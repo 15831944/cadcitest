@@ -12,7 +12,8 @@ jobs:
     - uses: lukka/get-cmake@latest
     - name: configure
       run: mkdir build && cd build && cmake .. -DENABLE_ALL=ON
+      run: ls -R
     - name: build
-      run: cmake --build build
+      run: cd build && make VERBOSE=1
     - name: test
       run: cd build && cmake --build check
