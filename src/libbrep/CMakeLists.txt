@@ -1,0 +1,102 @@
+# Include directories needed by libbrep users
+set(BREP_INCLUDE_DIRS
+  ${BRLCAD_BINARY_DIR}/include
+  ${BRLCAD_SOURCE_DIR}/include
+  ${BU_INCLUDE_DIRS}
+  ${BN_INCLUDE_DIRS}
+  ${P2T_INCLUDE_DIR}
+  ${OPENNURBS_INCLUDE_DIRS}
+  )
+
+# locally used but not needed by users of the library
+set(BREP_LOCAL_INCLUDE_DIRS
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${REGEX_INCLUDE_DIR}
+  ${BRLCAD_SOURCE_DIR}/src/other/Eigen
+  )
+
+BRLCAD_LIB_INCLUDE_DIRS(brep BREP_INCLUDE_DIRS BREP_LOCAL_INCLUDE_DIRS)
+
+set(LIBBREP_SOURCES
+  BBNode.cpp
+  BRNode.cpp
+  PullbackCurve.cpp
+  Subcurve.cpp
+  Subsurface.cpp
+  boolean.cpp
+  cdt/cdt.cpp
+  cdt/fast.cpp
+  cdt/surf.cpp
+  cdt/util.cpp
+  cdt/validate.cpp
+  cdt/edge.cpp
+  cdt/mesh.cpp
+  cdt/ovlps_simple.cpp
+  cdt/tri_isect.cpp
+  intersect.cpp
+  tools/tools.cpp
+  opennurbs_ext.cpp
+  px_event.cpp
+  shape_recognition/shape_recognition.cpp
+  shape_recognition/cone.cpp
+  shape_recognition/cylinder.cpp
+  shape_recognition/pipeline.cpp
+  shape_recognition/planar.cpp
+  shape_recognition/sphere.cpp
+  shape_recognition/util.cpp
+  ssx_event.cpp
+  tools/util.cpp
+  #opennurbs_fit.cpp
+  )
+
+set(CDT2_srcs
+  cdt2/cdt.cpp
+  cdt2/vert.cpp
+  cdt2/edge.cpp
+  cdt2/mesh.cpp
+  cdt2/polygon.cpp
+  )
+if (ENABLE_CDT2)
+  set(LIBBREP_SOURCES ${LIBBREP_SOURCES} ${CDT2_srcs})
+endif (ENABLE_CDT2)
+
+set(libbrep_ignored_files
+  tools/tools.h
+  brep_except.h
+  cdt/cdt.h
+  cdt/mesh.h
+  cdt/omesh.cpp
+  cdt/overt.cpp
+  cdt/ovlps.cpp
+  cdt/ovlps_grps.cpp
+  cdt/RTree.h
+  opennurbs_fit.h
+  opennurbs_fit.cpp
+  PullbackCurve.h
+  shape_recognition/shape_recognition.h
+  shape_recognition/torus.cpp
+  surface_tree_queue_tests.patch
+  ${CDT2_srcs}
+  cdt2/cdt.h
+  )
+CMAKEFILES(${libbrep_ignored_files})
+
+# Anyone who needs to import libbrep will also need to import openNURBS
+if(CPP_DLL_DEFINES)
+  set_property(GLOBAL APPEND PROPERTY libbrep_DLL_DEFINES "ON_DLL_IMPORTS")
+endif(CPP_DLL_DEFINES)
+
+BRLCAD_ADDLIB(libbrep "${LIBBREP_SOURCES}" "libbg;libbn;libbu;${OPENNURBS_LIBRARIES};${P2T_LIBRARY};${WINSOCK_LIB};${RPCRT_LIB};${STDCXX_LIBRARIES}")
+
+set_target_properties(libbrep PROPERTIES VERSION 20.0.1 SOVERSION 20)
+
+add_subdirectory(tests)
+
+CMAKEFILES(CMakeLists.txt)
+
+# Local Variables:
+# tab-width: 8
+# mode: cmake
+# indent-tabs-mode: t
+# End:
+# ex: shiftwidth=2 tabstop=8
