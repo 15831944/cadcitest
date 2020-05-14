@@ -15,7 +15,7 @@ jobs:
     - name: build
       run: cmake --build build -v && ls -R
     - name: configure2
-      run: cd build && cmake .. && more CMakeCache.txt && ls -R
+      run: cd build && rm CMakeCache.txt && cmake .. && more CMakeCache.txt && ls -R
     - name: build2
       run: cmake --build build -v && ls -R
     - name: test
