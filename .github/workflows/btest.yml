@@ -11,12 +11,10 @@ jobs:
     - uses: actions/checkout@v1
     - uses: lukka/get-cmake@latest
     - name: configure
-      run: mkdir build && cd build && cmake --version && cmake .. -DENABLE_ALL=ON && more CMakeCache.txt && ls -R
+      run: mkdir build && cd build && cmake --version && cmake .. -DENABLE_ALL=ON && more CMakeCache.txt
     - name: build
-      run: cmake --build build -v && ls -R
+      run: cd build && make libicv VERBOSE=1 && ls -R
     - name: configure2
       run: cd build && rm CMakeCache.txt && cmake .. && more CMakeCache.txt && ls -R
     - name: build2
-      run: cmake --build build -v && ls -R
-    - name: test
-      run: cd build && make check VERBOSE=1
+      run: cd build && make clean &&  make libicv VERBOSE=1 --build build -v && ls -R
