@@ -12,9 +12,9 @@ jobs:
     - uses: lukka/get-cmake@latest
     - name: configure
       run: mkdir build && cd build && cmake --version && cmake .. -DENABLE_ALL=ON && more CMakeCache.txt && ls -R
-    - name: build
-      run: cd build && make png && make libicv VERBOSE=1 && ls -R
-    - name: configure2
-      run: cd build && rm CMakeCache.txt && cmake .. && more CMakeCache.txt && ls -R
-    - name: build2
-      run: cd build && make clean &&  make libicv VERBOSE=1 && ls -R
+      #- name: build
+      #run: cd build && make png && make libicv VERBOSE=1 && ls -R
+      #- name: configure2
+      #run: cd build && rm CMakeCache.txt && cmake .. && more CMakeCache.txt && ls -R
+      #- name: build2
+      #run: cd build && make clean &&  make libicv VERBOSE=1 && ls -R
