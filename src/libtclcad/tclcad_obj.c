@@ -42,6 +42,9 @@
 #include "png.h"
 
 #include "tcl.h"
+#ifdef HAVE_TK
+#  include "tk.h"
+#endif
 
 #include "bio.h"
 
@@ -64,46 +67,16 @@
 #include "icv/io.h"
 #include "icv/ops.h"
 #include "icv/crop.h"
-#include "fb.h"
+#include "dm.h"
 
-#include "dm/dm_xvars.h"
-
-#ifdef DM_X
-#  ifdef WITH_TK
-#    include "tk.h"
-#endif
-#  include <X11/Xutil.h>
-#  include "dm/dm_xvars.h"
-#endif /* DM_X */
-
-#ifdef DM_TK
-#  ifdef WITH_TK
-#    include "tk.h"
+#if defined(DM_OGL) || defined(DM_WGL)
+#  if defined(DM_WGL)
+#    include <tkwinport.h>
 #  endif
-#  include "dm/dm_xvars.h"
-#endif /* DM_TK */
-
-#ifdef DM_OGL
-#  include "fb/fb_ogl.h"
-#endif /* DM_OGL */
-
-#ifdef DM_OSG
-#  include "dm/dm_xvars.h"
-#endif /* DM_OSG */
-
-#ifdef DM_OSGL
-#  include "dm/dm_xvars.h"
-#endif /* DM_OSGL */
-
-#ifdef DM_WGL
-#  include <tkwinport.h>
-#  include "fb/fb_wgl.h"
-#  include "dm/dm_xvars.h"
-#endif /* DM_WGL */
-
-#ifdef DM_QT
-#  include "dm/dm_xvars.h"
-#endif /* DM_QT */
+#  ifdef HAVE_GL_GL_H
+#    include <GL/gl.h>
+#  endif
+#endif
 
 /* Private headers */
 #include "tclcad_private.h"
@@ -1047,7 +1020,6 @@ HIDDEN int to_dm_func(struct ged *gedp,
 
 /* Utility Functions */
 HIDDEN int to_close_fbs(struct ged_dm_view *gdvp);
-HIDDEN void to_dm_get_display_image(struct ged *gedp, unsigned char **idata);
 HIDDEN void to_fbs_callback();
 HIDDEN int to_open_fbs(struct ged_dm_view *gdvp, Tcl_Interp *interp);
 
@@ -1350,7 +1322,7 @@ static struct to_cmdtab to_cmds[] = {
     {"pix",	"file", TO_UNLIMITED, to_pix, GED_FUNC_PTR_NULL},
     {"png",	"file", TO_UNLIMITED, to_png, GED_FUNC_PTR_NULL},
 #endif
-    {"png2fb",  	"[options] [file.png]", TO_UNLIMITED, to_view_func, ged_png2fb},
+    {"png2fb",  "[options] [file.png]", TO_UNLIMITED, to_view_func, ged_png2fb},
     {"pngwf",	"[options] file.png", 16, to_view_func, ged_png},
     {"poly_circ_mode",	"x y", TO_UNLIMITED, to_poly_circ_mode, GED_FUNC_PTR_NULL},
     {"poly_cont_build",	"x y", TO_UNLIMITED, to_poly_cont_build, GED_FUNC_PTR_NULL},
@@ -1490,7 +1462,7 @@ static struct to_cmdtab to_cmds[] = {
 
 
 static fastf_t
-screen_to_view_x(dm *dmp, fastf_t x)
+screen_to_view_x(struct dm *dmp, fastf_t x)
 {
     int width = dm_get_width(dmp);
     return x / (fastf_t)width * 2.0 - 1.0;
@@ -1498,7 +1470,7 @@ screen_to_view_x(dm *dmp, fastf_t x)
 
 
 static fastf_t
-screen_to_view_y(dm *dmp, fastf_t y)
+screen_to_view_y(struct dm *dmp, fastf_t y)
 {
     int height = dm_get_height(dmp);
     return (y / (fastf_t)height * -2.0 + 1.0) / dm_get_aspect(dmp);
@@ -1517,7 +1489,7 @@ dm_list_tcl(ClientData UNUSED(clientData),
 	    int UNUSED(argc),
 	    const char **UNUSED(argv))
 {
-    struct bu_vls *list = dm_list_types(',');
+    struct bu_vls *list = dm_list_types(",");
     Tcl_SetResult(interp, bu_vls_addr(list), TCL_VOLATILE);
     bu_vls_free(list);
     BU_PUT(list, struct bu_vls);
@@ -7248,7 +7220,7 @@ to_light(struct ged *gedp,
 
     /* get light flag */
     if (argc == 2) {
-	bu_vls_printf(gedp->ged_result_str, "%d", dm_get_light_flag(gdvp->gdv_dmp));
+	bu_vls_printf(gedp->ged_result_str, "%d", dm_get_light(gdvp->gdv_dmp));
 	return GED_OK;
     }
 
@@ -11553,7 +11525,7 @@ to_new_view(struct ged *gedp,
 {
     struct ged_dm_view *new_gdvp;
     HIDDEN const int name_index = 1;
-    int type = DM_TYPE_BAD;
+    const char *type = NULL;
     struct bu_vls event_vls = BU_VLS_INIT_ZERO;
 
     GED_CHECK_DATABASE_OPEN(gedp, GED_ERROR);
@@ -11573,45 +11545,31 @@ to_new_view(struct ged *gedp,
     }
 
     if (BU_STR_EQUAL(argv[2], "nu"))
-	type = DM_TYPE_NULL;
+	type = argv[2];
 
     /* find display manager type */
-#ifdef DM_X
     if (argv[2][0] == 'X' || argv[2][0] == 'x')
-	type = DM_TYPE_X;
-#endif /* DM_X */
+	type = argv[2];
 
-#ifdef DM_TK
     if (BU_STR_EQUAL(argv[2], "tk"))
-	type = DM_TYPE_TK;
-#endif /* DM_TK */
+	type = argv[2];
 
-#ifdef DM_OGL
     if (BU_STR_EQUAL(argv[2], "ogl"))
-	type = DM_TYPE_OGL;
-#endif /* DM_OGL */
+	type = argv[2];
 
-#ifdef DM_OSG
     if (BU_STR_EQUAL(argv[2], "osg"))
-	type = DM_TYPE_OSG;
-#endif /* DM_OSG */
+	type = argv[2];
 
-#ifdef DM_OSGL
     if (BU_STR_EQUAL(argv[2], "osgl"))
-	type = DM_TYPE_OSGL;
-#endif /* DM_OSGL */
+	type = argv[2];
 
-#ifdef DM_WGL
     if (BU_STR_EQUAL(argv[2], "wgl"))
-	type = DM_TYPE_WGL;
-#endif /* DM_WGL */
+	type = argv[2];
 
-#ifdef DM_QT
     if (BU_STR_EQUAL(argv[2], "qt"))
-	type = DM_TYPE_QT;
-#endif /* DM_QT */
+	type = argv[2];
 
-    if (type == DM_TYPE_BAD) {
+    if (!type) {
 	bu_vls_printf(gedp->ged_result_str, "ERROR:  Requisite display manager is not available.\nBRL-CAD may need to be recompiled with support for:  %s\nRun 'fbhelp' for a list of available display managers.\n", argv[2]);
 	return GED_ERROR;
     }
@@ -11641,7 +11599,7 @@ to_new_view(struct ged *gedp,
 	    av[i+newargs] = argv[i];
 	av[i+newargs] = (const char *)NULL;
 
-	new_gdvp->gdv_dmp = dm_open(current_top->to_interp, type, ac, av);
+	new_gdvp->gdv_dmp = dm_open((void *)current_top->to_interp, type, ac, av);
 	if (new_gdvp->gdv_dmp == DM_NULL) {
 	    bu_free((void *)new_gdvp->gdv_view, "ged_view");
 	    bu_free((void *)new_gdvp, "ged_dm_view");
@@ -11976,7 +11934,7 @@ to_pix(struct ged *gedp,
 	return GED_ERROR;
     }
 
-    if (dm_get_type(gdvp->gdv_dmp) != DM_TYPE_WGL && dm_get_type(gdvp->gdv_dmp) != DM_TYPE_OGL) {
+    if (!BU_STR_EQUIV(dm_get_type(gdvp->gdv_dmp), "wgl") && !BU_STR_EQUIV(dm_get_type(gdvp->gdv_dmp), "ogl")) {
 	bu_vls_printf(gedp->ged_result_str, "%s: not yet supported for this display manager (i.e. must be OpenGL based)", argv[0]);
 	return GED_OK;
     }
@@ -12066,7 +12024,7 @@ to_png(struct ged *gedp,
 	return GED_ERROR;
     }
 
-    if (dm_get_type(gdvp->gdv_dmp) != DM_TYPE_WGL && dm_get_type(gdvp->gdv_dmp) != DM_TYPE_OGL) {
+    if (!BU_STR_EQUIV(dm_get_type(gdvp->gdv_dmp), "wgl") && !BU_STR_EQUIV(dm_get_type(gdvp->gdv_dmp), "ogl")) {
 	bu_vls_printf(gedp->ged_result_str, "%s: not yet supported for this display manager (i.e. must be OpenGL based)", argv[0]);
 	return GED_OK;
     }
@@ -14279,14 +14237,7 @@ to_view_win_size(struct ged *gedp,
 	}
     }
 
-#if defined(DM_X) || defined(DM_TK) || defined(DM_OGL) || defined(DM_OSG) || defined(DM_OSGL) || defined(DM_WGL) || defined(DM_QT)
-#   if (defined HAVE_TK)
-    if (dm_get_public_vars(gdvp->gdv_dmp)) {
-	Tk_GeometryRequest(((struct dm_xvars *)(dm_get_public_vars(gdvp->gdv_dmp)))->xtkwin,
-			   width, height);
-    }
-#   endif
-#endif
+    dm_geometry_request(gdvp->gdv_dmp, width, height);
 
     return GED_OK;
 }
@@ -14928,7 +14879,6 @@ to_view_func(struct ged *gedp,
     return to_view_func_common(gedp, argc, argv, func, usage, maxargs, 0, 1);
 }
 
-
 HIDDEN int
 to_view_func_common(struct ged *gedp,
 		    int argc,
@@ -14970,9 +14920,10 @@ to_view_func_common(struct ged *gedp,
 	return GED_ERROR;
     }
 
+    gedp->ged_dmp = gdvp->gdv_dmp;
+
     /* Copy argv into av while skipping argv[1] (i.e. the view name) */
     gedp->ged_gvp = gdvp->gdv_view;
-    gedp->ged_fbsp = &gdvp->gdv_fbs;
     gedp->ged_refresh_clientdata = (void *)gdvp;
     av[0] = (char *)argv[0];
     ac = argc-1;
@@ -15082,9 +15033,6 @@ to_dm_func(struct ged *gedp,
     /* Copy argv into av while skipping argv[1] (i.e. the view name) */
     gedp->ged_gvp = gdvp->gdv_view;
     gedp->ged_dmp = (void *)gdvp->gdv_dmp;
-    gedp->ged_dm_width = dm_get_width(gdvp->gdv_dmp);
-    gedp->ged_dm_height = dm_get_height(gdvp->gdv_dmp);
-    gedp->ged_dm_get_display_image = to_dm_get_display_image;
     gedp->ged_refresh_clientdata = (void *)gdvp;
     av[0] = (char *)argv[0];
     ac = argc-1;
@@ -15125,14 +15073,6 @@ to_close_fbs(struct ged_dm_view *gdvp)
     gdvp->gdv_fbs.fbs_fbp = FB_NULL;
 
     return TCL_OK;
-}
-
-
-HIDDEN void to_dm_get_display_image(struct ged *gedp, unsigned char **idata)
-{
-    if (gedp->ged_dmp) {
-	(void)dm_get_display_image(((dm *)gedp->ged_dmp), idata);
-    }
 }
 
 
@@ -15325,10 +15265,10 @@ to_output_handler(struct ged *gedp, char *line)
 }
 
 
-HIDDEN void go_dm_draw_arrows(dm *dmp, struct bview_data_arrow_state *gdasp, fastf_t sf);
-HIDDEN void go_dm_draw_labels(dm *dmp, struct bview_data_label_state *gdlsp, matp_t m2vmat);
-HIDDEN void go_dm_draw_lines(dm *dmp, struct bview_data_line_state *gdlsp);
-HIDDEN void go_dm_draw_polys(dm *dmp, bview_data_polygon_state *gdpsp, int mode);
+HIDDEN void go_dm_draw_arrows(struct dm *dmp, struct bview_data_arrow_state *gdasp, fastf_t sf);
+HIDDEN void go_dm_draw_labels(struct dm *dmp, struct bview_data_label_state *gdlsp, matp_t m2vmat);
+HIDDEN void go_dm_draw_lines(struct dm *dmp, struct bview_data_line_state *gdlsp);
+HIDDEN void go_dm_draw_polys(struct dm *dmp, bview_data_polygon_state *gdpsp, int mode);
 
 HIDDEN void go_draw(struct ged_dm_view *gdvp);
 HIDDEN int go_draw_dlist(struct ged_dm_view *gdvp);
@@ -15337,7 +15277,7 @@ HIDDEN void go_draw_solid(struct ged_dm_view *gdvp, struct solid *sp);
 
 
 HIDDEN void
-go_dm_draw_arrows(dm *dmp, struct bview_data_arrow_state *gdasp, fastf_t sf)
+go_dm_draw_arrows(struct dm *dmp, struct bview_data_arrow_state *gdasp, fastf_t sf)
 {
     register int i;
     int saveLineWidth;
@@ -15419,7 +15359,7 @@ go_dm_draw_arrows(dm *dmp, struct bview_data_arrow_state *gdasp, fastf_t sf)
 
 
 HIDDEN void
-go_dm_draw_labels(dm *dmp, struct bview_data_label_state *gdlsp, matp_t m2vmat)
+go_dm_draw_labels(struct dm *dmp, struct bview_data_label_state *gdlsp, matp_t m2vmat)
 {
     register int i;
 
@@ -15441,7 +15381,7 @@ go_dm_draw_labels(dm *dmp, struct bview_data_label_state *gdlsp, matp_t m2vmat)
 
 
 HIDDEN void
-go_dm_draw_lines(dm *dmp, struct bview_data_line_state *gdlsp)
+go_dm_draw_lines(struct dm *dmp, struct bview_data_line_state *gdlsp)
 {
     int saveLineWidth;
     int saveLineStyle;
@@ -15509,7 +15449,7 @@ go_dm_draw_lines(dm *dmp, struct bview_data_line_state *gdlsp)
 
 
 HIDDEN void
-go_dm_draw_polys(dm *dmp, bview_data_polygon_state *gdpsp, int mode)
+go_dm_draw_polys(struct dm *dmp, bview_data_polygon_state *gdpsp, int mode)
 {
     register size_t i, last_poly;
     int saveLineWidth;
@@ -15559,7 +15499,7 @@ go_draw_dlist(struct ged_dm_view *gdvp)
     register struct display_list *next_gdlp;
     struct solid *sp;
     int line_style = -1;
-    dm *dmp = gdvp->gdv_dmp;
+    struct dm *dmp = gdvp->gdv_dmp;
     struct bu_list *hdlp = gdvp->gdv_gop->go_gedp->ged_gdp->gd_headDisplay;
 
     if (dm_get_transparency(dmp)) {
@@ -15766,7 +15706,7 @@ HIDDEN void
 go_draw_solid(struct ged_dm_view *gdvp, struct solid *sp)
 {
     struct ged_obj *gop = gdvp->gdv_gop;
-    dm *dmp = gdvp->gdv_dmp;
+    struct dm *dmp = gdvp->gdv_dmp;
     struct bu_hash_entry *entry;
     struct path_edit_params *params = NULL;
     mat_t save_mat, edit_model2view;
