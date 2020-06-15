@@ -11,9 +11,9 @@ jobs:
     - uses: actions/checkout@v1
     - uses: lukka/get-cmake@latest
     - name: configure
-      run: mkdir build && cd build && cmake --version && cmake .. -DENABLE_ALL=ON && more CMakeCache.txt && ls -R
-      #- name: build
-      #run: cd build && make png && make libicv VERBOSE=1 && ls -R
+      run: mkdir build && cd build && cmake --version && cmake .. && more CMakeCache.txt && ls -R
+    - name: build
+      run: cd build && make && make check
       #- name: configure2
       #run: cd build && rm CMakeCache.txt && cmake .. && more CMakeCache.txt && ls -R
       #- name: build2

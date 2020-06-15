@@ -241,30 +241,6 @@ mark_as_advanced(PNG_SHARED)
 mark_as_advanced(PNG_STATIC)
 mark_as_advanced(uname_executable)
 
-# LZ4 compression/decompression library
-set(lz4_DESCRIPTION "
-Option for enabling and disabling compilation of the lz4 data
-compression library provided with BRL-CAD's source code.  Default
-is AUTO, responsive to the toplevel BRLCAD_BUNDLED_LIBS option and
-testing first for a system version if BRLCAD_BUNDLED_LIBS is also
-AUTO.
-")
-THIRD_PARTY(lz4 LZ4 lz4 lz4_DESCRIPTION ALIASES ENABLE_LZ4 FLAGS NOSYS)
-if(BRLCAD_LZ4_BUILD)
-  set(LIBLZ4_INCLUDE_DIR "${BRLCAD_SOURCE_DIR}/src/other/lz4" CACHE STRING "Directory containing lz4 headers." FORCE)
-  set(LZ4_INCLUDE_DIR "${LIBLZ4_INCLUDE_DIR}" CACHE STRING "Directory containing lz4 headers." FORCE)
-  set(LZ4_INCLUDE_DIRS "${LZ4_INCLUDE_DIR}" CACHE STRING "Directory containing lz4 headers." FORCE)
-  mark_as_advanced(LIBLZ4_INCLUDE_DIR)
-  mark_as_advanced(LZ4_INCLUDE_DIR)
-  mark_as_advanced(LZ4_INCLUDE_DIRS)
-  set(LZ4_LIBRARY lz4 CACHE STRING "lz4" FORCE)
-  set(LZ4_LIBRARIES ${LZ4_LIBRARY} CACHE STRING "lz4" FORCE)
-  mark_as_advanced(LZ4_LIBRARY)
-  mark_as_advanced(LZ4_LIBRARIES)
-  SetTargetFolder(lz4 "Third Party Libraries")
-  SetTargetFolder(lz4-static "Third Party Libraries")
-endif(BRLCAD_LZ4_BUILD)
-
 # libnetpbm Library support for pnm,ppm,pbm, etc. image files
 set(netpbm_DESCRIPTION "
 Option for enabling and disabling compilation of the netpbm library
@@ -308,13 +284,40 @@ endif(BRLCAD_UTAHRLE_BUILD)
 #                Tcl/Tk and related extensions
 ####################################################################
 
+function(TCL_RESET_VARS)
+  unset(TCL_LIBRARY CACHE)
+  unset(TCL_STUB_LIBRARY CACHE)
+  unset(TCL_FOUND CACHE)
+  unset(TCLSH_FOUND CACHE)
+  unset(TCL_LIBRARY CACHE)
+  unset(TCL_INCLUDE_PATH CACHE)
+  unset(TCL_TCLSH CACHE)
+  unset(TCL_STUB_LIBRARY CACHE)
+endfunction(TCL_RESET_VARS)
+
+function(TK_RESET_VARS)
+  unset(TK_LIBRARY CACHE)
+  unset(TK_STUB_LIBRARY CACHE)
+  unset(TK_FOUND CACHE)
+  unset(TCLTK_FOUND CACHE)
+  unset(TK_LIBRARY CACHE)
+  unset(TK_INCLUDE_PATH CACHE)
+  unset(TK_WISH CACHE)
+  unset(TK_STUB_LIBRARY CACHE)
+  unset(TTK_STUB_LIBRARY CACHE)
+endfunction(TK_RESET_VARS)
+
+
+# Set the expected graphics system (if known) before any find_package
+# calls related to Tcl
+if(BRLCAD_ENABLE_AQUA)
+  set(TK_ENABLE_AQUA ON CACHE STRING "BRL-CAD setting to enable AQUA" FORCE)
+  set(TCL_TK_SYSTEM_GRAPHICS "aqua" CACHE STRING "Tk system graphics type" FORCE)
+endif(BRLCAD_ENABLE_AQUA)
+
 # Make sure we actually look for these each time...
-unset(TCL_TCLSH CACHE)
-unset(TCL_LIBRARY CACHE)
-unset(TCL_INCLUDE_PATH CACHE)
-unset(TK_WISH CACHE)
-unset(TK_LIBRARY CACHE)
-unset(TK_INCLUDE_PATH CACHE)
+TCL_RESET_VARS()
+TK_RESET_VARS()
 
 set(tcl_DESCRIPTION "
 Option for enabling and disabling compilation of the Tcl library
@@ -375,7 +378,7 @@ exit
   ")
   set(inittcl_scriptfile "${CMAKE_BINARY_DIR}/CMakeTmp/tcl_inittcl.tcl")
   file(WRITE ${inittcl_scriptfile} ${inittcl_script})
-  exec_program(${TCL_TCLSH} ARGS ${inittcl_scriptfile} OUTPUT_VARIABLE EXECOUTPUT)
+  execute_process(COMMAND ${TCL_TCLSH} ${inittcl_scriptfile} OUTPUT_VARIABLE EXECOUTPUT)
   file(READ "${CMAKE_BINARY_DIR}/CMakeTmp/tcl_inittcl" tcl_inittcl_raw)
   string(REGEX REPLACE "\n" "" tcl_inittcl_paths_1 ${tcl_inittcl_raw})
   string(REGEX REPLACE " " ";" tcl_inittcl_paths ${tcl_inittcl_paths_1})
@@ -411,9 +414,6 @@ BRLCAD_TCL is set to AUTO or SYSTEM.  If BRLCAD_TK is set to BUNDLED,
 local copy is built even if a system version is present.  This option
 also depends on BRLCAD_ENABLE_TK being ON.
 ")
-if(BRLCAD_ENABLE_AQUA)
-  set(TK_ENABLE_AQUA ON CACHE STRING "BRL-CAD setting to enable AQUA" FORCE)
-endif(BRLCAD_ENABLE_AQUA)
 
 THIRD_PARTY_TCL_PACKAGE(Tk tk "${TCL_TCLSH}" "tcl" "BRLCAD_ENABLE_TK;BRLCAD_LEVEL2" "tk" tk_ALIASES tk_DESCRIPTION)
 
@@ -455,52 +455,23 @@ elseif(BRLCAD_ENABLE_TK)
 
   set(HAVE_TK_H 1)
 
-  # Packages probably still need to know the system graphics package.  Unfortunately
-  # it is not possible to run tclsh or wish to use the [tk windowingsystem] command
-  # to extract this information on a system without the ability to launch a graphics
-  # window successfully - Tk initialization will fail, and thus the command fails,
-  # even though we don't actually need the window.  There is no other reliable
-  # runtime way to use tclsh or wish to identify the system graphics system.
-  #
-  # In lieu of this, we look instead in the printiable strings of the Tk library
-  # for the "win32", "aqua", or "x11" strings (or, if necessary, we will add additional
-  # string checks.)  This is not ideal, but there appears to be no other way to learn
-  # what we want to know.
-
-  try_compile(WSYS_BUILD ${CMAKE_BINARY_DIR}/CMakeTmp ${BRLCAD_CMAKE_DIR}/wsysstring.cpp
-    OUTPUT_VARIABLE WSYS_MSG
-    COPY_FILE ${CMAKE_BINARY_DIR}/CMakeTmp/wsysstring${CMAKE_EXECUTABLE_SUFFIX})
-
-  if (NOT WSYS_BUILD)
-    message(FATAL_ERROR "Could not build wyssstring checker to test Tcl/Tk windowing system: ${WSYS_MSG}")
-  endif (NOT WSYS_BUILD)
-
-  message("TK_LIBRARY: ${TK_LIBRARY}")
-  execute_process(COMMAND ${CMAKE_BINARY_DIR}/CMakeTmp/wsysstring${CMAKE_EXECUTABLE_SUFFIX}  ${TK_LIBRARY}
-    RESULT_VARIABLE WSYS_TEST
-    OUTPUT_VARIABLE WSYS_VAL
-    )
-
-  if (WSYS_TEST EQUAL -1)
-    message(FATAL_ERROR "Tcl/Tk windowing system test failed")
-  endif (WSYS_TEST EQUAL -1)
-
-  string(REPLACE "\n" "" WSYS_VAL "${WSYS_VAL}")
-
-  set(TK_SYSTEM_GRAPHICS "${WSYS_VAL}" CACHE STRING "Tk system graphics type" FORCE)
-
-  message("TK_SYSTEM_GRAPHICS: ${TK_SYSTEM_GRAPHICS}")
+  # Packages probably still need to know the system graphics package
+  if (BRLCAD_ENABLE_AQUA)
+    set(TK_SYSTEM_GRAPHICS aqua)
+  elseif (BRLCAD_ENABLE_X11)
+    set(TK_SYSTEM_GRAPHICS x11)
+  elseif (WIN32)
+    set(TK_SYSTEM_GRAPHICS win32)
+  endif ()
+  set(TK_SYSTEM_GRAPHICS "${TK_SYSTEM_GRAPHICS}" CACHE STRING "Tk system graphics type" FORCE)
 
 else(BRLCAD_TK_BUILD)
 
   # If we're not using Tk, make sure the variables are empty - CMake won't be
   # happy if they're set to NOTFOUND and used, and FindTCL.cmake may have set
   # them.
-  set(TK_LIBRARY "" CACHE STRING "TK_LIBRARY" FORCE)
-  set(TK_STUB_LIBRARY "" CACHE STRING "TK_LIBRARY" FORCE)
-  set(TK_WISH "" CACHE STRING "TK_WISH" FORCE)
-  set(TK_INCLUDE_PATH "" CACHE STRING "Tk include path" FORCE)
-  set(TK_SYSTEM_GRAPHICS "" CACHE STRING "Tk system graphics type" FORCE)
+  TK_RESET_VARS()
+  unset(TK_SYSTEM_GRAPHICS CACHE)
 
 endif(BRLCAD_TK_BUILD)
 mark_as_advanced(TK_INCLUDE_PATH)
