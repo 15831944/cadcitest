@@ -15,6 +15,6 @@ jobs:
     - name: build
       run: cd build && make && make check
     - name: configure2
-      run: cd build && make distcleanclean && cmake .. -DENABLE_ALL=ON && more CMakeCache.txt && ls -R
+      run: cd build && make distclean && cmake .. -DENABLE_ALL=ON && more CMakeCache.txt && ls -R
     - name: build2
       run: cd build && make && make check
