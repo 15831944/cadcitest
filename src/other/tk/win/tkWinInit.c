@@ -68,9 +68,9 @@ TkpGetAppName(
     Tcl_DString *namePtr)	/* A previously initialized Tcl_DString. */
 {
     int argc, namelength;
-    const char **argv = NULL, *name, *p;
+    CONST char **argv = NULL, *name, *p;
 
-    name = Tcl_GetVar2(interp, "argv0", NULL, TCL_GLOBAL_ONLY);
+    name = Tcl_GetVar(interp, "argv0", TCL_GLOBAL_ONLY);
     namelength = -1;
     if (name != NULL) {
 	Tcl_SplitPath(name, &argc, &argv);
@@ -90,7 +90,7 @@ TkpGetAppName(
     }
     Tcl_DStringAppend(namePtr, name, namelength);
     if (argv != NULL) {
-	ckfree(argv);
+	ckfree((char *)argv);
     }
 }
 
@@ -113,13 +113,12 @@ TkpGetAppName(
 
 void
 TkpDisplayWarning(
-    const char *msg,		/* Message to be displayed. */
-    const char *title)		/* Title of warning. */
+    CONST char *msg,		/* Message to be displayed. */
+    CONST char *title)		/* Title of warning. */
 {
 #define TK_MAX_WARN_LEN 1024
-    WCHAR titleString[TK_MAX_WARN_LEN];
-    WCHAR *msgString; /* points to titleString, just after title, leaving space for ": " */
-    int len; /* size of title, including terminating NULL */
+    WCHAR msgString[TK_MAX_WARN_LEN + 5];
+    WCHAR titleString[TK_MAX_WARN_LEN + 1];
 
     /* If running on Cygwin and we have a stderr channel, use it. */
 #if !defined(STATIC_BUILD)
@@ -135,78 +134,18 @@ TkpDisplayWarning(
     }
 #endif /* !STATIC_BUILD */
 
-    len = MultiByteToWideChar(CP_UTF8, 0, title, -1, titleString, TK_MAX_WARN_LEN);
-    msgString = &titleString[len + 1];
-    titleString[TK_MAX_WARN_LEN - 1] = L'\0';
-    MultiByteToWideChar(CP_UTF8, 0, msg, -1, msgString, (TK_MAX_WARN_LEN - 1) - len);
+    MultiByteToWideChar(CP_UTF8, 0, msg, -1, msgString, TK_MAX_WARN_LEN);
+    MultiByteToWideChar(CP_UTF8, 0, title, -1, titleString, TK_MAX_WARN_LEN);
     /*
      * Truncate MessageBox string if it is too long to not overflow the screen
      * and cause possible oversized window error.
      */
-    if (titleString[TK_MAX_WARN_LEN - 1] != L'\0') {
-	memcpy(titleString + (TK_MAX_WARN_LEN - 5), L" ...", 5 * sizeof(WCHAR));
-    }
-    if (IsDebuggerPresent()) {
-	titleString[len - 1] = L':';
-	titleString[len] = L' ';
-	OutputDebugStringW(titleString);
-    } else {
-	titleString[len - 1] = L'\0';
-	MessageBoxW(NULL, msgString, titleString,
-		MB_OK | MB_ICONEXCLAMATION | MB_SYSTEMMODAL
-		| MB_SETFOREGROUND | MB_TOPMOST);
-    }
+	memcpy(msgString + TK_MAX_WARN_LEN, L" ...", 5 * sizeof(WCHAR));
+    titleString[TK_MAX_WARN_LEN] = L'\0';
+    MessageBoxW(NULL, msgString, titleString,
+	    MB_OK | MB_ICONEXCLAMATION | MB_SYSTEMMODAL
+	    | MB_SETFOREGROUND | MB_TOPMOST);
 }
-
-/*
- * ----------------------------------------------------------------------
- *
- * Win32ErrorObj --
- *
- *	Returns a string object containing text from a COM or Win32 error code
- *
- * Results:
- *	A Tcl_Obj containing the Win32 error message.
- *
- * Side effects:
- *	Removed the error message from the COM threads error object.
- *
- * ----------------------------------------------------------------------
- */
-
-Tcl_Obj*
-TkWin32ErrorObj(
-    HRESULT hrError)
-{
-    LPWSTR lpBuffer = NULL, p = NULL;
-    WCHAR  sBuffer[30];
-    Tcl_Obj* errPtr = NULL;
-    Tcl_DString ds;
-
-    FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
-	    | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, (DWORD)hrError,
-	    LANG_NEUTRAL, (LPWSTR)&lpBuffer, 0, NULL);
-
-    if (lpBuffer == NULL) {
-	lpBuffer = sBuffer;
-	wsprintfW(sBuffer, L"Error Code: %08lX", hrError);
-    }
-
-    if ((p = wcsrchr(lpBuffer, '\r')) != NULL) {
-	*p = '\0';
-    }
-
-    Tcl_WinTCharToUtf((LPCTSTR)lpBuffer, -1, &ds);
-    errPtr = Tcl_NewStringObj(Tcl_DStringValue(&ds), Tcl_DStringLength(&ds));
-    Tcl_DStringFree(&ds);
-
-    if (lpBuffer != sBuffer) {
-	LocalFree((HLOCAL)lpBuffer);
-    }
-
-    return errPtr;
-}
-
 
 /*
  * Local Variables:

@@ -32,11 +32,10 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/getopt.h"
 #include "bu/exit.h"
-#include "dm.h"
+#include "fb.h"
 #include "libtermio.h"
 
 #define COMMA ','
@@ -51,7 +50,7 @@ ColorMap old_map;
 ColorMap cm;
 
 static char *framebuffer = NULL;
-static struct fb *fbp;
+static fb *fbp;
 static int scr_height;
 static int scr_width;
 
@@ -73,8 +72,6 @@ int
 main(int argc, char **argv)
 {
     int i;
-
-    bu_setprogname(argv[0]);
 
     if (! pars_Argv(argc, argv)) {
     	printusage();

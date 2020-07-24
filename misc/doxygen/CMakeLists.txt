@@ -41,10 +41,12 @@ set(DOX_LIBS
   libgcv
   libanalyze
   libged
+  libfb
   libdm
   libtclcad
   libpkg
   libtermio
+  libcursor
   )
 
 foreach(libname ${DOX_LIBS})
@@ -181,8 +183,9 @@ set(doxygen_ignore_files
   libbn.dox
   libbrep.dox
   libbu.dox
+  libcursor.dox
   libdm.dox
-  libdm.dox
+  libfb.dox
   libfft.dox
   libgcv.dox
   libged.dox

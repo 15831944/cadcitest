@@ -7,7 +7,6 @@ set(optical_headers
   shadefuncs.h
   )
 BRLCAD_MANAGE_FILES(optical_headers ${INCLUDE_DIR}/brlcad/optical)
-
 CMAKEFILES(CMakeLists.txt)
 
 # Local Variables:

@@ -30,7 +30,6 @@
 #include <stdlib.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/malloc.h"
 #include "bu/log.h"
 #include "bu/file.h"
@@ -56,8 +55,6 @@ main(int argc, char **argv)
     size_t framenumber;
     char *base_name;
     char name[128];
-
-    bu_setprogname(argv[0]);
 
     if (argc < 3) {
 	printUsage();

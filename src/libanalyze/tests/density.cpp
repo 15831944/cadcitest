@@ -22,7 +22,6 @@
 
 #include <set>
 
-#include "bu/app.h"
 #include "analyze.h"
 
 
@@ -130,8 +129,6 @@ main(int argc, char **argv)
 {
     struct bu_vls msgs = BU_VLS_INIT_ZERO;
     struct analyze_densities *a = NULL;
-
-    bu_setprogname(argv[0]);
 
     if (argc < 1 || !argv) {
 	return -1;

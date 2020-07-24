@@ -31,12 +31,11 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/getopt.h"
 #include "bu/exit.h"
 #include "vmath.h"
-#include "dm.h"
+#include "fb.h"
 #include "pkg.h"
 
 
@@ -60,7 +59,7 @@ struct stroke {
 }; /* rasterization descriptor */
 
 static char *framebuffer = NULL;
-struct fb *fbp;			/* Current framebuffer */
+fb *fbp;			/* Current framebuffer */
 
 static int screen_width = 512;	/* default input width */
 static int screen_height = 512;	/* default input height */
@@ -230,8 +229,6 @@ int
 main(int argc, char **argv)
 {
     struct coords start, end;
-
-    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	fputs(usage, stderr);

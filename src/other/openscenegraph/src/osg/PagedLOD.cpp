@@ -150,7 +150,7 @@ void PagedLOD::traverse(NodeVisitor& nv)
             }
             else
             {
-                osg::CullStack* cullStack = nv.asCullStack();
+                osg::CullStack* cullStack = dynamic_cast<osg::CullStack*>(&nv);
                 if (cullStack && cullStack->getLODScale()>0.0f)
                 {
                     required_range = cullStack->clampedPixelSize(getBound()) / cullStack->getLODScale();

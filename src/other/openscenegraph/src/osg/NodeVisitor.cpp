@@ -25,7 +25,6 @@
 #include <osg/OcclusionQueryNode>
 #include <osg/PagedLOD>
 #include <osg/PositionAttitudeTransform>
-#include <osg/AutoTransform>
 #include <osg/Projection>
 #include <osg/ProxyNode>
 #include <osg/Sequence>
@@ -34,14 +33,13 @@
 #include <osg/Transform>
 #include <osg/Camera>
 #include <osg/CameraView>
-#include <osg/Geometry>
 
 #include <stdlib.h>
 
 using namespace osg;
 
 NodeVisitor::NodeVisitor(TraversalMode tm):
-    Object(true)
+        Referenced(true)
 {
     _visitorType = NODE_VISITOR;
     _traversalNumber = osg::UNINITIALIZED_FRAME_NUMBER;
@@ -52,7 +50,7 @@ NodeVisitor::NodeVisitor(TraversalMode tm):
 }
 
 NodeVisitor::NodeVisitor(VisitorType type,TraversalMode tm):
-    Object(true)
+    Referenced(true)
 {
     _visitorType = type;
     _traversalNumber = osg::UNINITIALIZED_FRAME_NUMBER;
@@ -62,15 +60,6 @@ NodeVisitor::NodeVisitor(VisitorType type,TraversalMode tm):
     _nodeMaskOverride = 0x0;
 }
 
-NodeVisitor::NodeVisitor(const NodeVisitor& nv, const osg::CopyOp& copyop):
-    Object(nv, copyop),
-    _visitorType(nv._visitorType),
-    _traversalNumber(nv._traversalNumber),
-    _traversalMode(nv._traversalMode),
-    _traversalMask(nv._traversalMask),
-    _nodeMaskOverride(nv._nodeMaskOverride)
-{
-}
 
 NodeVisitor::~NodeVisitor()
 {
@@ -82,19 +71,9 @@ void NodeVisitor::apply(Node& node)
     traverse(node);
 }
 
-void NodeVisitor::apply(Drawable& drawable)
-{
-    apply(static_cast<Node&>(drawable));
-}
-
-void NodeVisitor::apply(Geometry& drawable)
-{
-    apply(static_cast<Drawable&>(drawable));
-}
-
 void NodeVisitor::apply(Geode& node)
 {
-    apply(static_cast<Group&>(node));
+    apply(static_cast<Node&>(node));
 }
 
 void NodeVisitor::apply(Billboard& node)
@@ -158,11 +137,6 @@ void NodeVisitor::apply(MatrixTransform& node)
 }
 
 void NodeVisitor::apply(PositionAttitudeTransform& node)
-{
-    apply(static_cast<Transform&>(node));
-}
-
-void NodeVisitor::apply(AutoTransform& node)
 {
     apply(static_cast<Transform&>(node));
 }

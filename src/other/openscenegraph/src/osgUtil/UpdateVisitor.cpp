@@ -15,8 +15,7 @@
 using namespace osg;
 using namespace osgUtil;
 
-UpdateVisitor::UpdateVisitor():
-    osg::NodeVisitor(osg::NodeVisitor::UPDATE_VISITOR, osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+UpdateVisitor::UpdateVisitor():NodeVisitor(UPDATE_VISITOR,TRAVERSE_ALL_CHILDREN)
 {
 }
 

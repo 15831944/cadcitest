@@ -437,7 +437,7 @@ namespace PlaneIntersectorUtils
             }
         }
 
-        inline void operator () (const osg::Vec3& v1,const osg::Vec3& v2,const osg::Vec3& v3)
+        inline void operator () (const osg::Vec3& v1,const osg::Vec3& v2,const osg::Vec3& v3, bool)
         {
 
             if (_limitOneIntersection && _hit) return;
@@ -468,21 +468,21 @@ namespace PlaneIntersectorUtils
 
             if (numOnPlane==3)
             {
-                // triangle lives wholly in the plane
+                // triangle lives wholy in the plane
                 OSG_NOTICE<<"3"<<std::endl;
                 return;
             }
 
             if (numOnPlane==2)
             {
-                // one edge lives wholly in the plane
+                // one edge lives wholy in the plane
                 OSG_NOTICE<<"2"<<std::endl;
                 return;
             }
 
             if (numOnPlane==1)
             {
-                // one point lives wholly in the plane
+                // one point lives wholy in the plane
                 OSG_NOTICE<<"1"<<std::endl;
                 return;
             }
@@ -656,8 +656,8 @@ void PlaneIntersector::intersect(osgUtil::IntersectionVisitor& iv, osg::Drawable
     // OSG_NOTICE<<"PlaneIntersector::intersect(osgUtil::IntersectionVisitor& iv, osg::Drawable* drawable)"<<std::endl;
 
     if (reachedLimit()) return;
-    if ( _plane.intersect( drawable->getBoundingBox() )!=0 ) return;
-    if ( !_polytope.contains( drawable->getBoundingBox() ) ) return;
+    if ( _plane.intersect( drawable->getBound() )!=0 ) return;
+    if ( !_polytope.contains( drawable->getBound() ) ) return;
 
     // OSG_NOTICE<<"Succed PlaneIntersector::intersect(osgUtil::IntersectionVisitor& iv, osg::Drawable* drawable)"<<std::endl;
 

@@ -30,9 +30,7 @@ DAMAGE.
 #define MY_TIME_INCLUDED
 
 #include <string.h>
-#ifdef HAVE_SYS_TIMEB
-#  include <sys/timeb.h>
-#endif
+#include <sys/timeb.h>
 #ifndef WIN32
 #include <sys/time.h>
 #endif // WIN32

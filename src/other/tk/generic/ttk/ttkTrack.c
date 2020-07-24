@@ -173,7 +173,7 @@ ElementStateEventProc(ClientData clientData, XEvent *ev)
 
 void TtkTrackElementState(WidgetCore *corePtr)
 {
-    ElementStateTracker *es = ckalloc(sizeof(*es));
+    ElementStateTracker *es = (ElementStateTracker*)ckalloc(sizeof(*es));
     es->corePtr = corePtr;
     es->tracking = 0;
     es->activeElement = es->pressedElement = 0;

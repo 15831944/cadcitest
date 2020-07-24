@@ -41,7 +41,7 @@ void LightSource::setLight(Light* light)
     setLocalStateSetModes(_value);
 }
 
-// Set the GLModes on StateSet associated with the LightSource.
+// Set the GLModes on StateSet associated with the ClipPlanes.
 void LightSource::setStateSetModes(StateSet& stateset,StateAttribute::GLModeValue value) const
 {
     if (_light.valid())

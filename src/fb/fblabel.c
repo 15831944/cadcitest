@@ -35,7 +35,7 @@
 #include "bu/getopt.h"
 #include "bu/exit.h"
 #include "bu/vfont.h"
-#include "dm.h"
+#include "fb.h"
 #include "pkg.h"
 
 
@@ -44,7 +44,7 @@
 static char *framebuffer = NULL;
 static char *font1 = NULL;
 
-struct fb *fbp;
+fb *fbp;
 
 static char usage[] = "\
 Usage: fblabel [-c -a] [-F framebuffer] [-C r/g/b]\n\

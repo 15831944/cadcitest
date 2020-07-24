@@ -11,7 +11,6 @@
  * OpenSceneGraph Public License for more details.
 */
 #include <osg/Array>
-#include <osg/Notify>
 
 using namespace osg;
 
@@ -63,20 +62,13 @@ static const char* s_ArrayNames[] =
 
     "MatrixArray",  //33
     "MatrixdArray", //34
-
-    "QuatArray",    //35
-
-    "UInt64Array",  //36
-    "Int64Array",   //37
 };
 
 const char* Array::className() const
 {
-    if (_arrayType>=ArrayType && _arrayType<=LastArrayType)
+    if (_arrayType>=ArrayType && _arrayType<=Vec4dArrayType)
         return s_ArrayNames[_arrayType];
-    else {
-        OSG_DEBUG << "Array::className(): Unknown array type " << _arrayType << std::endl;
+    else
         return "UnknownArray";
-    }
 }
 

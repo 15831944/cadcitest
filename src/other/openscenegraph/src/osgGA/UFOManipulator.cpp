@@ -26,7 +26,6 @@ using namespace osgGA;
 
 UFOManipulator::UFOManipulator():
             _t0(0.0),
-            _dt(0.0),
             _shift(false),
             _ctrl(false)
 {
@@ -35,7 +34,6 @@ UFOManipulator::UFOManipulator():
 
     _speedAccelerationFactor       = 0.4;
     _speedDecelerationFactor       = 0.90;
-    _decelerateUpSideRate          = false;
 
     _directionRotationRate         = 0.0;
     _directionRotationAcceleration = M_PI*0.00005;
@@ -421,7 +419,7 @@ void UFOManipulator::_keyDown( const osgGA::GUIEventAdapter &ea, osgGA::GUIActio
                     _upSpeed *= _speedDecelerationFactor;
 
                     if( fabs( _upSpeed ) < _speedEpsilon )
-                        _upSpeed = 0.0;
+                        _sideSpeed = 0.0;
                 }
 
 
@@ -520,9 +518,8 @@ void UFOManipulator::_frame( const osgGA::GUIEventAdapter &ea, osgGA::GUIActionA
 
             if( fabs(_pitchOffset ) < 0.01 )
                 _pitchOffset = 0.0;
-
             if( fabs(_yawOffset ) < 0.01 )
-                _yawOffset = 0.0;
+                _pitchOffset = 0.0;
 
         }
         if( _pitchOffset == 0.0 && _yawOffset == 0.0 )
@@ -536,6 +533,11 @@ void UFOManipulator::_adjustPosition()
         return;
 
     // Forward line segment at 3 times our intersect distance
+
+
+    typedef std::vector<osg::Vec3d> Intersections;
+    Intersections intersections;
+
     // Check intersects infront.
     osg::Vec3d ip;
     if (intersect(_position,

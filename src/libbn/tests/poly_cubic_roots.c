@@ -131,12 +131,9 @@ test_bn_poly_cubic_rts(void)
 
 
 int
-main(int UNUSED(ac), char **av)
+main(int UNUSED(ac), char **UNUSED(av))
 {
     int ret;
-
-    bu_setprogname(av[0]);
-
     poly_init();
     ret = test_bn_poly_cubic_rts();
 

@@ -29,8 +29,6 @@
 #include <gecode/minimodel.hh>
 #include <gecode/search.hh>
 
-#include "bu/app.h"
-
 class GeometrySolve : public Gecode::Space {
     public:
 	Gecode::IntVarArray l;
@@ -88,9 +86,7 @@ add_constraint_pnt_on_line_segment(GeometrySolve *s, int tol, int p, int s1, int
 
 }
 
-int main(int argc, const char *argv[]) {
-
-    bu_setprogname(argv[0]);
+int main() {
 
     /* Perpendicular constraint test */
     {

@@ -65,8 +65,6 @@ main(int argc, char *argv[])
 {
     int ret = 0;
 
-    bu_setprogname(argv[0]);
-
     // process command line arguments
     int c;
     char *output_file = (char *)NULL;

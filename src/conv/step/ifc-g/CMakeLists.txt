@@ -31,7 +31,7 @@ list(APPEND ifcg_LIBS ${ifcg_LIBS})
 BRLCAD_ADDEXEC(ifc-g "${ifcg_SOURCES}" "${ifcg_LIBS}" NO_STRICT)
 add_dependencies(ifc-g ifc-express-${SCHEMA_NAME}-ifcg)
 
-if (HIDE_INTERNAL_SYMBOLS)
+if(MSVC)
   set(ifcg_IMPORTS
     BU_DLL_IMPORTS
     RT_DLL_IMPORTS
@@ -42,8 +42,8 @@ if (HIDE_INTERNAL_SYMBOLS)
     SC_UTILS_DLL_IMPORTS
     )
   list(APPEND ifcg_IMPORTS ${ifcg_IMPORTS})
-  set_property(TARGET ifc-g APPEND PROPERTY COMPILE_DEFINITIONS "${ifcg_IMPORTS}")
-endif (HIDE_INTERNAL_SYMBOLS)
+  set_target_properties(ifc-g PROPERTIES COMPILE_DEFINITIONS "${ifcg_IMPORTS}")
+endif(MSVC)
 
 CMAKEFILES(CMakeLists.txt)
 

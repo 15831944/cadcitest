@@ -31,7 +31,6 @@
 #include <string.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/file.h"
 #include "bu/malloc.h"
@@ -116,8 +115,6 @@ main(int argc, char **argv)
     int is_stream = 0;	/* set if input is stream on stdin */
     char name[256] = {0};
     ssize_t ret;
-
-    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

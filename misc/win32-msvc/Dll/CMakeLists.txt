@@ -22,7 +22,7 @@ file(WRITE ../../../../rt^3/include/brlcad/brlcadversion.h
 include_directories(
   ${BRLCAD_BINARY_DIR}/include
   ${BRLCAD_SOURCE_DIR}/include
-  ${TCL_INCLUDE_PATH}
+  ${TCL_INCLUDE_DIRS}
   )
 
 # build the BrlcadCore.dll
@@ -38,18 +38,20 @@ target_link_libraries(BrlcadCore
   libbn-static
   libbrep-static
   libbu-static
-  gdiam-static
+  libgcv-static
+  libgdiam-static
   libged-static
   regex-static
   librt-static
   libbrep-static
-  vds-static
+  libvds-static
   libwdb-static
   libnmg-static
-  poly2tri-static
+  p2t-static
   zlib-static
   lz4-static
   openNURBS-static
+  tcl85
   )
 
 set_property(TARGET BrlcadCore PROPERTY LINK_INTERFACE_LIBRARIES "")
@@ -86,7 +88,6 @@ set(COREINTERFACE_SOURCES
   ../../../../rt^3/src/coreInterface/Sphere.cpp
   ../../../../rt^3/src/coreInterface/Torus.cpp
   ../../../../rt^3/src/coreInterface/Unknown.cpp
-  ../../../../rt^3/src/coreInterface/VectorList.cpp
   ../../../../rt^3/src/coreInterface/globals.cpp
   )
 
@@ -94,7 +95,7 @@ file(GLOB COREINTERFACE_HEADERS ../../../../rt^3/include/brlcad/*.h)
 
 include_directories(
   ../../../../rt^3/include
-  ${ZLIB_INCLUDE_DIRS}
+  ${ZLIB_INCLUDE_DIR}
   ${OPENNURBS_INCLUDE_DIR}
   )
 
@@ -106,7 +107,6 @@ if(MSVC)
   set(COREINTERFACE_MSVC_LIBRARIES
     Ws2_32
     Psapi
-    Rpcrt4
   )
 endif(MSVC)
 
@@ -120,15 +120,15 @@ target_link_libraries(brlcad
   libbn-static
   libbrep-static
   libbu-static
-  gdiam-static
+  libgdiam-static
   libged-static
   regex-static
   librt-static
   libbrep-static
-  vds-static
+  libvds-static
   libwdb-static
   libnmg-static
-  poly2tri-static
+  p2t-static
   zlib-static
   lz4-static
   openNURBS-static

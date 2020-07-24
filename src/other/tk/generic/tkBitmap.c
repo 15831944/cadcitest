@@ -49,7 +49,7 @@
  */
 
 typedef struct TkBitmap {
-    Pixmap bitmap;		/* X identifier for bitmap. None means this
+    Pixmap bitmap;		/* X identifier for bitmap. TkNone means this
 				 * bitmap was created by Tk_DefineBitmap and
 				 * it isn't currently in use. */
     int width, height;		/* Dimensions of bitmap. */
@@ -88,7 +88,7 @@ typedef struct {
     int width, height;		/* Dimensions of bitmap. */
 } DataKey;
 
-typedef struct {
+typedef struct ThreadSpecificData {
     int initialized;		/* 0 means table below needs initializing. */
     Tcl_HashTable predefBitmapTable;
 				/* Hash table created by Tk_DefineBitmap to
@@ -108,7 +108,6 @@ static void		BitmapInit(TkDisplay *dispPtr);
 static void		DupBitmapObjProc(Tcl_Obj *srcObjPtr,
 			    Tcl_Obj *dupObjPtr);
 static void		FreeBitmap(TkBitmap *bitmapPtr);
-static void		FreeBitmapObj(Tcl_Obj *objPtr);
 static void		FreeBitmapObjProc(Tcl_Obj *objPtr);
 static TkBitmap *	GetBitmap(Tcl_Interp *interp, Tk_Window tkwin,
 			    const char *name);
@@ -121,7 +120,7 @@ static void		InitBitmapObj(Tcl_Obj *objPtr);
  * field of the Tcl_Obj points to a TkBitmap object.
  */
 
-const Tcl_ObjType tkBitmapObjType = {
+Tcl_ObjType tkBitmapObjType = {
     "bitmap",			/* name */
     FreeBitmapObjProc,		/* freeIntRepProc */
     DupBitmapObjProc,		/* dupIntRepProc */
@@ -140,7 +139,7 @@ const Tcl_ObjType tkBitmapObjType = {
  * Results:
  *	The return value is the X identifer for the desired bitmap (i.e. a
  *	Pixmap with a single plane), unless string couldn't be parsed
- *	correctly. In this case, None is returned and an error message is left
+ *	correctly. In this case, TkNone is returned and an error message is left
  *	in the interp's result. The caller should never modify the bitmap that
  *	is returned, and should eventually call Tk_FreeBitmapFromObj when the
  *	bitmap is no longer needed.
@@ -167,7 +166,7 @@ Tk_AllocBitmapFromObj(
     if (objPtr->typePtr != &tkBitmapObjType) {
 	InitBitmapObj(objPtr);
     }
-    bitmapPtr = objPtr->internalRep.twoPtrValue.ptr1;
+    bitmapPtr = (TkBitmap *) objPtr->internalRep.twoPtrValue.ptr1;
 
     /*
      * If the object currently points to a TkBitmap, see if it's the one we
@@ -181,7 +180,7 @@ Tk_AllocBitmapFromObj(
 	     * longer in use. Clear the reference.
 	     */
 
-	    FreeBitmapObj(objPtr);
+	    FreeBitmapObjProc(objPtr);
 	    bitmapPtr = NULL;
 	} else if ((Tk_Display(tkwin) == bitmapPtr->display)
 		&& (Tk_ScreenNumber(tkwin) == bitmapPtr->screenNum)) {
@@ -197,16 +196,16 @@ Tk_AllocBitmapFromObj(
      */
 
     if (bitmapPtr != NULL) {
-	TkBitmap *firstBitmapPtr = Tcl_GetHashValue(bitmapPtr->nameHashPtr);
-
-	FreeBitmapObj(objPtr);
+	TkBitmap *firstBitmapPtr = (TkBitmap *)
+		Tcl_GetHashValue(bitmapPtr->nameHashPtr);
+	FreeBitmapObjProc(objPtr);
 	for (bitmapPtr = firstBitmapPtr; bitmapPtr != NULL;
 		bitmapPtr = bitmapPtr->nextPtr) {
 	    if ((Tk_Display(tkwin) == bitmapPtr->display) &&
 		    (Tk_ScreenNumber(tkwin) == bitmapPtr->screenNum)) {
 		bitmapPtr->resourceRefCount++;
 		bitmapPtr->objRefCount++;
-		objPtr->internalRep.twoPtrValue.ptr1 = bitmapPtr;
+		objPtr->internalRep.twoPtrValue.ptr1 = (void *) bitmapPtr;
 		return bitmapPtr->bitmap;
 	    }
 	}
@@ -217,9 +216,9 @@ Tk_AllocBitmapFromObj(
      */
 
     bitmapPtr = GetBitmap(interp, tkwin, Tcl_GetString(objPtr));
-    objPtr->internalRep.twoPtrValue.ptr1 = bitmapPtr;
+    objPtr->internalRep.twoPtrValue.ptr1 = (void *) bitmapPtr;
     if (bitmapPtr == NULL) {
-	return None;
+	return TkNone;
     }
     bitmapPtr->objRefCount++;
     return bitmapPtr->bitmap;
@@ -236,7 +235,7 @@ Tk_AllocBitmapFromObj(
  * Results:
  *	The return value is the X identifer for the desired bitmap (i.e. a
  *	Pixmap with a single plane), unless string couldn't be parsed
- *	correctly. In this case, None is returned and an error message is left
+ *	correctly. In this case, TkNone is returned and an error message is left
  *	in the interp's result. The caller should never modify the bitmap that
  *	is returned, and should eventually call Tk_FreeBitmap when the bitmap
  *	is no longer needed.
@@ -261,7 +260,7 @@ Tk_GetBitmap(
     TkBitmap *bitmapPtr = GetBitmap(interp, tkwin, string);
 
     if (bitmapPtr == NULL) {
-	return None;
+	return TkNone;
     }
     return bitmapPtr->bitmap;
 }
@@ -279,7 +278,7 @@ Tk_GetBitmap(
  * Results:
  *	The return value is the X identifer for the desired bitmap (i.e. a
  *	Pixmap with a single plane), unless string couldn't be parsed
- *	correctly. In this case, None is returned and an error message is left
+ *	correctly. In this case, TkNone is returned and an error message is left
  *	in the interp's result. The caller should never modify the bitmap that
  *	is returned, and should eventually call Tk_FreeBitmap when the bitmap
  *	is no longer needed.
@@ -307,7 +306,7 @@ GetBitmap(
     Pixmap bitmap;
     int isNew, width = 0, height = 0, dummy2;
     TkDisplay *dispPtr = ((TkWindow *) tkwin)->dispPtr;
-    ThreadSpecificData *tsdPtr =
+    ThreadSpecificData *tsdPtr = (ThreadSpecificData *)
 	    Tcl_GetThreadData(&dataKey, sizeof(ThreadSpecificData));
 
     if (!dispPtr->bitmapInit) {
@@ -317,11 +316,11 @@ GetBitmap(
     nameHashPtr = Tcl_CreateHashEntry(&dispPtr->bitmapNameTable, string,
 	    &isNew);
     if (!isNew) {
-	existingBitmapPtr = Tcl_GetHashValue(nameHashPtr);
+	existingBitmapPtr = (TkBitmap *) Tcl_GetHashValue(nameHashPtr);
 	for (bitmapPtr = existingBitmapPtr; bitmapPtr != NULL;
 		bitmapPtr = bitmapPtr->nextPtr) {
-	    if ((Tk_Display(tkwin) == bitmapPtr->display) &&
-		    (Tk_ScreenNumber(tkwin) == bitmapPtr->screenNum)) {
+	    if ( (Tk_Display(tkwin) == bitmapPtr->display) &&
+		    (Tk_ScreenNumber(tkwin) == bitmapPtr->screenNum) ) {
 		bitmapPtr->resourceRefCount++;
 		return bitmapPtr;
 	    }
@@ -342,10 +341,8 @@ GetBitmap(
 	int result;
 
 	if (Tcl_IsSafe(interp)) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj(
-		    "can't specify bitmap with '@' in a safe interpreter",
-		    -1));
-	    Tcl_SetErrorCode(interp, "TK", "SAFE", "BITMAP_FILE", NULL);
+	    Tcl_AppendResult(interp, "can't specify bitmap with '@' in a",
+		    " safe interpreter", NULL);
 	    goto error;
 	}
 
@@ -365,9 +362,8 @@ GetBitmap(
 		&bitmap, &dummy2, &dummy2);
 	if (result != BitmapSuccess) {
 	    if (interp != NULL) {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"error reading bitmap file \"%s\"", string));
-		Tcl_SetErrorCode(interp, "TK", "BITMAP", "FILE_ERROR", NULL);
+		Tcl_AppendResult(interp, "error reading bitmap file \"",
+			string, "\"", NULL);
 	    }
 	    Tcl_DStringFree(&buffer);
 	    goto error;
@@ -378,30 +374,28 @@ GetBitmap(
 	if (predefHashPtr == NULL) {
 	    /*
 	     * The following platform specific call allows the user to define
-	     * bitmaps that may only exist during run time. If it returns None
+	     * bitmaps that may only exist during run time. If it returns TkNone
 	     * nothing was found and we return the error.
 	     */
 
 	    bitmap = TkpGetNativeAppBitmap(Tk_Display(tkwin), string,
 		    &width, &height);
 
-	    if (bitmap == None) {
+	    if (bitmap == TkNone) {
 		if (interp != NULL) {
-		    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			    "bitmap \"%s\" not defined", string));
-		    Tcl_SetErrorCode(interp, "TK", "LOOKUP", "BITMAP", string,
-			    NULL);
+		    Tcl_AppendResult(interp, "bitmap \"", string,
+			    "\" not defined", NULL);
 		}
 		goto error;
 	    }
 	} else {
-	    predefPtr = Tcl_GetHashValue(predefHashPtr);
+	    predefPtr = (TkPredefBitmap *) Tcl_GetHashValue(predefHashPtr);
 	    width = predefPtr->width;
 	    height = predefPtr->height;
 	    if (predefPtr->native) {
 		bitmap = TkpCreateNativeBitmap(Tk_Display(tkwin),
 		    predefPtr->source);
-		if (bitmap == None) {
+		if (bitmap == TkNone) {
 		    Tcl_Panic("native bitmap creation failed");
 		}
 	    } else {
@@ -416,7 +410,7 @@ GetBitmap(
      * Add information about this bitmap to our database.
      */
 
-    bitmapPtr = ckalloc(sizeof(TkBitmap));
+    bitmapPtr = (TkBitmap *) ckalloc(sizeof(TkBitmap));
     bitmapPtr->bitmap = bitmap;
     bitmapPtr->width = width;
     bitmapPtr->height = height;
@@ -467,14 +461,14 @@ Tk_DefineBitmap(
     Tcl_Interp *interp,		/* Interpreter to use for error reporting. */
     const char *name,		/* Name to use for bitmap. Must not already be
 				 * defined as a bitmap. */
-    const void *source,		/* Address of bits for bitmap. */
+    const char *source,		/* Address of bits for bitmap. */
     int width,			/* Width of bitmap. */
     int height)			/* Height of bitmap. */
 {
     int isNew;
     Tcl_HashEntry *predefHashPtr;
     TkPredefBitmap *predefPtr;
-    ThreadSpecificData *tsdPtr =
+    ThreadSpecificData *tsdPtr = (ThreadSpecificData *)
 	    Tcl_GetThreadData(&dataKey, sizeof(ThreadSpecificData));
 
     /*
@@ -492,12 +486,11 @@ Tk_DefineBitmap(
     predefHashPtr = Tcl_CreateHashEntry(&tsdPtr->predefBitmapTable,
 	    name, &isNew);
     if (!isNew) {
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"bitmap \"%s\" is already defined", name));
-	Tcl_SetErrorCode(interp, "TK", "BITMAP", "EXISTS", NULL);
+	Tcl_AppendResult(interp, "bitmap \"", name, "\" is already defined",
+		NULL);
 	return TCL_ERROR;
     }
-    predefPtr = ckalloc(sizeof(TkPredefBitmap));
+    predefPtr = (TkPredefBitmap *) ckalloc(sizeof(TkPredefBitmap));
     predefPtr->source = source;
     predefPtr->width = width;
     predefPtr->height = height;
@@ -540,7 +533,7 @@ Tk_NameOfBitmap(
     if (idHashPtr == NULL) {
 	goto unknown;
     }
-    bitmapPtr = Tcl_GetHashValue(idHashPtr);
+    bitmapPtr = (TkBitmap *) Tcl_GetHashValue(idHashPtr);
     return bitmapPtr->nameHashPtr->key.string;
 }
 
@@ -582,7 +575,7 @@ Tk_SizeOfBitmap(
     if (idHashPtr == NULL) {
 	goto unknownBitmap;
     }
-    bitmapPtr = Tcl_GetHashValue(idHashPtr);
+    bitmapPtr = (TkBitmap *) Tcl_GetHashValue(idHashPtr);
     *widthPtr = bitmapPtr->width;
     *heightPtr = bitmapPtr->height;
 }
@@ -619,7 +612,7 @@ FreeBitmap(
 
     Tk_FreePixmap(bitmapPtr->display, bitmapPtr->bitmap);
     Tcl_DeleteHashEntry(bitmapPtr->idHashPtr);
-    prevPtr = Tcl_GetHashValue(bitmapPtr->nameHashPtr);
+    prevPtr = (TkBitmap *) Tcl_GetHashValue(bitmapPtr->nameHashPtr);
     if (prevPtr == bitmapPtr) {
 	if (bitmapPtr->nextPtr == NULL) {
 	    Tcl_DeleteHashEntry(bitmapPtr->nameHashPtr);
@@ -633,7 +626,7 @@ FreeBitmap(
 	prevPtr->nextPtr = bitmapPtr->nextPtr;
     }
     if (bitmapPtr->objRefCount == 0) {
-	ckfree(bitmapPtr);
+	ckfree((char *) bitmapPtr);
     }
 }
 
@@ -671,7 +664,7 @@ Tk_FreeBitmap(
     if (idHashPtr == NULL) {
 	Tcl_Panic("Tk_FreeBitmap received unknown bitmap argument");
     }
-    FreeBitmap(Tcl_GetHashValue(idHashPtr));
+    FreeBitmap((TkBitmap *) Tcl_GetHashValue(idHashPtr));
 }
 
 /*
@@ -707,7 +700,7 @@ Tk_FreeBitmapFromObj(
 /*
  *---------------------------------------------------------------------------
  *
- * FreeBitmapObjProc, FreeBitmapObj --
+ * FreeBitmapObjProc --
  *
  *	This proc is called to release an object reference to a bitmap.
  *	Called when the object's internal rep is released or when the cached
@@ -727,21 +720,13 @@ static void
 FreeBitmapObjProc(
     Tcl_Obj *objPtr)		/* The object we are releasing. */
 {
-    FreeBitmapObj(objPtr);
-    objPtr->typePtr = NULL;
-}
-
-static void
-FreeBitmapObj(
-    Tcl_Obj *objPtr)		/* The object we are releasing. */
-{
-    TkBitmap *bitmapPtr = objPtr->internalRep.twoPtrValue.ptr1;
+    TkBitmap *bitmapPtr = (TkBitmap *) objPtr->internalRep.twoPtrValue.ptr1;
 
     if (bitmapPtr != NULL) {
 	bitmapPtr->objRefCount--;
 	if ((bitmapPtr->objRefCount == 0)
 		&& (bitmapPtr->resourceRefCount == 0)) {
-	    ckfree(bitmapPtr);
+	    ckfree((char *) bitmapPtr);
 	}
 	objPtr->internalRep.twoPtrValue.ptr1 = NULL;
     }
@@ -770,10 +755,10 @@ DupBitmapObjProc(
     Tcl_Obj *srcObjPtr,		/* The object we are copying from. */
     Tcl_Obj *dupObjPtr)		/* The object we are copying to. */
 {
-    TkBitmap *bitmapPtr = srcObjPtr->internalRep.twoPtrValue.ptr1;
+    TkBitmap *bitmapPtr = (TkBitmap *) srcObjPtr->internalRep.twoPtrValue.ptr1;
 
     dupObjPtr->typePtr = srcObjPtr->typePtr;
-    dupObjPtr->internalRep.twoPtrValue.ptr1 = bitmapPtr;
+    dupObjPtr->internalRep.twoPtrValue.ptr1 = (void *) bitmapPtr;
 
     if (bitmapPtr != NULL) {
 	bitmapPtr->objRefCount++;
@@ -792,7 +777,7 @@ DupBitmapObjProc(
  * Results:
  *	The return value is the X identifer for the desired bitmap (a
  *	one-plane Pixmap), unless it couldn't be created properly. In this
- *	case, None is returned and an error message is left in the interp's
+ *	case, TkNone is returned and an error message is left in the interp's
  *	result. The caller should never modify the bitmap that is returned,
  *	and should eventually call Tk_FreeBitmap when the bitmap is no longer
  *	needed.
@@ -811,7 +796,7 @@ Pixmap
 Tk_GetBitmapFromData(
     Tcl_Interp *interp,		/* Interpreter to use for error reporting. */
     Tk_Window tkwin,		/* Window in which bitmap will be used. */
-    const void *source,		/* Bitmap data for bitmap shape. */
+    const char *source,		/* Bitmap data for bitmap shape. */
     int width, int height)	/* Dimensions of bitmap. */
 {
     DataKey nameKey;
@@ -820,7 +805,7 @@ Tk_GetBitmapFromData(
     char string[16 + TCL_INTEGER_SPACE];
     char *name;
     TkDisplay *dispPtr = ((TkWindow *) tkwin)->dispPtr;
-    ThreadSpecificData *tsdPtr =
+    ThreadSpecificData *tsdPtr = (ThreadSpecificData *)
 	    Tcl_GetThreadData(&dataKey, sizeof(ThreadSpecificData));
 
     if (!tsdPtr->initialized) {
@@ -833,7 +818,7 @@ Tk_GetBitmapFromData(
     dataHashPtr = Tcl_CreateHashEntry(&dispPtr->bitmapDataTable,
 	    (char *) &nameKey, &isNew);
     if (!isNew) {
-	name = Tcl_GetHashValue(dataHashPtr);
+	name = (char *) Tcl_GetHashValue(dataHashPtr);
     } else {
 	dispPtr->bitmapAutoNumber++;
 	sprintf(string, "_tk%d", dispPtr->bitmapAutoNumber);
@@ -911,14 +896,14 @@ GetBitmapFromObj(
 	InitBitmapObj(objPtr);
     }
 
-    bitmapPtr = objPtr->internalRep.twoPtrValue.ptr1;
+    bitmapPtr = (TkBitmap *) objPtr->internalRep.twoPtrValue.ptr1;
     if (bitmapPtr != NULL) {
 	if ((bitmapPtr->resourceRefCount > 0)
 		&& (Tk_Display(tkwin) == bitmapPtr->display)) {
 	    return bitmapPtr;
 	}
 	hashPtr = bitmapPtr->nameHashPtr;
-	FreeBitmapObj(objPtr);
+	FreeBitmapObjProc(objPtr);
     } else {
 	hashPtr = Tcl_FindHashEntry(&dispPtr->bitmapNameTable,
 		Tcl_GetString(objPtr));
@@ -932,10 +917,10 @@ GetBitmapFromObj(
      * more TkBitmap structures. See if any of them will work.
      */
 
-    for (bitmapPtr = Tcl_GetHashValue(hashPtr); bitmapPtr != NULL;
-	    bitmapPtr = bitmapPtr->nextPtr) {
+    for (bitmapPtr = (TkBitmap *) Tcl_GetHashValue(hashPtr);
+	    bitmapPtr != NULL;  bitmapPtr = bitmapPtr->nextPtr) {
 	if (Tk_Display(tkwin) == bitmapPtr->display) {
-	    objPtr->internalRep.twoPtrValue.ptr1 = bitmapPtr;
+	    objPtr->internalRep.twoPtrValue.ptr1 = (void *) bitmapPtr;
 	    bitmapPtr->objRefCount++;
 	    return bitmapPtr;
 	}
@@ -980,7 +965,7 @@ InitBitmapObj(
     Tcl_GetString(objPtr);
     typePtr = objPtr->typePtr;
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
-	typePtr->freeIntRepProc(objPtr);
+	(*typePtr->freeIntRepProc)(objPtr);
     }
     objPtr->typePtr = &tkBitmapObjType;
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
@@ -1012,7 +997,7 @@ BitmapInit(
 				 * or NULL if unavailable. */
 {
     Tcl_Interp *dummy;
-    ThreadSpecificData *tsdPtr =
+    ThreadSpecificData *tsdPtr = (ThreadSpecificData *)
 	    Tcl_GetThreadData(&dataKey, sizeof(ThreadSpecificData));
 
     /*
@@ -1025,25 +1010,25 @@ BitmapInit(
 	dummy = Tcl_CreateInterp();
 	Tcl_InitHashTable(&tsdPtr->predefBitmapTable, TCL_STRING_KEYS);
 
-	Tk_DefineBitmap(dummy, "error", error_bits,
+	Tk_DefineBitmap(dummy, "error", (char *) error_bits,
 		error_width, error_height);
-	Tk_DefineBitmap(dummy, "gray75", gray75_bits,
+	Tk_DefineBitmap(dummy, "gray75", (char *) gray75_bits,
 		gray75_width, gray75_height);
-	Tk_DefineBitmap(dummy, "gray50", gray50_bits,
+	Tk_DefineBitmap(dummy, "gray50", (char *) gray50_bits,
 		gray50_width, gray50_height);
-	Tk_DefineBitmap(dummy, "gray25", gray25_bits,
+	Tk_DefineBitmap(dummy, "gray25", (char *) gray25_bits,
 		gray25_width, gray25_height);
-	Tk_DefineBitmap(dummy, "gray12", gray12_bits,
+	Tk_DefineBitmap(dummy, "gray12", (char *) gray12_bits,
 		gray12_width, gray12_height);
-	Tk_DefineBitmap(dummy, "hourglass", hourglass_bits,
+	Tk_DefineBitmap(dummy, "hourglass", (char *) hourglass_bits,
 		hourglass_width, hourglass_height);
-	Tk_DefineBitmap(dummy, "info", info_bits,
+	Tk_DefineBitmap(dummy, "info", (char *) info_bits,
 		info_width, info_height);
-	Tk_DefineBitmap(dummy, "questhead", questhead_bits,
+	Tk_DefineBitmap(dummy, "questhead", (char *) questhead_bits,
 		questhead_width, questhead_height);
-	Tk_DefineBitmap(dummy, "question", question_bits,
+	Tk_DefineBitmap(dummy, "question", (char *) question_bits,
 		question_width, question_height);
-	Tk_DefineBitmap(dummy, "warning", warning_bits,
+	Tk_DefineBitmap(dummy, "warning", (char *) warning_bits,
 		warning_width, warning_height);
 
 	TkpDefineNativeBitmaps();
@@ -1104,7 +1089,7 @@ TkReadBitmapFile(
 {
     char *data;
 
-    data = TkGetBitmapData(NULL, NULL, filename,
+    data = TkGetBitmapData(NULL, NULL, (char *) filename,
 	    (int *) width_return, (int *) height_return, x_hot_return,
 	    y_hot_return);
     if (data == NULL) {
@@ -1140,7 +1125,7 @@ Tcl_Obj *
 TkDebugBitmap(
     Tk_Window tkwin,		/* The window in which the bitmap will be used
 				 * (not currently used). */
-    const char *name)		/* Name of the desired color. */
+    char *name)			/* Name of the desired color. */
 {
     TkBitmap *bitmapPtr;
     Tcl_HashEntry *hashPtr;
@@ -1150,7 +1135,7 @@ TkDebugBitmap(
     resultPtr = Tcl_NewObj();
     hashPtr = Tcl_FindHashEntry(&dispPtr->bitmapNameTable, name);
     if (hashPtr != NULL) {
-	bitmapPtr = Tcl_GetHashValue(hashPtr);
+	bitmapPtr = (TkBitmap *) Tcl_GetHashValue(hashPtr);
 	if (bitmapPtr == NULL) {
 	    Tcl_Panic("TkDebugBitmap found empty hash table entry");
 	}
@@ -1190,7 +1175,7 @@ TkDebugBitmap(
 Tcl_HashTable *
 TkGetBitmapPredefTable(void)
 {
-    ThreadSpecificData *tsdPtr =
+    ThreadSpecificData *tsdPtr = (ThreadSpecificData *)
 	    Tcl_GetThreadData(&dataKey, sizeof(ThreadSpecificData));
 
     return &tsdPtr->predefBitmapTable;

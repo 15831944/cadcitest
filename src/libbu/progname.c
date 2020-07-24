@@ -65,11 +65,6 @@ extern pid_t wait(int *);
 static char bu_progname[MAXPATHLEN] = {0};
 const char *DEFAULT_PROGNAME = "(" PACKAGE_NAME ")";
 
-const char *
-_bu_progname_raw()
-{
-    return (const char *)bu_progname;
-}
 
 const char *
 bu_argv0_full_path(void)

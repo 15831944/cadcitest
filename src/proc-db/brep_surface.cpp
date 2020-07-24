@@ -26,7 +26,6 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "wdb.h"
 
 
@@ -205,8 +204,6 @@ main(int argc, char** argv)
     const char* regn_name = "brep_surface.r";
     const char* geom_name = "brep_surface.brep";
     fastf_t thickness = 0.0;
-
-    bu_setprogname(argv[0]);
 
     /* parse the arguments */
     if (argc > 1) {

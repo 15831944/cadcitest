@@ -31,17 +31,16 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/str.h"
 #include "bu/exit.h"
 #include "bu/getopt.h"
 #include "vmath.h"
-#include "dm.h"
+#include "fb.h"
 #include "libtermio.h"
 
 
-struct fb *fbp;
+fb *fbp;
 
 int JumpSpeed;		/* # pixels skipped with fast commands. */
 
@@ -147,8 +146,6 @@ main(int argc, char **argv)
     const char *xprefix = NULL;
     const char *yprefix = NULL;
     const char null_str = '\0';
-
-    bu_setprogname(argv[0]);
 
     setbuf(stderr, (char *)malloc(BUFSIZ));
     width = height = 512;

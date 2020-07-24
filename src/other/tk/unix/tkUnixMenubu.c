@@ -13,6 +13,17 @@
 #include "tkInt.h"
 #include "tkMenubutton.h"
 
+/*
+ * The structure below defines menubutton class behavior by means of functions
+ * that can be invoked from generic window code.
+ */
+
+Tk_ClassProcs tkpMenubuttonClass = {
+    sizeof(Tk_ClassProcs),	/* size */
+    TkMenuButtonWorldChanged,	/* worldChangedProc */
+    NULL,
+    NULL
+};
 
 /*
  *----------------------------------------------------------------------
@@ -34,7 +45,7 @@ TkMenuButton *
 TkpCreateMenuButton(
     Tk_Window tkwin)
 {
-    return ckalloc(sizeof(TkMenuButton));
+    return (TkMenuButton *)ckalloc(sizeof(TkMenuButton));
 }
 
 /*
@@ -92,10 +103,10 @@ TkpDisplayMenuButton(
 	border = mbPtr->normalBorder;
     }
 
-    if (mbPtr->image != NULL) {
+    if (mbPtr->image != TkNone) {
 	Tk_SizeOfImage(mbPtr->image, &width, &height);
 	haveImage = 1;
-    } else if (mbPtr->bitmap != None) {
+    } else if (mbPtr->bitmap != TkNone) {
 	Tk_SizeOfBitmap(mbPtr->display, mbPtr->bitmap, &width, &height);
 	haveImage = 1;
     }
@@ -183,7 +194,7 @@ TkpDisplayMenuButton(
 	if (mbPtr->image != NULL) {
 	    Tk_RedrawImage(mbPtr->image, 0, 0, width, height, pixmap,
 		    imageXOffset, imageYOffset);
-	} else if (mbPtr->bitmap != None) {
+	} else if (mbPtr->bitmap != TkNone) {
 	    XSetClipOrigin(mbPtr->display, gc, imageXOffset, imageYOffset);
 	    XCopyPlane(mbPtr->display, mbPtr->bitmap, pixmap,
 		    gc, 0, 0, (unsigned) width, (unsigned) height,
@@ -203,7 +214,7 @@ TkpDisplayMenuButton(
 	if (mbPtr->image != NULL) {
 	    Tk_RedrawImage(mbPtr->image, 0, 0, width, height, pixmap,
 		    imageXOffset, imageYOffset);
-	} else if (mbPtr->bitmap != None) {
+	} else if (mbPtr->bitmap != TkNone) {
 	    XSetClipOrigin(mbPtr->display, gc, x, y);
 	    XCopyPlane(mbPtr->display, mbPtr->bitmap, pixmap,
 		    gc, 0, 0, (unsigned) width, (unsigned) height,
@@ -358,10 +369,10 @@ TkpComputeMenuButtonGeometry(
     txtHeight = 0;
     avgWidth = 0;
 
-    if (mbPtr->image != NULL) {
+    if (mbPtr->image != TkNone) {
 	Tk_SizeOfImage(mbPtr->image, &width, &height);
 	haveImage = 1;
-    } else if (mbPtr->bitmap != None) {
+    } else if (mbPtr->bitmap != TkNone) {
 	Tk_SizeOfBitmap(mbPtr->display, mbPtr->bitmap, &width, &height);
 	haveImage = 1;
     }

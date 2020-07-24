@@ -5,7 +5,6 @@
  *
  * Copyright (c) 1998 by Sun Microsystems, Inc.
  * Copyright (c) 1999 by Scriptics Corporation
- * Copyright (c) 2008 by George Peter Staplin
  *
  * See the file "license.terms" for information on usage and redistribution of
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
@@ -208,7 +207,7 @@ TclWinThreadStart(
 int
 TclpThreadCreate(
     Tcl_ThreadId *idPtr,	/* Return, the ID of the thread. */
-    Tcl_ThreadCreateProc *proc,	/* Main() function of the thread. */
+    Tcl_ThreadCreateProc proc,	/* Main() function of the thread. */
     ClientData clientData,	/* The one argument to Main(). */
     int stackSize,		/* Size of stack for the new thread. */
     int flags)			/* Flags controlling behaviour of the new
@@ -247,7 +246,7 @@ TclpThreadCreate(
 
 	/*
 	 * The only purpose of this is to decrement the reference count so the
-	 * OS resources will be reacquired when the thread closes.
+	 * OS resources will be reaquired when the thread closes.
 	 */
 
 	CloseHandle(tHandle);
@@ -332,7 +331,7 @@ TclpThreadExit(
 Tcl_ThreadId
 Tcl_GetCurrentThread(void)
 {
-    return (Tcl_ThreadId)(size_t)GetCurrentThreadId();
+    return (Tcl_ThreadId) INT2PTR(GetCurrentThreadId());
 }
 
 /*
@@ -405,7 +404,7 @@ TclpInitUnlock(void)
  *	mutexes, condition variables, and thread local storage keys.
  *
  *	This lock must be different than the initLock because the initLock is
- *	held during creation of synchronization objects.
+ *	held during creation of syncronization objects.
  *
  * Results:
  *	None.
@@ -555,7 +554,7 @@ static void		FinalizeConditionEvent(ClientData data);
  *	None.
  *
  * Side effects:
- *	May block the current thread. The mutex is acquired when this returns.
+ *	May block the current thread. The mutex is aquired when this returns.
  *
  *----------------------------------------------------------------------
  */
@@ -574,7 +573,7 @@ Tcl_MutexLock(
 	 */
 
 	if (*mutexPtr == NULL) {
-	    csPtr = ckalloc(sizeof(CRITICAL_SECTION));
+	    csPtr = (CRITICAL_SECTION *) ckalloc(sizeof(CRITICAL_SECTION));
 	    InitializeCriticalSection(csPtr);
 	    *mutexPtr = (Tcl_Mutex)csPtr;
 	    TclRememberMutex(mutexPtr);
@@ -635,7 +634,7 @@ TclpFinalizeMutex(
 
     if (csPtr != NULL) {
 	DeleteCriticalSection(csPtr);
-	ckfree(csPtr);
+	ckfree((char *) csPtr);
 	*mutexPtr = NULL;
     }
 }
@@ -655,7 +654,7 @@ TclpFinalizeMutex(
  *	None.
  *
  * Side effects:
- *	May block the current thread. The mutex is acquired when this returns.
+ *	May block the current thread. The mutex is aquired when this returns.
  *	Will allocate memory for a HANDLE and initialize this the first time
  *	this Tcl_Condition is used.
  *
@@ -666,7 +665,7 @@ void
 Tcl_ConditionWait(
     Tcl_Condition *condPtr,	/* Really (WinCondition **) */
     Tcl_Mutex *mutexPtr,	/* Really (CRITICAL_SECTION **) */
-    const Tcl_Time *timePtr) /* Timeout on waiting period */
+    Tcl_Time *timePtr)		/* Timeout on waiting period */
 {
     WinCondition *winCondPtr;	/* Per-condition queue head */
     CRITICAL_SECTION *csPtr;	/* Caller's Mutex, after casting */
@@ -688,7 +687,7 @@ Tcl_ConditionWait(
 	 */
 
 	if (tsdPtr->flags == WIN_THREAD_UNINIT) {
-	    tsdPtr->condEvent = CreateEventW(NULL, TRUE /* manual reset */,
+	    tsdPtr->condEvent = CreateEvent(NULL, TRUE /* manual reset */,
 		    FALSE /* non signaled */, NULL);
 	    tsdPtr->nextPtr = NULL;
 	    tsdPtr->prevPtr = NULL;
@@ -705,7 +704,8 @@ Tcl_ConditionWait(
 	     * and initializing that may drop back into the Master Lock.
 	     */
 
-	    Tcl_CreateThreadExitHandler(FinalizeConditionEvent, tsdPtr);
+	    Tcl_CreateThreadExitHandler(FinalizeConditionEvent,
+		    (ClientData) tsdPtr);
 	}
     }
 
@@ -717,7 +717,7 @@ Tcl_ConditionWait(
 	 */
 
 	if (*condPtr == NULL) {
-	    winCondPtr = ckalloc(sizeof(WinCondition));
+	    winCondPtr = (WinCondition *) ckalloc(sizeof(WinCondition));
 	    InitializeCriticalSection(&winCondPtr->condLock);
 	    winCondPtr->firstPtr = NULL;
 	    winCondPtr->lastPtr = NULL;
@@ -766,8 +766,7 @@ Tcl_ConditionWait(
     while (!timeout && (tsdPtr->flags & WIN_THREAD_BLOCKED)) {
 	ResetEvent(tsdPtr->condEvent);
 	LeaveCriticalSection(&winCondPtr->condLock);
-	if (WaitForSingleObjectEx(tsdPtr->condEvent, wtime,
-		TRUE) == WAIT_TIMEOUT) {
+	if (WaitForSingleObject(tsdPtr->condEvent, wtime) == WAIT_TIMEOUT) {
 	    timeout = 1;
 	}
 	EnterCriticalSection(&winCondPtr->condLock);
@@ -928,7 +927,7 @@ TclpFinalizeCondition(
 
     if (winCondPtr != NULL) {
 	DeleteCriticalSection(&winCondPtr->condLock);
-	ckfree(winCondPtr);
+	ckfree((char *) winCondPtr);
 	*condPtr = NULL;
     }
 }
@@ -971,7 +970,7 @@ TclpFreeAllocMutex(
 void *
 TclpGetAllocCache(void)
 {
-    void *result;
+    VOID *result;
 
     if (!once) {
 	/*
@@ -1012,10 +1011,8 @@ TclpFreeAllocCache(
 
     if (ptr != NULL) {
 	/*
-	 * Called by TclFinalizeThreadAlloc() and
-	 * TclFinalizeThreadAllocThread() during Tcl_Finalize() or
-	 * Tcl_FinalizeThread(). This function destroys the tsd key which
-	 * stores allocator caches in thread local storage.
+	 * Called by us in TclpFinalizeThreadData when a thread exits and
+	 * destroys the tsd key which stores allocator caches.
 	 */
 
 	TclFreeAllocCache(ptr);
@@ -1038,61 +1035,6 @@ TclpFreeAllocCache(
 
 }
 #endif /* USE_THREAD_ALLOC */
-
-
-void *
-TclpThreadCreateKey(void)
-{
-    DWORD *key;
-
-    key = TclpSysAlloc(sizeof *key, 0);
-    if (key == NULL) {
-	Tcl_Panic("unable to allocate thread key!");
-    }
-
-    *key = TlsAlloc();
-
-    if (*key == TLS_OUT_OF_INDEXES) {
-	Tcl_Panic("unable to allocate thread-local storage");
-    }
-
-    return key;
-}
-
-void
-TclpThreadDeleteKey(
-    void *keyPtr)
-{
-    DWORD *key = keyPtr;
-
-    if (!TlsFree(*key)) {
-	Tcl_Panic("unable to delete key");
-    }
-
-    TclpSysFree(keyPtr);
-}
-
-void
-TclpThreadSetMasterTSD(
-    void *tsdKeyPtr,
-    void *ptr)
-{
-    DWORD *key = tsdKeyPtr;
-
-    if (!TlsSetValue(*key, ptr)) {
-	Tcl_Panic("unable to set master TSD value");
-    }
-}
-
-void *
-TclpThreadGetMasterTSD(
-    void *tsdKeyPtr)
-{
-    DWORD *key = tsdKeyPtr;
-
-    return TlsGetValue(*key);
-}
-
 #endif /* TCL_THREADS */
 
 /*

@@ -21,6 +21,9 @@
 
 /* #define TCL_MAC_DEBUG_NOTIFIER 1 */
 
+extern TclStubs tclStubs;
+extern Tcl_NotifierProcs tclOriginalNotifier;
+
 /*
  * We use the Darwin-native spinlock API rather than pthread mutexes for
  * notifier locking: this radically simplifies the implementation and lowers
@@ -46,30 +49,22 @@
 #define VOLATILE volatile
 #else
 #define VOLATILE
-#endif /* MAC_OS_X_VERSION_MAX_ALLOWED >= 1050 */
+#endif
 #ifndef bool
 #define bool int
 #endif
-extern void		OSSpinLockLock(VOLATILE OSSpinLock *lock)
-			    WEAK_IMPORT_ATTRIBUTE;
-extern void		OSSpinLockUnlock(VOLATILE OSSpinLock *lock)
-			    WEAK_IMPORT_ATTRIBUTE;
-extern bool		OSSpinLockTry(VOLATILE OSSpinLock *lock)
-			    WEAK_IMPORT_ATTRIBUTE;
-extern void		_spin_lock(VOLATILE OSSpinLock *lock)
-			    WEAK_IMPORT_ATTRIBUTE;
-extern void		_spin_unlock(VOLATILE OSSpinLock *lock)
-			    WEAK_IMPORT_ATTRIBUTE;
-extern bool		_spin_lock_try(VOLATILE OSSpinLock *lock)
-			    WEAK_IMPORT_ATTRIBUTE;
+extern void OSSpinLockLock(VOLATILE OSSpinLock *lock) WEAK_IMPORT_ATTRIBUTE;
+extern void OSSpinLockUnlock(VOLATILE OSSpinLock *lock) WEAK_IMPORT_ATTRIBUTE;
+extern bool OSSpinLockTry(VOLATILE OSSpinLock *lock) WEAK_IMPORT_ATTRIBUTE;
+extern void _spin_lock(VOLATILE OSSpinLock *lock) WEAK_IMPORT_ATTRIBUTE;
+extern void _spin_unlock(VOLATILE OSSpinLock *lock) WEAK_IMPORT_ATTRIBUTE;
+extern bool _spin_lock_try(VOLATILE OSSpinLock *lock) WEAK_IMPORT_ATTRIBUTE;
 static void (* lockLock)(VOLATILE OSSpinLock *lock) = NULL;
 static void (* lockUnlock)(VOLATILE OSSpinLock *lock) = NULL;
 static bool (* lockTry)(VOLATILE OSSpinLock *lock) = NULL;
 #undef VOLATILE
 static pthread_once_t spinLockLockInitControl = PTHREAD_ONCE_INIT;
-static void
-SpinLockLockInit(void)
-{
+static void SpinLockLockInit(void) {
     lockLock   = OSSpinLockLock   != NULL ? OSSpinLockLock   : _spin_lock;
     lockUnlock = OSSpinLockUnlock != NULL ? OSSpinLockUnlock : _spin_unlock;
     lockTry    = OSSpinLockTry    != NULL ? OSSpinLockTry    : _spin_lock_try;
@@ -79,13 +74,13 @@ SpinLockLockInit(void)
 }
 #define SpinLockLock(p) 	lockLock(p)
 #define SpinLockUnlock(p)	lockUnlock(p)
-#define SpinLockTry(p)		lockTry(p)
+#define SpinLockTry(p)  	lockTry(p)
 #else
 #define SpinLockLock(p) 	OSSpinLockLock(p)
 #define SpinLockUnlock(p)	OSSpinLockUnlock(p)
-#define SpinLockTry(p)		OSSpinLockTry(p)
+#define SpinLockTry(p)  	OSSpinLockTry(p)
 #endif /* HAVE_WEAK_IMPORT */
-#define SPINLOCK_INIT		OS_SPINLOCK_INIT
+#define SPINLOCK_INIT   	OS_SPINLOCK_INIT
 
 #else
 /*
@@ -93,13 +88,13 @@ SpinLockLockInit(void)
  */
 
 typedef uint32_t OSSpinLock;
-extern void		_spin_lock(OSSpinLock *lock);
-extern void		_spin_unlock(OSSpinLock *lock);
-extern int		_spin_lock_try(OSSpinLock *lock);
+extern void _spin_lock(OSSpinLock *lock);
+extern void _spin_unlock(OSSpinLock *lock);
+extern int  _spin_lock_try(OSSpinLock *lock);
 #define SpinLockLock(p) 	_spin_lock(p)
 #define SpinLockUnlock(p)	_spin_unlock(p)
-#define SpinLockTry(p)		_spin_lock_try(p)
-#define SPINLOCK_INIT		0
+#define SpinLockTry(p)  	_spin_lock_try(p)
+#define SPINLOCK_INIT   	0
 
 #endif /* HAVE_LIBKERN_OSATOMIC_H && HAVE_OSSPINLOCKLOCK */
 
@@ -122,27 +117,23 @@ static OSSpinLock notifierLock     = SPINLOCK_INIT;
 #define UNLOCK_NOTIFIER_TSD	SpinLockUnlock(&tsdPtr->tsdLock)
 
 #ifdef TCL_MAC_DEBUG_NOTIFIER
-#define TclMacOSXNotifierDbgMsg(m, ...) \
-    do {								\
-	fprintf(notifierLog?notifierLog:stderr, "tclMacOSXNotify.c:%d: " \
-		"%s() pid %5d thread %10p: " m "\n", __LINE__, __func__, \
-		getpid(), pthread_self(), ##__VA_ARGS__);		\
-	fflush(notifierLog?notifierLog:stderr);				\
-    } while (0)
+#define TclMacOSXNotifierDbgMsg(m, ...) do { \
+	    fprintf(notifierLog?notifierLog:stderr, "tclMacOSXNotify.c:%d: " \
+	    "%s() pid %5d thread %10p: " m "\n", __LINE__, __func__, \
+	    getpid(), pthread_self(), ##__VA_ARGS__); \
+	    fflush(notifierLog?notifierLog:stderr); \
+	} while (0)
 
 /*
  * Debug version of SpinLockLock that logs the time spent waiting for the lock
  */
 
-#define SpinLockLockDbg(p) \
-    if (!SpinLockTry(p)) {						\
-	Tcl_WideInt s = TclpGetWideClicks(), e;				\
-									\
-	SpinLockLock(p);						\
-	e = TclpGetWideClicks();					\
-	TclMacOSXNotifierDbgMsg("waited on %s for %8.0f ns",		\
-		#p, TclpWideClicksToNanoseconds(e-s));			\
-    }
+#define SpinLockLockDbg(p)	if (!SpinLockTry(p)) { \
+				    Tcl_WideInt s = TclpGetWideClicks(), e; \
+				    SpinLockLock(p); e = TclpGetWideClicks(); \
+				    TclMacOSXNotifierDbgMsg("waited on %s for %8.0f ns", \
+				    #p, TclpWideClicksToNanoseconds(e-s)); \
+				}
 #undef LOCK_NOTIFIER_INIT
 #define LOCK_NOTIFIER_INIT	SpinLockLockDbg(&notifierInitLock)
 #undef LOCK_NOTIFIER
@@ -154,44 +145,42 @@ static FILE *notifierLog = NULL;
 #ifndef NOTIFIER_LOG
 #define NOTIFIER_LOG "/tmp/tclMacOSXNotify.log"
 #endif
-#define OPEN_NOTIFIER_LOG \
-    if (!notifierLog) {							\
-	notifierLog = fopen(NOTIFIER_LOG, "a");				\
-	/*TclMacOSXNotifierDbgMsg("open log");				\
-	 *asl_set_filter(NULL,						\
-	 *	ASL_FILTER_MASK_UPTO(ASL_LEVEL_DEBUG));			\
-	 *asl_add_log_file(NULL, fileno(notifierLog));*/		\
-    }
-#define CLOSE_NOTIFIER_LOG \
-    if (notifierLog) {							\
-	/*asl_remove_log_file(NULL, fileno(notifierLog));		\
-	 *TclMacOSXNotifierDbgMsg("close log");*/			\
-	fclose(notifierLog);						\
-	notifierLog = NULL;						\
-    }
-#define ENABLE_ASL \
-    if (notifierLog) {							\
-	/*tsdPtr->asl = asl_open(NULL, "com.apple.console",		\
-	 *	ASL_OPT_NO_REMOTE);					\
-	 *asl_set_filter(tsdPtr->asl,					\
-	 *	ASL_FILTER_MASK_UPTO(ASL_LEVEL_DEBUG));			\
-	 *asl_add_log_file(tsdPtr->asl, fileno(notifierLog));*/		\
-    }
-#define DISABLE_ASL \
-    /*if (tsdPtr->asl) {						\
-     *	if (notifierLog) {						\
-     *	    asl_remove_log_file(tsdPtr->asl, fileno(notifierLog));	\
-     *	}								\
-     *	asl_close(tsdPtr->asl);						\
-     *}*/
-#define ASLCLIENT_DECL		/*aslclient asl*/
+#define OPEN_NOTIFIER_LOG	if (!notifierLog) { \
+				    notifierLog = fopen(NOTIFIER_LOG, "a"); \
+				    /*TclMacOSXNotifierDbgMsg("open log"); \
+				    asl_set_filter(NULL, \
+				    ASL_FILTER_MASK_UPTO(ASL_LEVEL_DEBUG)); \
+				    asl_add_log_file(NULL, \
+					    fileno(notifierLog));*/ \
+				}
+#define CLOSE_NOTIFIER_LOG	if (notifierLog) { \
+				    /*asl_remove_log_file(NULL, \
+					    fileno(notifierLog)); \
+				    TclMacOSXNotifierDbgMsg("close log");*/ \
+				    fclose(notifierLog); \
+				    notifierLog = NULL; \
+				}
+#define ENABLE_ASL		if (notifierLog) { \
+				    /*tsdPtr->asl = asl_open(NULL, "com.apple.console", ASL_OPT_NO_REMOTE); \
+				    asl_set_filter(tsdPtr->asl, \
+				    ASL_FILTER_MASK_UPTO(ASL_LEVEL_DEBUG)); \
+				    asl_add_log_file(tsdPtr->asl, \
+					    fileno(notifierLog));*/ \
+				}
+#define DISABLE_ASL		/*if (tsdPtr->asl) { \
+				    if (notifierLog) { \
+					asl_remove_log_file(tsdPtr->asl, \
+						fileno(notifierLog)); \
+				    } \
+				    asl_close(tsdPtr->asl); \
+				}*/
+#define ASLCLIENT		/*aslclient asl*/
 #else
 #define TclMacOSXNotifierDbgMsg(m, ...)
 #define OPEN_NOTIFIER_LOG
 #define CLOSE_NOTIFIER_LOG
 #define ENABLE_ASL
 #define DISABLE_ASL
-#define ASLCLIENT_DECL
 #endif /* TCL_MAC_DEBUG_NOTIFIER */
 
 /*
@@ -248,30 +237,28 @@ typedef struct ThreadSpecificData {
     FileHandler *firstFileHandlerPtr;
 				/* Pointer to head of file handler list. */
     int polled;			/* True if the notifier thread has polled for
-				 * this thread. */
+				 * this thread.
+				 */
     int sleeping;		/* True if runloop is inside Tcl_Sleep. */
     int runLoopSourcePerformed;	/* True after the runLoopSource callack was
 				 * performed. */
-    int runLoopRunning;		/* True if this thread's Tcl runLoop is
-				 * running. */
-    int runLoopNestingLevel;	/* Level of nested runLoop invocations. */
+    int runLoopRunning;		/* True if this thread's Tcl runLoop is running */
+    int runLoopNestingLevel;	/* Level of nested runLoop invocations */
     int runLoopServicingEvents;	/* True if this thread's runLoop is servicing
-				 * Tcl events. */
-
+				 * tcl events */
     /* Must hold the notifierLock before accessing the following fields: */
     /* Start notifierLock section */
-    int onList;			/* True if this thread is on the
-				 * waitingList */
+    int onList;			/* True if this thread is on the waitingList */
     struct ThreadSpecificData *nextPtr, *prevPtr;
 				/* All threads that are currently waiting on
 				 * an event have their ThreadSpecificData
 				 * structure on a doubly-linked listed formed
-				 * from these pointers. */
+				 * from these pointers.
+				 */
     /* End notifierLock section */
-
     OSSpinLock tsdLock;		/* Must hold this lock before acessing the
-				 * following fields from more than one
-				 * thread. */
+				 * following fields from more than one thread.
+				 */
     /* Start tsdLock section */
     SelectMasks checkMasks;	/* This structure is used to build up the
 				 * masks to be used in the next call to
@@ -283,11 +270,9 @@ typedef struct ThreadSpecificData {
     int numFdBits;		/* Number of valid bits in checkMasks (one
 				 * more than highest fd for which
 				 * Tcl_WatchFile has been called). */
-    int polling;		/* True if this thread is polling for
-				 * events. */
+    int polling;		/* True if this thread is polling for events */
     CFRunLoopRef runLoop;	/* This thread's CFRunLoop, needs to be woken
-				 * up whenever the runLoopSource is
-				 * signaled. */
+				 * up whenever the runLoopSource is signaled */
     CFRunLoopSourceRef runLoopSource;
 				/* Any other thread alerts a notifier that an
 				 * event is ready to be processed by signaling
@@ -299,10 +284,11 @@ typedef struct ThreadSpecificData {
 				/* Wakes up CFRunLoop after given timeout when
 				 * running embedded. */
     /* End tsdLock section */
-
     CFTimeInterval waitTime;	/* runLoopTimer wait time when running
 				 * embedded. */
-    ASLCLIENT_DECL;
+#ifdef TCL_MAC_DEBUG_NOTIFIER
+    ASLCLIENT;
+#endif
 } ThreadSpecificData;
 
 static Tcl_ThreadDataKey dataKey;
@@ -352,8 +338,8 @@ static int receivePipe = -1; /* Output end of triggerPipe */
 static int notifierThreadRunning;
 
 /*
- * This is the thread ID of the notifier thread that does select. Only valid
- * when notifierThreadRunning is non-zero.
+ * This is the thread ID of the notifier thread that does select.
+ * Only valid when notifierThreadRunning is non-zero.
  *
  * You must hold the notifierInitLock before accessing this variable.
  */
@@ -362,7 +348,7 @@ static pthread_t notifierThread;
 
 /*
  * Custom runloop mode for running with only the runloop source for the
- * notifier thread.
+ * notifier thread
  */
 
 #ifndef TCL_EVENTS_ONLY_RUN_LOOP_MODE
@@ -384,45 +370,38 @@ static CFStringRef tclEventsOnlyRunLoopMode = NULL;
  * Static routines defined in this file.
  */
 
-static void		StartNotifierThread(void);
-static void		NotifierThreadProc(ClientData clientData)
-			    __attribute__ ((__noreturn__));
-static int		FileHandlerEventProc(Tcl_Event *evPtr, int flags);
-static void		TimerWakeUp(CFRunLoopTimerRef timer, void *info);
-static void		QueueFileEvents(void *info);
-static void		UpdateWaitingListAndServiceEvents(
-			    CFRunLoopObserverRef observer,
-			    CFRunLoopActivity activity, void *info);
-static int		OnOffWaitingList(ThreadSpecificData *tsdPtr,
-			    int onList, int signalNotifier);
+static void	StartNotifierThread(void);
+static void	NotifierThreadProc(ClientData clientData)
+			__attribute__ ((__noreturn__));
+static int	FileHandlerEventProc(Tcl_Event *evPtr, int flags);
+static void	TimerWakeUp(CFRunLoopTimerRef timer, void *info);
+static void	QueueFileEvents(void *info);
+static void	UpdateWaitingListAndServiceEvents(CFRunLoopObserverRef observer,
+			CFRunLoopActivity activity, void *info);
+static int	OnOffWaitingList(ThreadSpecificData *tsdPtr, int onList,
+			int signalNotifier);
 
 #ifdef HAVE_PTHREAD_ATFORK
-static int atForkInit = 0;
-static void		AtForkPrepare(void);
-static void		AtForkParent(void);
-static void		AtForkChild(void);
+static int	atForkInit = 0;
+static void	AtForkPrepare(void);
+static void	AtForkParent(void);
+static void	AtForkChild(void);
 #if defined(HAVE_WEAK_IMPORT) && MAC_OS_X_VERSION_MIN_REQUIRED < 1040
 /* Support for weakly importing pthread_atfork. */
 #define WEAK_IMPORT_PTHREAD_ATFORK
-extern int		pthread_atfork(void (*prepare)(void),
-			    void (*parent)(void), void (*child)(void))
-			    WEAK_IMPORT_ATTRIBUTE;
-#define MayUsePthreadAtfork()	(pthread_atfork != NULL)
-#else
-#define MayUsePthreadAtfork()	(1)
+extern int	pthread_atfork(void (*prepare)(void), void (*parent)(void),
+		    void (*child)(void)) WEAK_IMPORT_ATTRIBUTE;
 #endif /* HAVE_WEAK_IMPORT */
-
 /*
  * On Darwin 9 and later, it is not possible to call CoreFoundation after
  * a fork.
  */
-
 #if !defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
 	MAC_OS_X_VERSION_MIN_REQUIRED < 1050
 MODULE_SCOPE long tclMacOSXDarwinRelease;
-#define noCFafterFork	(tclMacOSXDarwinRelease >= 9)
+#define noCFafterFork (tclMacOSXDarwinRelease >= 9)
 #else /* MAC_OS_X_VERSION_MIN_REQUIRED */
-#define noCFafterFork	1
+#define noCFafterFork 1
 #endif /* MAC_OS_X_VERSION_MIN_REQUIRED */
 #endif /* HAVE_PTHREAD_ATFORK */
 
@@ -446,10 +425,6 @@ ClientData
 Tcl_InitNotifier(void)
 {
     ThreadSpecificData *tsdPtr;
-
-    if (tclNotifierHooks.initNotifierProc) {
-	return tclNotifierHooks.initNotifierProc();
-    }
 
     tsdPtr = TCL_TSD_INIT(&dataKey);
 
@@ -538,7 +513,11 @@ Tcl_InitNotifier(void)
      * child of a fork.
      */
 
-    if (MayUsePthreadAtfork() && !atForkInit) {
+    if (
+#ifdef WEAK_IMPORT_PTHREAD_ATFORK
+	    pthread_atfork != NULL &&
+#endif
+	    !atForkInit) {
 	int result = pthread_atfork(AtForkPrepare, AtForkParent, AtForkChild);
 
 	if (result) {
@@ -546,7 +525,7 @@ Tcl_InitNotifier(void)
 	}
 	atForkInit = 1;
     }
-#endif /* HAVE_PTHREAD_ATFORK */
+#endif
     if (notifierCount == 0) {
 	int fds[2], status;
 
@@ -587,7 +566,7 @@ Tcl_InitNotifier(void)
     notifierCount++;
     UNLOCK_NOTIFIER_INIT;
 
-    return tsdPtr;
+    return (ClientData) tsdPtr;
 }
 
 /*
@@ -609,7 +588,7 @@ Tcl_InitNotifier(void)
 
 void
 TclMacOSXNotifierAddRunLoopMode(
-    const void *runLoopMode)
+    CONST void *runLoopMode)
 {
     ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
     CFStringRef mode = (CFStringRef) runLoopMode;
@@ -690,11 +669,6 @@ Tcl_FinalizeNotifier(
 {
     ThreadSpecificData *tsdPtr;
 
-    if (tclNotifierHooks.finalizeNotifierProc) {
-	tclNotifierHooks.finalizeNotifierProc(clientData);
-	return;
-    }
-
     tsdPtr = TCL_TSD_INIT(&dataKey);
 
     LOCK_NOTIFIER_INIT;
@@ -713,10 +687,10 @@ Tcl_FinalizeNotifier(
 	     * terminate. The notifier will return from its call to select()
 	     * and notice that a "q" message has arrived, it will then close
 	     * its side of the pipe and terminate its thread. Note the we can
-	     * not just close the pipe and check for EOF in the notifier
-	     * thread because if a background child process was created with
-	     * exec, select() would not register the EOF on the pipe until the
-	     * child processes had terminated. [Bug: 4139] [Bug 1222872]
+	     * not just close the pipe and check for EOF in the notifier thread
+	     * because if a background child process was created with exec,
+	     * select() would not register the EOF on the pipe until the child
+	     * processes had terminated. [Bug: 4139] [Bug: 1222872]
 	     */
 
 	    write(triggerPipe, "q", 1);
@@ -791,11 +765,6 @@ Tcl_AlertNotifier(
 {
     ThreadSpecificData *tsdPtr = clientData;
 
-    if (tclNotifierHooks.alertNotifierProc) {
-	tclNotifierHooks.alertNotifierProc(clientData);
-	return;
-    }
-
     LOCK_NOTIFIER_TSD;
     if (tsdPtr->runLoop) {
 	CFRunLoopSourceSignal(tsdPtr->runLoopSource);
@@ -822,14 +791,14 @@ Tcl_AlertNotifier(
 
 void
 Tcl_SetTimer(
-    const Tcl_Time *timePtr)		/* Timeout value, may be NULL. */
+    Tcl_Time *timePtr)		/* Timeout value, may be NULL. */
 {
     ThreadSpecificData *tsdPtr;
     CFRunLoopTimerRef runLoopTimer;
     CFTimeInterval waitTime;
 
-    if (tclNotifierHooks.setTimerProc) {
-	tclNotifierHooks.setTimerProc(timePtr);
+    if (tclStubs.tcl_SetTimer != tclOriginalNotifier.setTimerProc) {
+	tclStubs.tcl_SetTimer(timePtr);
 	return;
     }
 
@@ -839,7 +808,7 @@ Tcl_SetTimer(
 	return;
     }
     if (timePtr) {
-	Tcl_Time vTime = *timePtr;
+	Tcl_Time vTime  = *timePtr;
 
 	if (vTime.sec != 0 || vTime.usec != 0) {
 	    tclScaleTimeProcPtr(&vTime, tclTimeClientData);
@@ -901,11 +870,6 @@ Tcl_ServiceModeHook(
 {
     ThreadSpecificData *tsdPtr;
 
-    if (tclNotifierHooks.serviceModeHookProc) {
-	tclNotifierHooks.serviceModeHookProc(mode);
-	return;
-    }
-
     tsdPtr = TCL_TSD_INIT(&dataKey);
 
     if (mode == TCL_SERVICE_ALL && !tsdPtr->runLoopTimer) {
@@ -953,8 +917,9 @@ Tcl_CreateFileHandler(
     ThreadSpecificData *tsdPtr;
     FileHandler *filePtr;
 
-    if (tclNotifierHooks.createFileHandlerProc) {
-	tclNotifierHooks.createFileHandlerProc(fd, mask, proc, clientData);
+    if (tclStubs.tcl_CreateFileHandler !=
+	    tclOriginalNotifier.createFileHandlerProc) {
+	tclStubs.tcl_CreateFileHandler(fd, mask, proc, clientData);
 	return;
     }
 
@@ -967,7 +932,7 @@ Tcl_CreateFileHandler(
 	}
     }
     if (filePtr == NULL) {
-	filePtr = ckalloc(sizeof(FileHandler));
+	filePtr = (FileHandler *) ckalloc(sizeof(FileHandler));
 	filePtr->fd = fd;
 	filePtr->readyMask = 0;
 	filePtr->nextPtr = tsdPtr->firstFileHandlerPtr;
@@ -983,19 +948,19 @@ Tcl_CreateFileHandler(
 
     LOCK_NOTIFIER_TSD;
     if (mask & TCL_READABLE) {
-	FD_SET(fd, &tsdPtr->checkMasks.readable);
+	FD_SET(fd, &(tsdPtr->checkMasks.readable));
     } else {
-	FD_CLR(fd, &tsdPtr->checkMasks.readable);
+	FD_CLR(fd, &(tsdPtr->checkMasks.readable));
     }
     if (mask & TCL_WRITABLE) {
-	FD_SET(fd, &tsdPtr->checkMasks.writable);
+	FD_SET(fd, &(tsdPtr->checkMasks.writable));
     } else {
-	FD_CLR(fd, &tsdPtr->checkMasks.writable);
+	FD_CLR(fd, &(tsdPtr->checkMasks.writable));
     }
     if (mask & TCL_EXCEPTION) {
-	FD_SET(fd, &tsdPtr->checkMasks.exceptional);
+	FD_SET(fd, &(tsdPtr->checkMasks.exceptional));
     } else {
-	FD_CLR(fd, &tsdPtr->checkMasks.exceptional);
+	FD_CLR(fd, &(tsdPtr->checkMasks.exceptional));
     }
     if (tsdPtr->numFdBits <= fd) {
 	tsdPtr->numFdBits = fd+1;
@@ -1028,8 +993,9 @@ Tcl_DeleteFileHandler(
     int i, numFdBits;
     ThreadSpecificData *tsdPtr;
 
-    if (tclNotifierHooks.deleteFileHandlerProc) {
-	tclNotifierHooks.deleteFileHandlerProc(fd);
+    if (tclStubs.tcl_DeleteFileHandler !=
+	    tclOriginalNotifier.deleteFileHandlerProc) {
+	tclStubs.tcl_DeleteFileHandler(fd);
 	return;
     }
 
@@ -1057,9 +1023,9 @@ Tcl_DeleteFileHandler(
     if (fd+1 == tsdPtr->numFdBits) {
 	numFdBits = 0;
 	for (i = fd-1; i >= 0; i--) {
-	    if (FD_ISSET(i, &tsdPtr->checkMasks.readable)
-		    || FD_ISSET(i, &tsdPtr->checkMasks.writable)
-		    || FD_ISSET(i, &tsdPtr->checkMasks.exceptional)) {
+	    if (FD_ISSET(i, &(tsdPtr->checkMasks.readable))
+		    || FD_ISSET(i, &(tsdPtr->checkMasks.writable))
+		    || FD_ISSET(i, &(tsdPtr->checkMasks.exceptional))) {
 		numFdBits = i+1;
 		break;
 	    }
@@ -1076,13 +1042,13 @@ Tcl_DeleteFileHandler(
      */
 
     if (filePtr->mask & TCL_READABLE) {
-	FD_CLR(fd, &tsdPtr->checkMasks.readable);
+	FD_CLR(fd, &(tsdPtr->checkMasks.readable));
     }
     if (filePtr->mask & TCL_WRITABLE) {
-	FD_CLR(fd, &tsdPtr->checkMasks.writable);
+	FD_CLR(fd, &(tsdPtr->checkMasks.writable));
     }
     if (filePtr->mask & TCL_EXCEPTION) {
-	FD_CLR(fd, &tsdPtr->checkMasks.exceptional);
+	FD_CLR(fd, &(tsdPtr->checkMasks.exceptional));
     }
     UNLOCK_NOTIFIER_TSD;
 
@@ -1095,7 +1061,7 @@ Tcl_DeleteFileHandler(
     } else {
 	prevPtr->nextPtr = filePtr->nextPtr;
     }
-    ckfree(filePtr);
+    ckfree((char *) filePtr);
 }
 
 /*
@@ -1166,13 +1132,13 @@ FileHandlerEventProc(
 	if (mask != 0) {
 	    LOCK_NOTIFIER_TSD;
 	    if (mask & TCL_READABLE) {
-		FD_CLR(filePtr->fd, &tsdPtr->readyMasks.readable);
+		FD_CLR(filePtr->fd, &(tsdPtr->readyMasks.readable));
 	    }
 	    if (mask & TCL_WRITABLE) {
-		FD_CLR(filePtr->fd, &tsdPtr->readyMasks.writable);
+		FD_CLR(filePtr->fd, &(tsdPtr->readyMasks.writable));
 	    }
 	    if (mask & TCL_EXCEPTION) {
-		FD_CLR(filePtr->fd, &tsdPtr->readyMasks.exceptional);
+		FD_CLR(filePtr->fd, &(tsdPtr->readyMasks.exceptional));
 	    }
 	    UNLOCK_NOTIFIER_TSD;
 	    filePtr->proc(filePtr->clientData, mask);
@@ -1203,15 +1169,15 @@ FileHandlerEventProc(
 
 int
 Tcl_WaitForEvent(
-    const Tcl_Time *timePtr)		/* Maximum block time, or NULL. */
+    Tcl_Time *timePtr)		/* Maximum block time, or NULL. */
 {
     int result, polling, runLoopRunning;
     CFTimeInterval waitTime;
     SInt32 runLoopStatus;
     ThreadSpecificData *tsdPtr;
 
-    if (tclNotifierHooks.waitForEventProc) {
-	return tclNotifierHooks.waitForEventProc(timePtr);
+    if (tclStubs.tcl_WaitForEvent != tclOriginalNotifier.waitForEventProc) {
+	return tclStubs.tcl_WaitForEvent(timePtr);
     }
     result = -1;
     polling = 0;
@@ -1223,7 +1189,7 @@ Tcl_WaitForEvent(
     }
 
     if (timePtr) {
-	Tcl_Time vTime = *timePtr;
+	Tcl_Time vTime  = *timePtr;
 
 	/*
 	 * TIP #233 (Virtualized Time). Is virtual time in effect? And do we
@@ -1274,7 +1240,7 @@ Tcl_WaitForEvent(
     UNLOCK_NOTIFIER_TSD;
     switch (runLoopStatus) {
     case kCFRunLoopRunFinished:
-	Tcl_Panic("Tcl_WaitForEvent: CFRunLoop finished");
+       Tcl_Panic("Tcl_WaitForEvent: CFRunLoop finished");
 	break;
     case kCFRunLoopRunTimedOut:
 	QueueFileEvents(tsdPtr);
@@ -1311,19 +1277,19 @@ QueueFileEvents(
 {
     SelectMasks readyMasks;
     FileHandler *filePtr;
-    ThreadSpecificData *tsdPtr = info;
+    ThreadSpecificData *tsdPtr = (ThreadSpecificData *) info;
 
     /*
      * Queue all detected file events.
      */
 
     LOCK_NOTIFIER_TSD;
-    FD_COPY(&tsdPtr->readyMasks.readable, &readyMasks.readable);
-    FD_COPY(&tsdPtr->readyMasks.writable, &readyMasks.writable);
-    FD_COPY(&tsdPtr->readyMasks.exceptional, &readyMasks.exceptional);
-    FD_ZERO(&tsdPtr->readyMasks.readable);
-    FD_ZERO(&tsdPtr->readyMasks.writable);
-    FD_ZERO(&tsdPtr->readyMasks.exceptional);
+    FD_COPY(&(tsdPtr->readyMasks.readable), &readyMasks.readable);
+    FD_COPY(&(tsdPtr->readyMasks.writable), &readyMasks.writable);
+    FD_COPY(&(tsdPtr->readyMasks.exceptional), &readyMasks.exceptional);
+    FD_ZERO(&(tsdPtr->readyMasks.readable));
+    FD_ZERO(&(tsdPtr->readyMasks.writable));
+    FD_ZERO(&(tsdPtr->readyMasks.exceptional));
     UNLOCK_NOTIFIER_TSD;
     tsdPtr->runLoopSourcePerformed = 1;
 
@@ -1350,8 +1316,8 @@ QueueFileEvents(
 	 */
 
 	if (filePtr->readyMask == 0) {
-	    FileHandlerEvent *fileEvPtr = ckalloc(sizeof(FileHandlerEvent));
-
+	    FileHandlerEvent *fileEvPtr = (FileHandlerEvent *)
+		    ckalloc(sizeof(FileHandlerEvent));
 	    fileEvPtr->header.proc = FileHandlerEventProc;
 	    fileEvPtr->fd = filePtr->fd;
 	    Tcl_QueueEvent((Tcl_Event *) fileEvPtr, TCL_QUEUE_TAIL);
@@ -1383,7 +1349,7 @@ UpdateWaitingListAndServiceEvents(
     CFRunLoopActivity activity,
     void *info)
 {
-    ThreadSpecificData *tsdPtr = info;
+    ThreadSpecificData *tsdPtr = (ThreadSpecificData*) info;
 
     if (tsdPtr->sleeping) {
 	return;
@@ -1394,7 +1360,7 @@ UpdateWaitingListAndServiceEvents(
 	if (tsdPtr->numFdBits > 0 || tsdPtr->polling) {
 	    LOCK_NOTIFIER;
 	    if (!OnOffWaitingList(tsdPtr, 1, 1) && tsdPtr->polling) {
-		write(triggerPipe, "", 1);
+	       write(triggerPipe, "", 1);
 	    }
 	    UNLOCK_NOTIFIER;
 	}
@@ -1409,10 +1375,9 @@ UpdateWaitingListAndServiceEvents(
 	break;
     case kCFRunLoopBeforeWaiting:
 	if (tsdPtr->runLoopTimer && !tsdPtr->runLoopServicingEvents &&
-		(tsdPtr->runLoopNestingLevel > 1
-			|| !tsdPtr->runLoopRunning)) {
+		(tsdPtr->runLoopNestingLevel > 1 || !tsdPtr->runLoopRunning)) {
 	    tsdPtr->runLoopServicingEvents = 1;
-            /* This call seems to simply force event processing through and prevents hangups that have long been observed with Tk-Cocoa.  */
+           /* This call seems to simply force event processing through and prevents hangups that have long been observed with Tk-Cocoa.  */
 	    Tcl_ServiceAll();
 	    tsdPtr->runLoopServicingEvents = 0;
 	}
@@ -1427,8 +1392,8 @@ UpdateWaitingListAndServiceEvents(
  *
  * OnOffWaitingList --
  *
- *	Add/remove the specified thread to/from the global waitingList and
- *	optionally signal the notifier.
+ *	Add/remove the specified thread to/from the global waitingList
+ *	and optionally signal the notifier.
  *
  *	!!! Requires notifierLock to be held !!!
  *
@@ -1448,9 +1413,8 @@ OnOffWaitingList(
     int signalNotifier)
 {
     int changeWaitingList;
-
 #ifdef TCL_MAC_DEBUG_NOTIFIER
-    if (SpinLockTry(&notifierLock)) {
+    if(SpinLockTry(&notifierLock)) {
 	Tcl_Panic("OnOffWaitingList: notifierLock unlocked");
     }
 #endif
@@ -1477,7 +1441,7 @@ OnOffWaitingList(
 	    tsdPtr->onList = 0;
 	}
 	if (signalNotifier) {
-	    write(triggerPipe, "", 1);
+	   write(triggerPipe, "", 1);
 	}
     }
 
@@ -1515,7 +1479,7 @@ Tcl_Sleep(
      * TIP #233: Scale from virtual time to real-time.
      */
 
-    vdelay.sec = ms / 1000;
+    vdelay.sec  = ms / 1000;
     vdelay.usec = (ms % 1000) * 1000;
     tclScaleTimeProcPtr(&vdelay, tclTimeClientData);
 
@@ -1541,8 +1505,8 @@ Tcl_Sleep(
 	}
 	tsdPtr->sleeping = 1;
 	do {
-	    runLoopStatus = CFRunLoopRunInMode(kCFRunLoopDefaultMode,
-		    waitTime, FALSE);
+	    runLoopStatus = CFRunLoopRunInMode(kCFRunLoopDefaultMode, waitTime,
+		    FALSE);
 	    switch (runLoopStatus) {
 	    case kCFRunLoopRunFinished:
 		Tcl_Panic("Tcl_Sleep: CFRunLoop finished");
@@ -1678,10 +1642,10 @@ TclUnixWaitForFile(
 	 * Setup the select masks for the fd.
 	 */
 
-	if (mask & TCL_READABLE) {
+	if (mask & TCL_READABLE)  {
 	    FD_SET(fd, &readableMask);
 	}
-	if (mask & TCL_WRITABLE) {
+	if (mask & TCL_WRITABLE)  {
 	    FD_SET(fd, &writableMask);
 	}
 	if (mask & TCL_EXCEPTION) {
@@ -1695,10 +1659,10 @@ TclUnixWaitForFile(
 	numFound = select(fd + 1, &readableMask, &writableMask,
 		&exceptionalMask, timeoutPtr);
 	if (numFound == 1) {
-	    if (FD_ISSET(fd, &readableMask)) {
+	    if (FD_ISSET(fd, &readableMask))   {
 		SET_BITS(result, TCL_READABLE);
 	    }
-	    if (FD_ISSET(fd, &writableMask)) {
+	    if (FD_ISSET(fd, &writableMask))  {
 		SET_BITS(result, TCL_WRITABLE);
 	    }
 	    if (FD_ISSET(fd, &exceptionalMask)) {
@@ -1782,13 +1746,13 @@ NotifierThreadProc(
 	for (tsdPtr = waitingListPtr; tsdPtr; tsdPtr = tsdPtr->nextPtr) {
 	    LOCK_NOTIFIER_TSD;
 	    for (i = tsdPtr->numFdBits-1; i >= 0; --i) {
-		if (FD_ISSET(i, &tsdPtr->checkMasks.readable)) {
+		if (FD_ISSET(i, &(tsdPtr->checkMasks.readable))) {
 		    FD_SET(i, &readableMask);
 		}
-		if (FD_ISSET(i, &tsdPtr->checkMasks.writable)) {
+		if (FD_ISSET(i, &(tsdPtr->checkMasks.writable))) {
 		    FD_SET(i, &writableMask);
 		}
-		if (FD_ISSET(i, &tsdPtr->checkMasks.exceptional)) {
+		if (FD_ISSET(i, &(tsdPtr->checkMasks.exceptional))) {
 		    FD_SET(i, &exceptionalMask);
 		}
 	    }
@@ -1831,9 +1795,9 @@ NotifierThreadProc(
 	    SelectMasks readyMasks, checkMasks;
 
 	    LOCK_NOTIFIER_TSD;
-	    FD_COPY(&tsdPtr->checkMasks.readable, &checkMasks.readable);
-	    FD_COPY(&tsdPtr->checkMasks.writable, &checkMasks.writable);
-	    FD_COPY(&tsdPtr->checkMasks.exceptional, &checkMasks.exceptional);
+	    FD_COPY(&(tsdPtr->checkMasks.readable), &checkMasks.readable);
+	    FD_COPY(&(tsdPtr->checkMasks.writable), &checkMasks.writable);
+	    FD_COPY(&(tsdPtr->checkMasks.exceptional), &checkMasks.exceptional);
 	    UNLOCK_NOTIFIER_TSD;
 	    found = tsdPtr->polled;
 	    FD_ZERO(&readyMasks.readable);
@@ -1869,10 +1833,9 @@ NotifierThreadProc(
 		OnOffWaitingList(tsdPtr, 0, 0);
 
 		LOCK_NOTIFIER_TSD;
-		FD_COPY(&readyMasks.readable, &tsdPtr->readyMasks.readable);
-		FD_COPY(&readyMasks.writable, &tsdPtr->readyMasks.writable);
-		FD_COPY(&readyMasks.exceptional,
-			&tsdPtr->readyMasks.exceptional);
+		FD_COPY(&readyMasks.readable, &(tsdPtr->readyMasks.readable));
+		FD_COPY(&readyMasks.writable, &(tsdPtr->readyMasks.writable));
+		FD_COPY(&readyMasks.exceptional, &(tsdPtr->readyMasks.exceptional));
 		UNLOCK_NOTIFIER_TSD;
 		tsdPtr->polled = 0;
 		if (tsdPtr->runLoop) {
@@ -2020,7 +1983,7 @@ AtForkChild(void)
 
 void
 TclMacOSXNotifierAddRunLoopMode(
-    const void *runLoopMode)
+    CONST void *runLoopMode)
 {
     Tcl_Panic("TclMacOSXNotifierAddRunLoopMode: "
 	    "Tcl not built with CoreFoundation support");

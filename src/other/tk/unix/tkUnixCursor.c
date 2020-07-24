@@ -28,8 +28,8 @@ typedef struct {
  * the official cursor font:
  */
 
-static const struct CursorName {
-    const char *name;
+static struct CursorName {
+    CONST char *name;
     unsigned int shape;
 } cursorNames[] = {
     {"X_cursor",		XC_X_cursor},
@@ -159,9 +159,9 @@ static const struct CursorName {
 
 #endif /* DEFINE_MYARROW_CURSOR */
 
-static const struct TkCursorName {
-    const char *name;
-    const char *data;
+static struct TkCursorName {
+    char *name;
+    char *data;
     char *mask;
 } tkCursorNames[] = {
     {"none",	CURSOR_NONE_DATA,	NULL},
@@ -180,8 +180,8 @@ static const struct TkCursorName {
 #endif
 
 static Cursor		CreateCursorFromTableOrFile(Tcl_Interp *interp,
-			    Tk_Window tkwin, int argc, const char **argv,
-			    const struct TkCursorName *tkCursorPtr);
+			    Tk_Window tkwin, int argc, CONST char **argv,
+			    struct TkCursorName *tkCursorPtr);
 
 /*
  *----------------------------------------------------------------------
@@ -209,12 +209,12 @@ TkGetCursorByName(
 				 * details on legal syntax. */
 {
     TkUnixCursor *cursorPtr = NULL;
-    Cursor cursor = None;
+    Cursor cursor = TkNone;
     int argc;
-    const char **argv = NULL;
+    CONST char **argv = NULL;
     Display *display = Tk_Display(tkwin);
     int inTkTable = 0;
-    const struct TkCursorName *tkCursorPtr = NULL;
+    struct TkCursorName* tkCursorPtr = NULL;
 
     if (Tcl_SplitList(interp, string, &argc, &argv) != TCL_OK) {
 	return NULL;
@@ -245,7 +245,7 @@ TkGetCursorByName(
     if ((argv[0][0] != '@') && !inTkTable) {
 	XColor fg, bg;
 	unsigned int maskIndex;
-	register const struct CursorName *namePtr;
+	register struct CursorName *namePtr;
 	TkDisplay *dispPtr;
 
 	/*
@@ -275,9 +275,8 @@ TkGetCursorByName(
 	    bg.red = bg.green = bg.blue = 65535;
 	} else {
 	    if (TkParseColor(display, Tk_Colormap(tkwin), argv[1], &fg) == 0) {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"invalid color name \"%s\"", argv[1]));
-		Tcl_SetErrorCode(interp, "TK", "CURSOR", "COLOR", NULL);
+		Tcl_AppendResult(interp, "invalid color name \"", argv[1],
+			"\"", NULL);
 		goto cleanup;
 	    }
 	    if (argc == 2) {
@@ -285,19 +284,16 @@ TkGetCursorByName(
 		maskIndex = namePtr->shape;
 	    } else if (TkParseColor(display, Tk_Colormap(tkwin), argv[2],
 		    &bg) == 0) {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"invalid color name \"%s\"", argv[2]));
-		Tcl_SetErrorCode(interp, "TK", "CURSOR", "COLOR", NULL);
+		Tcl_AppendResult(interp, "invalid color name \"", argv[2],
+			"\"", NULL);
 		goto cleanup;
 	    }
 	}
 	dispPtr = ((TkWindow *) tkwin)->dispPtr;
-	if (dispPtr->cursorFont == None) {
+	if (dispPtr->cursorFont == TkNone) {
 	    dispPtr->cursorFont = XLoadFont(display, CURSORFONT);
-	    if (dispPtr->cursorFont == None) {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj(
-			"couldn't load cursor font", -1));
-		Tcl_SetErrorCode(interp, "TK", "CURSOR", "FONT", NULL);
+	    if (dispPtr->cursorFont == TkNone) {
+		Tcl_SetResult(interp, "couldn't load cursor font", TCL_STATIC);
 		goto cleanup;
 	    }
 	}
@@ -310,10 +306,8 @@ TkGetCursorByName(
 	 */
 
 	if (!inTkTable && Tcl_IsSafe(interp)) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj(
-		    "can't get cursor from a file in a safe interpreter",
-		    -1));
-	    Tcl_SetErrorCode(interp, "TK", "SAFE", "CURSOR_FILE", NULL);
+	    Tcl_AppendResult(interp, "can't get cursor from a file in",
+		    " a safe interpreter", NULL);
 	    cursorPtr = NULL;
 	    goto cleanup;
 	}
@@ -337,27 +331,26 @@ TkGetCursorByName(
 		tkCursorPtr);
     }
 
-    if (cursor != None) {
-	cursorPtr = ckalloc(sizeof(TkUnixCursor));
+    if (cursor != TkNone) {
+	cursorPtr = (TkUnixCursor *) ckalloc(sizeof(TkUnixCursor));
 	cursorPtr->info.cursor = (Tk_Cursor) cursor;
 	cursorPtr->display = display;
     }
 
   cleanup:
     if (argv != NULL) {
-	ckfree(argv);
+	ckfree((char *) argv);
     }
     return (TkCursor *) cursorPtr;
 
   badString:
     if (argv) {
-	ckfree(argv);
+	ckfree((char *) argv);
     }
-    Tcl_SetObjResult(interp, Tcl_ObjPrintf("bad cursor spec \"%s\"", string));
-    Tcl_SetErrorCode(interp, "TK", "VALUE", "CURSOR", NULL);
+    Tcl_AppendResult(interp, "bad cursor spec \"", string, "\"", NULL);
     return NULL;
 }
-
+
 /*
  *----------------------------------------------------------------------
  *
@@ -369,7 +362,7 @@ TkGetCursorByName(
  *	already.
  *
  * Results:
- *	Returns a new cursor, or None on error.
+ *	Returns a new cursor, or TkNone on error.
  *
  * Side effects:
  *	Allocates a new X cursor.
@@ -382,26 +375,26 @@ CreateCursorFromTableOrFile(
     Tcl_Interp *interp,		/* Interpreter to use for error reporting. */
     Tk_Window tkwin,		/* Window in which cursor will be used. */
     int argc,
-    const char **argv,		/* Cursor spec parsed into elements. */
-    const struct TkCursorName *tkCursorPtr)
+    CONST char **argv,		/* Cursor spec parsed into elements. */
+    struct TkCursorName *tkCursorPtr)
 				/* Non-NULL when cursor is defined in Tk
 				 * table. */
 {
-    Cursor cursor = None;
+    Cursor cursor = TkNone;
 
     int width, height, maskWidth, maskHeight;
     int xHot = -1, yHot = -1;
     int dummy1, dummy2;
     XColor fg, bg;
-    const char *fgColor;
-    const char *bgColor;
+    CONST char *fgColor;
+    CONST char *bgColor;
     int inTkTable = (tkCursorPtr != NULL);
 
     Display *display = Tk_Display(tkwin);
     Drawable drawable = RootWindowOfScreen(Tk_Screen(tkwin));
 
-    Pixmap source = None;
-    Pixmap mask = None;
+    Pixmap source = TkNone;
+    Pixmap mask = TkNone;
 
     /*
      * A cursor defined in a file accepts either 2 or 4 arguments.
@@ -426,9 +419,8 @@ CreateCursorFromTableOrFile(
 	data = TkGetBitmapData(NULL, tkCursorPtr->data, NULL,
 		&width, &height, &xHot, &yHot);
 	if (data == NULL) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "error reading bitmap data for \"%s\"", argv[0]));
-	    Tcl_SetErrorCode(interp, "TK", "CURSOR", "BITMAP_DATA", NULL);
+	    Tcl_AppendResult(interp, "error reading bitmap data for \"",
+		    argv[0], "\"", NULL);
 	    goto cleanup;
 	}
 
@@ -436,24 +428,22 @@ CreateCursorFromTableOrFile(
 	ckfree(data);
     } else {
 	if (TkReadBitmapFile(display, drawable, &argv[0][1],
-		(unsigned *) &width, (unsigned *) &height,
+		(unsigned int *) &width, (unsigned int *) &height,
 		&source, &xHot, &yHot) != BitmapSuccess) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "cleanup reading bitmap file \"%s\"", &argv[0][1]));
-	    Tcl_SetErrorCode(interp, "TK", "CURSOR", "BITMAP_FILE", NULL);
+	    Tcl_AppendResult(interp, "cleanup reading bitmap file \"",
+		    &argv[0][1], "\"", NULL);
 	    goto cleanup;
 	}
     }
 
     if ((xHot < 0) || (yHot < 0) || (xHot >= width) || (yHot >= height)) {
 	if (inTkTable) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "bad hot spot in bitmap data for \"%s\"", argv[0]));
+	    Tcl_AppendResult(interp, "bad hot spot in bitmap data for \"",
+		    argv[0], "\"", NULL);
 	} else {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "bad hot spot in bitmap file \"%s\"", &argv[0][1]));
+	    Tcl_AppendResult(interp, "bad hot spot in bitmap file \"",
+		    &argv[0][1], "\"", NULL);
 	}
-	Tcl_SetErrorCode(interp, "TK", "CURSOR", "HOTSPOT", NULL);
 	goto cleanup;
     }
 
@@ -467,9 +457,8 @@ CreateCursorFromTableOrFile(
     } else if (argc == 2) {
 	fgColor = argv[1];
 	if (TkParseColor(display, Tk_Colormap(tkwin), fgColor, &fg) == 0) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "invalid color name \"%s\"", fgColor));
-	    Tcl_SetErrorCode(interp, "TK", "CURSOR", "COLOR", NULL);
+	    Tcl_AppendResult(interp, "invalid color name \"",
+		    fgColor, "\"", NULL);
 	    goto cleanup;
 	}
 	if (inTkTable) {
@@ -487,15 +476,13 @@ CreateCursorFromTableOrFile(
 	    bgColor = argv[3];
 	}
 	if (TkParseColor(display, Tk_Colormap(tkwin), fgColor, &fg) == 0) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "invalid color name \"%s\"", fgColor));
-	    Tcl_SetErrorCode(interp, "TK", "CURSOR", "COLOR", NULL);
+	    Tcl_AppendResult(interp, "invalid color name \"",
+		    fgColor, "\"", NULL);
 	    goto cleanup;
 	}
 	if (TkParseColor(display, Tk_Colormap(tkwin), bgColor, &bg) == 0) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "invalid color name \"%s\"", bgColor));
-	    Tcl_SetErrorCode(interp, "TK", "CURSOR", "COLOR", NULL);
+	    Tcl_AppendResult(interp, "invalid color name \"",
+		    bgColor, "\"", NULL);
 	    goto cleanup;
 	}
     }
@@ -524,9 +511,8 @@ CreateCursorFromTableOrFile(
 	data = TkGetBitmapData(NULL, tkCursorPtr->mask, NULL,
 		&maskWidth, &maskHeight, &dummy1, &dummy2);
 	if (data == NULL) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "error reading bitmap mask data for \"%s\"", argv[0]));
-	    Tcl_SetErrorCode(interp, "TK", "CURSOR", "MASK_DATA", NULL);
+	    Tcl_AppendResult(interp, "error reading bitmap mask data for \"",
+		    argv[0], "\"", NULL);
 	    goto cleanup;
 	}
 
@@ -538,17 +524,15 @@ CreateCursorFromTableOrFile(
 	if (TkReadBitmapFile(display, drawable, argv[1],
 		(unsigned int *) &maskWidth, (unsigned int *) &maskHeight,
 		&mask, &dummy1, &dummy2) != BitmapSuccess) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "cleanup reading bitmap file \"%s\"", argv[1]));
-	    Tcl_SetErrorCode(interp, "TK", "CURSOR", "MASK_FILE", NULL);
+	    Tcl_AppendResult(interp, "cleanup reading bitmap file \"",
+		    argv[1], "\"", NULL);
 	    goto cleanup;
 	}
     }
 
     if ((maskWidth != width) || (maskHeight != height)) {
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(
-		"source and mask bitmaps have different sizes", -1));
-	Tcl_SetErrorCode(interp, "TK", "CURSOR", "SIZE_MATCH", NULL);
+	Tcl_SetResult(interp, "source and mask bitmaps have different sizes",
+		TCL_STATIC);
 	goto cleanup;
     }
 
@@ -556,10 +540,10 @@ CreateCursorFromTableOrFile(
 	    &fg, &bg, (unsigned) xHot, (unsigned) yHot);
 
   cleanup:
-    if (source != None) {
+    if (source != TkNone) {
 	Tk_FreePixmap(display, source);
     }
-    if (mask != None) {
+    if (mask != TkNone) {
 	Tk_FreePixmap(display, mask);
     }
     return cursor;
@@ -584,8 +568,8 @@ CreateCursorFromTableOrFile(
 TkCursor *
 TkCreateCursorFromData(
     Tk_Window tkwin,		/* Window in which cursor will be used. */
-    const char *source,		/* Bitmap data for cursor shape. */
-    const char *mask,		/* Bitmap data for cursor mask. */
+    CONST char *source,		/* Bitmap data for cursor shape. */
+    CONST char *mask,		/* Bitmap data for cursor mask. */
     int width, int height,	/* Dimensions of cursor. */
     int xHot, int yHot,		/* Location of hot-spot in cursor. */
     XColor fgColor,		/* Foreground color for cursor. */
@@ -607,8 +591,8 @@ TkCreateCursorFromData(
     Tk_FreePixmap(display, sourcePixmap);
     Tk_FreePixmap(display, maskPixmap);
 
-    if (cursor != None) {
-	cursorPtr = ckalloc(sizeof(TkUnixCursor));
+    if (cursor != TkNone) {
+	cursorPtr = (TkUnixCursor *) ckalloc(sizeof(TkUnixCursor));
 	cursorPtr->info.cursor = (Tk_Cursor) cursor;
 	cursorPtr->display = display;
     }
@@ -639,6 +623,7 @@ TkpFreeCursor(
     TkUnixCursor *unixCursorPtr = (TkUnixCursor *) cursorPtr;
 
     XFreeCursor(unixCursorPtr->display, (Cursor) unixCursorPtr->info.cursor);
+    Tk_FreeXId(unixCursorPtr->display, (XID) unixCursorPtr->info.cursor);
 }
 
 /*

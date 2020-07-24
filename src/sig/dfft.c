@@ -33,7 +33,6 @@
 #include <math.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/malloc.h"
 #include "bu/getopt.h"
 #include "bu/exit.h"
@@ -208,8 +207,6 @@ main(int argc, char **argv)
     double cbsum = 0.0;
     int phase = 0;
     double data[MAXFFT];		/* Data buffer: 2*Points in spectrum */
-
-    bu_setprogname(argv[0]);
 
     while ((c = bu_getopt(argc, argv, optstring)) != -1) {
 	switch (c) {

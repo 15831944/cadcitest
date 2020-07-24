@@ -273,7 +273,6 @@ if(NOT DEFINED BRLCAD_BUILDTEST_EXTERNALS)
   # DLLs in place will result in silent failure of the loading step. ***
   add_library(creo-brl SHARED ${creo_brl_srcs})
   target_link_libraries(creo-brl ${WIN_LIBS} ${CREO_PTK_DLL_LIBS} ${BRLCAD_STATIC_LIBS})
-  set_property(TARGET creo-brl APPEND PROPERTY COMPILE_DEFINITIONS BRLCADBUILD HAVE_CONFIG_H)
   install(TARGETS creo-brl
     RUNTIME DESTINATION "${MDIR}/${CREO_OBJ_DIR}"
     )
@@ -353,8 +352,8 @@ else(NOT DEFINED BRLCAD_BUILDTEST_EXTERNALS)
     "${CMAKE_CURRENT_BINARY_DIR}/../../../include"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/other/openNURBS"
-    "${ZLIB_INCLUDE_DIRS}"
-    "${REGEX_INCLUDE_DIRS}"
+    "${ZLIB_INCLUDE_DIR}"
+    "${REGEX_INCLUDE_DIR}"
     )
 
   # The build shims aren't so great at mocking the initialization
@@ -366,7 +365,7 @@ else(NOT DEFINED BRLCAD_BUILDTEST_EXTERNALS)
   add_library(creo-brl ${creo_brl_srcs})
   target_link_libraries(creo-brl librt libwdb libbrep libbg libnmg libbn libbu)
   set_target_properties(creo-brl PROPERTIES FOLDER "BRL-CAD Executables/Build Only")
-  if(HIDE_INTERNAL_SYMBOLS)
+  if(CPP_DLL_DEFINES)
     set_property(TARGET creo-brl APPEND PROPERTY COMPILE_DEFINITIONS "BU_DLL_IMPORTS")
     set_property(TARGET creo-brl APPEND PROPERTY COMPILE_DEFINITIONS "BN_DLL_IMPORTS")
     set_property(TARGET creo-brl APPEND PROPERTY COMPILE_DEFINITIONS "NMG_DLL_IMPORTS")
@@ -380,7 +379,7 @@ else(NOT DEFINED BRLCAD_BUILDTEST_EXTERNALS)
     set_property(TARGET creo-brl APPEND PROPERTY COMPILE_DEFINITIONS "VDS_DLL_IMPORTS")
     set_property(TARGET creo-brl APPEND PROPERTY COMPILE_DEFINITIONS "ON_DLL_IMPORTS")
     set_property(TARGET creo-brl APPEND PROPERTY COMPILE_DEFINITIONS "LZ4_DLL_IMPORT=1")
-  endif(HIDE_INTERNAL_SYMBOLS)
+  endif(CPP_DLL_DEFINES)
 
   # Distcheck file list
   set(creo_dist_files

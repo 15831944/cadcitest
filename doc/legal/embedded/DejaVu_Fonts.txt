@@ -97,5 +97,3 @@ from Tavmjong Bah. For further information, contact: tavmjong @ free
 . fr.
 
 $Id: LICENSE 2133 2007-11-28 02:46:28Z lechimp $
-
-file:/doc/docbook/resources/other/fonts/dejavu-lgc-fonts.tar.bz2

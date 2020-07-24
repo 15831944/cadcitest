@@ -32,7 +32,6 @@
 #include <float.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/str.h"
 #include "bu/exit.h"
 
@@ -59,8 +58,6 @@ main(int ac, char *av[])
     double max = DBL_MIN;
     double mean, var;
     FILE *fp;
-
-    bu_setprogname(av[0]);
 
     if (ac == 1 && isatty(fileno(stdin)) && isatty(fileno(stdout)))
 	printusage();

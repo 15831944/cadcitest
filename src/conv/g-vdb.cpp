@@ -69,8 +69,6 @@ main(int argc, char **argv)
 
     char title[1024] = {0};
 
-    bu_setprogname(argv[0]);
-
     /* Check for command-line arguments.  Make sure we have at least a
      * geometry file and one geometry object on the command line.
      */

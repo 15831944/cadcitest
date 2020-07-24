@@ -42,7 +42,6 @@
 #include <string.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
 #include "bu/exit.h"
@@ -144,7 +143,6 @@ main(int ac, char **av)
 {
     int c, optlen;
 
-    bu_setprogname(av[0]);
     progname = *av;
     if (isatty(fileno(stdin))) usage();
 

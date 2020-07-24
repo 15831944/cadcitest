@@ -20,9 +20,8 @@ CameraManipulator::CameraManipulator()
 }
 
 
-CameraManipulator::CameraManipulator(const CameraManipulator& mm, const CopyOp& copyOp):
-     osg::Object(mm,copyOp),
-     osg::Callback(mm,copyOp),
+CameraManipulator::CameraManipulator(const CameraManipulator& mm, const CopyOp& copyOp)
+   : osg::Object(mm, copyOp),
      inherited(mm, copyOp),
      _intersectTraversalMask(mm._intersectTraversalMask),
      _autoComputeHomePosition(mm._autoComputeHomePosition),
@@ -96,15 +95,13 @@ void CameraManipulator::computeHomePosition(const osg::Camera *camera, bool useB
         OSG_INFO<<"    boundingSphere.center() = ("<<boundingSphere.center()<<")"<<std::endl;
         OSG_INFO<<"    boundingSphere.radius() = "<<boundingSphere.radius()<<std::endl;
 
-        double radius = osg::maximum(double(boundingSphere.radius()), 1e-6);
-
         // set dist to default
-        double dist = 3.5f * radius;
+        double dist = 3.5f * boundingSphere.radius();
 
         if (camera)
         {
 
-            // try to compute dist from frustum
+            // try to compute dist from frustrum
             double left,right,bottom,top,zNear,zFar;
             if (camera->getProjectionMatrixAsFrustum(left,right,bottom,top,zNear,zFar))
             {
@@ -112,7 +109,7 @@ void CameraManipulator::computeHomePosition(const osg::Camera *camera, bool useB
                 double horizontal2 = fabs(top - bottom) / zNear / 2.;
                 double dim = horizontal2 < vertical2 ? horizontal2 : vertical2;
                 double viewAngle = atan2(dim,1.);
-                dist = radius / sin(viewAngle);
+                dist = boundingSphere.radius() / sin(viewAngle);
             }
             else
             {

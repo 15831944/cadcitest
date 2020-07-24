@@ -99,14 +99,14 @@ LoadXPThemeProcs(HINSTANCE *phlib)
      * if we are running at least on Windows XP.
      */
     HINSTANCE handle;
-    *phlib = handle = LoadLibraryW(L"uxtheme.dll");
+    *phlib = handle = LoadLibrary(TEXT("uxtheme.dll"));
     if (handle != 0)
     {
 	/*
 	 * We have successfully loaded the library. Proceed in storing the
 	 * addresses of the functions we want to use.
 	 */
-	XPThemeProcs *procs = ckalloc(sizeof(XPThemeProcs));
+	XPThemeProcs *procs = (XPThemeProcs*)ckalloc(sizeof(XPThemeProcs));
 #define LOADPROC(name) \
 	(0 != (procs->name = (name ## Proc *)GetProcAddress(handle, #name) ))
 
@@ -124,7 +124,7 @@ LoadXPThemeProcs(HINSTANCE *phlib)
 	    return procs;
 	}
 #undef LOADPROC
-	ckfree(procs);
+	ckfree((char*)procs);
     }
     return 0;
 }
@@ -208,8 +208,6 @@ static Ttk_StateTable checkbox_statemap[] =
  */
 static Ttk_StateTable radiobutton_statemap[] =
 {
-{RBS_UNCHECKEDDISABLED,	TTK_STATE_ALTERNATE|TTK_STATE_DISABLED, 0},
-{RBS_UNCHECKEDNORMAL,	TTK_STATE_ALTERNATE, 0},
 {RBS_CHECKEDDISABLED,	TTK_STATE_SELECTED|TTK_STATE_DISABLED, 0},
 {RBS_CHECKEDPRESSED,	TTK_STATE_SELECTED|TTK_STATE_PRESSED, 0},
 {RBS_CHECKEDHOT,	TTK_STATE_SELECTED|TTK_STATE_ACTIVE, 0},
@@ -413,7 +411,7 @@ typedef struct
 static ElementData *
 NewElementData(XPThemeProcs *procs, ElementInfo *info)
 {
-    ElementData *elementData = ckalloc(sizeof(ElementData));
+    ElementData *elementData = (ElementData*)ckalloc(sizeof(ElementData));
 
     elementData->procs = procs;
     elementData->info = info;
@@ -431,10 +429,10 @@ static void DestroyElementData(void *clientData)
 {
     ElementData *elementData = clientData;
     if (elementData->info->flags & HEAP_ELEMENT) {
-	ckfree(elementData->info->statemap);
-	ckfree(elementData->info->className);
-	ckfree(elementData->info->elementName);
-	ckfree(elementData->info);
+	ckfree((char *)elementData->info->statemap);
+	ckfree((char *)elementData->info->className);
+	ckfree((char *)elementData->info->elementName);
+	ckfree((char *)elementData->info);
     }
     ckfree(clientData);
 }
@@ -455,7 +453,7 @@ InitElementData(ElementData *elementData, Tk_Window tkwin, Drawable d)
 {
     Window win = Tk_WindowId(tkwin);
 
-    if (win) {
+    if (win != TkNone) {
 	elementData->hwnd = Tk_GetHWND(win);
     } else  {
 	elementData->hwnd = elementData->procs->stubWindow;
@@ -829,21 +827,16 @@ static void TextElementSize(
     ElementData *elementData = clientData;
     RECT rc = {0, 0};
     HRESULT hr = S_OK;
-    const char *src;
-    int len;
-    Tcl_DString ds;
 
     if (!InitElementData(elementData, tkwin, 0))
 	return;
 
-    src = Tcl_GetStringFromObj(element->textObj, &len);
-    Tcl_WinUtfToTChar(src, len, &ds);
     hr = elementData->procs->GetThemeTextExtent(
 	    elementData->hTheme,
 	    elementData->hDC,
 	    elementData->info->partId,
 	    Ttk_StateTableLookup(elementData->info->statemap, 0),
-	    (WCHAR *) Tcl_DStringValue(&ds),
+	    Tcl_GetUnicode(element->textObj),
 	    -1,
 	    DT_LEFT,// | DT_BOTTOM | DT_NOPREFIX,
 	    NULL,
@@ -856,7 +849,6 @@ static void TextElementSize(
     if (*widthPtr < 80) *widthPtr = 80;
     if (*heightPtr < 20) *heightPtr = 20;
 
-    Tcl_DStringFree(&ds);
     FreeElementData(elementData);
 }
 
@@ -868,27 +860,20 @@ static void TextElementDraw(
     ElementData *elementData = clientData;
     RECT rc = BoxToRect(b);
     HRESULT hr = S_OK;
-    const char *src;
-    int len;
-    Tcl_DString ds;
 
     if (!InitElementData(elementData, tkwin, d))
 	return;
 
-    src = Tcl_GetStringFromObj(element->textObj, &len);
-    Tcl_WinUtfToTChar(src, len, &ds);
     hr = elementData->procs->DrawThemeText(
 	    elementData->hTheme,
 	    elementData->hDC,
 	    elementData->info->partId,
 	    Ttk_StateTableLookup(elementData->info->statemap, state),
-	    (WCHAR *) Tcl_DStringValue(&ds),
+	    Tcl_GetUnicode(element->textObj),
 	    -1,
 	    DT_LEFT,// | DT_BOTTOM | DT_NOPREFIX,
 	    (state & TTK_STATE_DISABLED) ? DTT_GRAYED : 0,
 	    &rc);
-
-    Tcl_DStringFree(&ds);
     FreeElementData(elementData);
 }
 
@@ -1062,7 +1047,7 @@ GetSysFlagFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *resultPtr)
 	"SM_CXBORDER", "SM_CYBORDER", "SM_CXVSCROLL", "SM_CYVSCROLL",
 	"SM_CXHSCROLL", "SM_CYHSCROLL", "SM_CXMENUCHECK", "SM_CYMENUCHECK",
 	"SM_CXMENUSIZE", "SM_CYMENUSIZE", "SM_CXSIZE", "SM_CYSIZE", "SM_CXSMSIZE",
-	"SM_CYSMSIZE", NULL
+	"SM_CYSMSIZE"
     };
     int flags[] = {
 	SM_CXBORDER, SM_CYBORDER, SM_CXVSCROLL, SM_CYVSCROLL,
@@ -1077,14 +1062,13 @@ GetSysFlagFromObj(Tcl_Interp *interp, Tcl_Obj *objPtr, int *resultPtr)
     if (Tcl_ListObjGetElements(interp, objPtr, &objc, &objv) != TCL_OK)
 	return TCL_ERROR;
     if (objc != 2) {
-	Tcl_SetObjResult(interp, Tcl_NewStringObj("wrong # args", -1));
-	Tcl_SetErrorCode(interp, "TCL", "WRONGARGS", NULL);
+	Tcl_SetResult(interp, "wrong # args", TCL_STATIC);
 	return TCL_ERROR;
     }
     for (i = 0; i < objc; ++i) {
 	int option;
-	if (Tcl_GetIndexFromObjStruct(interp, objv[i], names,
-		sizeof(char *), "system constant", 0, &option) != TCL_OK)
+	if (Tcl_GetIndexFromObj(interp, objv[i], names, "system constant", 0, &option)
+		!= TCL_OK)
 	    return TCL_ERROR;
 	*resultPtr |= (flags[option] << (8 * (1 - i)));
     }
@@ -1115,7 +1099,7 @@ Ttk_CreateVsapiElement(
     XPThemeData *themeData = clientData;
     ElementInfo *elementPtr = NULL;
     ClientData elementData;
-    LPCWSTR className;
+    Tcl_UniChar *className;
     int partId = 0;
     Ttk_StateTable *stateTable;
     Ttk_Padding pad = {0, 0, 0, 0};
@@ -1124,7 +1108,6 @@ Ttk_CreateVsapiElement(
     char *name;
     LPWSTR wname;
     Ttk_ElementSpec *elementSpec = &GenericElementSpec;
-    Tcl_DString classBuf;
 
     static const char *optionStrings[] =
 	{ "-padding","-width","-height","-margins", "-syssize",
@@ -1133,17 +1116,15 @@ Ttk_CreateVsapiElement(
 	   O_HALFHEIGHT, O_HALFWIDTH };
 
     if (objc < 2) {
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(
-	    "missing required arguments 'class' and/or 'partId'", -1));
-	Tcl_SetErrorCode(interp, "TTK", "VSAPI", "REQUIRED", NULL);
+	Tcl_AppendResult(interp,
+	    "missing required arguments 'class' and/or 'partId'", NULL);
 	return TCL_ERROR;
     }
 
     if (Tcl_GetIntFromObj(interp, objv[1], &partId) != TCL_OK) {
 	return TCL_ERROR;
     }
-    name = Tcl_GetStringFromObj(objv[0], &length);
-    className = (LPCWSTR) Tcl_WinUtfToTChar(name, length, &classBuf);
+    className = Tcl_GetUnicodeFromObj(objv[0], &length);
 
     /* flags or padding */
     if (objc > 3) {
@@ -1151,58 +1132,56 @@ Ttk_CreateVsapiElement(
 	for (i = 3; i < objc; i += 2) {
 	    int tmp = 0;
 	    if (i == objc -1) {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"Missing value for \"%s\".",
-			Tcl_GetString(objv[i])));
-		Tcl_SetErrorCode(interp, "TTK", "VSAPI", "MISSING", NULL);
-		goto retErr;
+		Tcl_AppendResult(interp, "Missing value for \"",
+			Tcl_GetString(objv[i]), "\".", NULL);
+		return TCL_ERROR;
 	    }
-	    if (Tcl_GetIndexFromObjStruct(interp, objv[i], optionStrings,
-		    sizeof(char *), "option", 0, &option) != TCL_OK)
-		goto retErr;
+	    if (Tcl_GetIndexFromObj(interp, objv[i], optionStrings,
+		    "option", 0, &option) != TCL_OK)
+		return TCL_ERROR;
 	    switch (option) {
 	    case O_PADDING:
 		if (Ttk_GetBorderFromObj(interp, objv[i+1], &pad) != TCL_OK) {
-		    goto retErr;
+		    return TCL_ERROR;
 		}
 		break;
 	    case O_MARGINS:
 		if (Ttk_GetBorderFromObj(interp, objv[i+1], &pad) != TCL_OK) {
-		    goto retErr;
+		    return TCL_ERROR;
 		}
 		flags |= PAD_MARGINS;
 		break;
 	    case O_WIDTH:
 		if (Tcl_GetIntFromObj(interp, objv[i+1], &tmp) != TCL_OK) {
-		    goto retErr;
+		    return TCL_ERROR;
 		}
 		pad.left = pad.right = tmp;
 		flags |= IGNORE_THEMESIZE;
 		break;
 	    case O_HEIGHT:
 		if (Tcl_GetIntFromObj(interp, objv[i+1], &tmp) != TCL_OK) {
-		    goto retErr;
+		    return TCL_ERROR;
 		}
 		pad.top = pad.bottom = tmp;
 		flags |= IGNORE_THEMESIZE;
 		break;
 	    case O_SYSSIZE:
 		if (GetSysFlagFromObj(interp, objv[i+1], &tmp) != TCL_OK) {
-		    goto retErr;
+		    return TCL_ERROR;
 		}
 		elementSpec = &GenericSizedElementSpec;
 		flags |= (tmp & 0xFFFF);
 		break;
 	    case O_HALFHEIGHT:
 		if (Tcl_GetBooleanFromObj(interp, objv[i+1], &tmp) != TCL_OK) {
-		    goto retErr;
+		    return TCL_ERROR;
 		}
 		if (tmp)
 		    flags |= HALF_HEIGHT;
 		break;
 	    case O_HALFWIDTH:
 		if (Tcl_GetBooleanFromObj(interp, objv[i+1], &tmp) != TCL_OK) {
-		    goto retErr;
+		    return TCL_ERROR;
 		}
 		if (tmp)
 		    flags |= HALF_WIDTH;
@@ -1216,9 +1195,10 @@ Ttk_CreateVsapiElement(
 	Tcl_Obj **specs;
 	int n,j,count, status = TCL_OK;
 	if (Tcl_ListObjGetElements(interp, objv[2], &count, &specs) != TCL_OK)
-	    goto retErr;
+	    return TCL_ERROR;
 	/* we over-allocate to ensure there is a terminating entry */
-	stateTable = ckalloc(sizeof(Ttk_StateTable) * (count + 1));
+	stateTable = (Ttk_StateTable *)
+		ckalloc(sizeof(Ttk_StateTable) * (count + 1));
 	memset(stateTable, 0, sizeof(Ttk_StateTable) * (count + 1));
 	for (n = 0, j = 0; status == TCL_OK && n < count; n += 2, ++j) {
 	    Ttk_StateSpec spec = {0,0};
@@ -1231,16 +1211,15 @@ Ttk_CreateVsapiElement(
 	    }
 	}
 	if (status != TCL_OK) {
-	    ckfree(stateTable);
-	    Tcl_DStringFree(&classBuf);
+	    ckfree((char *)stateTable);
 	    return status;
 	}
     } else {
-	stateTable = ckalloc(sizeof(Ttk_StateTable));
+	stateTable = (Ttk_StateTable *)ckalloc(sizeof(Ttk_StateTable));
 	memset(stateTable, 0, sizeof(Ttk_StateTable));
     }
 
-    elementPtr = ckalloc(sizeof(ElementInfo));
+    elementPtr = (ElementInfo *)ckalloc(sizeof(ElementInfo));
     elementPtr->elementSpec = elementSpec;
     elementPtr->partId = partId;
     elementPtr->statemap = stateTable;
@@ -1253,7 +1232,7 @@ Ttk_CreateVsapiElement(
     elementPtr->elementName = name;
 
     /* set the class name to an allocated copy */
-    wname = ckalloc(Tcl_DStringLength(&classBuf) + sizeof(WCHAR));
+    wname = (LPWSTR) ckalloc(sizeof(WCHAR) * (length + 1));
     wcscpy(wname, className);
     elementPtr->className = wname;
 
@@ -1263,12 +1242,7 @@ Ttk_CreateVsapiElement(
 
     Ttk_RegisterCleanup(interp, elementData, DestroyElementData);
     Tcl_SetObjResult(interp, Tcl_NewStringObj(elementName, -1));
-    Tcl_DStringFree(&classBuf);
     return TCL_OK;
-
-retErr:
-    Tcl_DStringFree(&classBuf);
-    return TCL_ERROR;
 }
 
 /*----------------------------------------------------------------------
@@ -1305,7 +1279,7 @@ MODULE_SCOPE int TtkXPTheme_Init(Tcl_Interp *interp, HWND hwnd)
      * Set theme data and cleanup proc
      */
 
-    themeData = ckalloc(sizeof(XPThemeData));
+    themeData = (XPThemeData *)ckalloc(sizeof(XPThemeData));
     themeData->procs = procs;
     themeData->hlibrary = hlibrary;
 

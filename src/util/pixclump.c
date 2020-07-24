@@ -32,7 +32,6 @@
 
 #include "vmath.h"
 
-#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
@@ -174,8 +173,6 @@ main (int argc, char **argv)
     int best_color;	/* index of best match to pixbuf */
     int best_diff;	/* error in best match */
     int this_diff;	/* pixel-color_tbl difference */
-
-    bu_setprogname(argv[0]);
 
     /*
      * Initialize the color table

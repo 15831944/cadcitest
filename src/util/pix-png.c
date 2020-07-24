@@ -44,7 +44,7 @@
 #include "bu/log.h"
 #include "bu/malloc.h"
 #include "bn.h"
-#include "dm.h"
+#include "fb.h"
 
 
 #define BYTESPERPIXEL 3

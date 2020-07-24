@@ -41,11 +41,10 @@
 #include "bio.h"
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/exit.h"
 #include "bn.h"
-#include "dm.h"
+#include "fb.h"
 
 
 static long int file_width = 512L;
@@ -115,8 +114,6 @@ main(int argc, char **argv)
     int c;
     long int cur_width = 0;
     long int cur_height = 0;
-
-    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void) fputs(usage, stderr);

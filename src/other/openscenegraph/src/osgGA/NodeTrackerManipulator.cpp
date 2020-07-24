@@ -31,7 +31,6 @@ NodeTrackerManipulator::NodeTrackerManipulator( int flags )
 
 NodeTrackerManipulator::NodeTrackerManipulator( const NodeTrackerManipulator& m, const CopyOp& copyOp )
     : osg::Object(m, copyOp),
-      osg::Callback(m, copyOp),
       inherited( m, copyOp ),
       _trackNodePath( m._trackNodePath ),
       _trackerMode( m._trackerMode )
@@ -276,7 +275,7 @@ bool NodeTrackerManipulator::performMovementLeftMouseButton( const double eventT
     } else
         rotateTrackball( _ga_t0->getXnormalized(), _ga_t0->getYnormalized(),
                          _ga_t1->getXnormalized(), _ga_t1->getYnormalized(),
-                         getThrowScale( eventTimeDelta ) );
+                         _thrown ? float( _delta_frame_time / eventTimeDelta ) : 1.f );
 
     return true;
 }

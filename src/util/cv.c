@@ -29,7 +29,6 @@
 #include "bio.h"
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bu/cv.h"
 #include "raytrace.h"
 
@@ -66,8 +65,6 @@ main(int argc, char **argv)
     const char *out_pat;
     size_t m;
     size_t n;
-
-    bu_setprogname(argv[0]);
 
     if (argc < 3 || argc > 5) {
 	fputs(usage, stderr);

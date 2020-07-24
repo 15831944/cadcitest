@@ -75,7 +75,7 @@ TtkGetImageSpecEx(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr,
     int i = 0, n = 0, objc;
     Tcl_Obj **objv;
 
-    imageSpec = ckalloc(sizeof(*imageSpec));
+    imageSpec = (Ttk_ImageSpec *)ckalloc(sizeof(*imageSpec));
     imageSpec->baseImage = 0;
     imageSpec->mapCount = 0;
     imageSpec->states = 0;
@@ -89,17 +89,16 @@ TtkGetImageSpecEx(Tcl_Interp *interp, Tk_Window tkwin, Tcl_Obj *objPtr,
 
     if ((objc % 2) != 1) {
 	if (interp) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj(
+	    Tcl_SetResult(interp,
 		"image specification must contain an odd number of elements",
-		-1));
-	    Tcl_SetErrorCode(interp, "TTK", "IMAGE", "SPEC", NULL);
+		TCL_STATIC);
 	}
 	goto error;
     }
 
     n = (objc - 1) / 2;
-    imageSpec->states = ckalloc(n * sizeof(Ttk_StateSpec));
-    imageSpec->images = ckalloc(n * sizeof(Tk_Image *));
+    imageSpec->states = (Ttk_StateSpec*)ckalloc(n * sizeof(Ttk_StateSpec));
+    imageSpec->images = (Tk_Image*)ckalloc(n * sizeof(Tk_Image *));
 
     /* Get base image:
     */
@@ -148,10 +147,10 @@ void TtkFreeImageSpec(Ttk_ImageSpec *imageSpec)
     }
 
     if (imageSpec->baseImage) { Tk_FreeImage(imageSpec->baseImage); }
-    if (imageSpec->states) { ckfree(imageSpec->states); }
-    if (imageSpec->images) { ckfree(imageSpec->images); }
+    if (imageSpec->states) { ckfree((ClientData)imageSpec->states); }
+    if (imageSpec->images) { ckfree((ClientData)imageSpec->images); }
 
-    ckfree(imageSpec);
+    ckfree((ClientData)imageSpec);
 }
 
 /* TtkSelectImage --
@@ -355,9 +354,7 @@ Ttk_CreateImageElement(
     int i;
 
     if (objc <= 0) {
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(
-		"Must supply a base image", -1));
-	Tcl_SetErrorCode(interp, "TTK", "IMAGE", "BASE", NULL);
+	Tcl_AppendResult(interp, "Must supply a base image", NULL);
 	return TCL_ERROR;
     }
 
@@ -366,7 +363,7 @@ Ttk_CreateImageElement(
 	return TCL_ERROR;
     }
 
-    imageData = ckalloc(sizeof(*imageData));
+    imageData = (ImageData*)ckalloc(sizeof(*imageData));
     imageData->imageSpec = imageSpec;
     imageData->minWidth = imageData->minHeight = -1;
     imageData->sticky = TTK_FILL_BOTH;
@@ -380,9 +377,9 @@ Ttk_CreateImageElement(
 	int option;
 
 	if (i == objc - 1) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "Value for %s missing", Tcl_GetString(objv[i])));
-	    Tcl_SetErrorCode(interp, "TTK", "IMAGE", "VALUE", NULL);
+	    Tcl_AppendResult(interp,
+		"Value for ", Tcl_GetString(objv[i]), " missing",
+		NULL);
 	    goto error;
 	}
 
@@ -394,17 +391,13 @@ Ttk_CreateImageElement(
 	}
 #endif
 
-	if (Tcl_GetIndexFromObjStruct(interp, objv[i], optionStrings,
-		sizeof(char *), "option", 0, &option) != TCL_OK) {
-	    goto error;
-	}
+	if (Tcl_GetIndexFromObj(interp, objv[i], optionStrings,
+		    "option", 0, &option) != TCL_OK) { goto error; }
 
 	switch (option) {
 	    case O_BORDER:
 		if (Ttk_GetBorderFromObj(interp, objv[i+1], &imageData->border)
-			!= TCL_OK) {
-		    goto error;
-		}
+			!= TCL_OK) { goto error; }
 		if (!padding_specified) {
 		    imageData->padding = imageData->border;
 		}

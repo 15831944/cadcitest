@@ -6,32 +6,26 @@
 # ----------------------------------------------------------------------
 #  AUTHOR: Mark L. Ulferts               EMAIL: mulferts@spd.dsccc.com
 #
-#  @(#) $Id: iwidgets.tcl.in 75258 2020-04-02 21:41:04Z starseeker $
+#  @(#) $Id: iwidgets.tcl.in 27775 2007-03-06 17:36:37Z erikgreenwald $
 # ----------------------------------------------------------------------
 #                Copyright (c) 1995  Mark L. Ulferts
 # ======================================================================
 # See the file "license.terms" for information on usage and
 # redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES.
 
-package require Tcl
-package require Tk
-package require Itcl
-package require Itk
+package require Tcl 8.0
+package require Tk 8.0
+package require Itcl @ITCL_VERSION@
+package require Itk @ITCL_VERSION@
 
 namespace eval ::iwidgets {
     namespace export *
 
     variable library [file dirname [info script]]
     variable version @IWIDGETS_VERSION@
-
-    lappend auto_path $iwidgets::library
-    variable subdir
-    foreach subdir {generic scripts} {
-	if {[file isdirectory [file join $iwidgets::library $subdir]]} {
-	    lappend auto_path [file join $iwidgets::library $subdir]
-	}
-    }
-    unset subdir
 }
 
+lappend auto_path $iwidgets::library \
+		  [file join $iwidgets::library generic] \
+		  [file join $iwidgets::library scripts]
 package provide Iwidgets $iwidgets::version

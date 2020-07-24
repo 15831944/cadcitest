@@ -63,7 +63,8 @@ float CollectOccludersVisitor::getDistanceFromEyePoint(const Vec3& pos, bool wit
     const Matrix& matrix = *_modelviewStack.back();
     float dist = -(pos[0]*matrix(0,2)+pos[1]*matrix(1,2)+pos[2]*matrix(2,2)+matrix(3,2));
 
-    return withLODScale ? dist*getLODScale() : dist;
+    if (withLODScale) return dist*getLODScale();
+    else return dist*getLODScale();
 }
 
 void CollectOccludersVisitor::apply(osg::Node& node)
@@ -156,7 +157,7 @@ void CollectOccludersVisitor::apply(osg::OccluderNode& node)
     if (node.getOccluder())
     {
         // computeOccluder will check if the occluder is the view frustum,
-        // if it isn't then the it will return false, when in it will
+        // if it ins't then the it will return false, when in it will
         // clip the occluder's polygons in clip space, then create occluder
         // planes, all with their normals facing inward towards the volume,
         // and then transform them back into projection space.

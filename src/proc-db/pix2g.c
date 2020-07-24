@@ -30,7 +30,6 @@
 #include "bio.h"
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bn.h"
 #include "raytrace.h"
 #include "rt/geom.h"
@@ -172,8 +171,6 @@ main(int ac, char *av[])
     char databaseFileName[MAXSIZE]="";
     char scratch[MAXSIZE + 15]="";
     point_t origin;
-
-    bu_setprogname(av[0]);
 
     progname = *av;
 

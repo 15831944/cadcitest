@@ -12,6 +12,7 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+#include <stdio.h>
 #include "tkInt.h"
 #include "tkCanvas.h"
 
@@ -19,6 +20,9 @@
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #undef MAX
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#ifndef PI
+#   define PI 3.14159265358979323846
+#endif /* PI */
 
 /*
  *--------------------------------------------------------------
@@ -751,7 +755,7 @@ TkOvalToPoint(
 
 int
 TkOvalToArea(
-    register double *ovalPtr,	/* Points to coordinates defining the
+    register double *ovalPtr,	/* Points to coordinates definining the
 				 * bounding rectangle for the oval: x1, y1,
 				 * x2, y2. X1 must be less than x2 and y1 less
 				 * than y2. */
@@ -1375,7 +1379,7 @@ TkMakeBezierPostscript(
     int closed, i;
     int numCoords = numPoints*2;
     double control[8];
-    Tcl_Obj *psObj;
+    char buffer[200];
 
     /*
      * If the curve is a closed one then generate a special spline that spans
@@ -1394,9 +1398,7 @@ TkMakeBezierPostscript(
 	control[5] = 0.833*pointPtr[1] + 0.167*pointPtr[3];
 	control[6] = 0.5*pointPtr[0] + 0.5*pointPtr[2];
 	control[7] = 0.5*pointPtr[1] + 0.5*pointPtr[3];
-	psObj = Tcl_ObjPrintf(
-		"%.15g %.15g moveto\n"
-		"%.15g %.15g %.15g %.15g %.15g %.15g curveto\n",
+	sprintf(buffer, "%.15g %.15g moveto\n%.15g %.15g %.15g %.15g %.15g %.15g curveto\n",
 		control[0], Tk_CanvasPsY(canvas, control[1]),
 		control[2], Tk_CanvasPsY(canvas, control[3]),
 		control[4], Tk_CanvasPsY(canvas, control[5]),
@@ -1405,9 +1407,10 @@ TkMakeBezierPostscript(
 	closed = 0;
 	control[6] = pointPtr[0];
 	control[7] = pointPtr[1];
-	psObj = Tcl_ObjPrintf("%.15g %.15g moveto\n",
+	sprintf(buffer, "%.15g %.15g moveto\n",
 		control[6], Tk_CanvasPsY(canvas, control[7]));
     }
+    Tcl_AppendResult(interp, buffer, NULL);
 
     /*
      * Cycle through all the remaining points in the curve, generating a curve
@@ -1433,15 +1436,12 @@ TkMakeBezierPostscript(
 	control[4] = 0.333*control[6] + 0.667*pointPtr[0];
 	control[5] = 0.333*control[7] + 0.667*pointPtr[1];
 
-	Tcl_AppendPrintfToObj(psObj,
-		"%.15g %.15g %.15g %.15g %.15g %.15g curveto\n",
+	sprintf(buffer, "%.15g %.15g %.15g %.15g %.15g %.15g curveto\n",
 		control[2], Tk_CanvasPsY(canvas, control[3]),
 		control[4], Tk_CanvasPsY(canvas, control[5]),
 		control[6], Tk_CanvasPsY(canvas, control[7]));
+	Tcl_AppendResult(interp, buffer, NULL);
     }
-
-    Tcl_AppendObjToObj(Tcl_GetObjResult(interp), psObj);
-    Tcl_DecrRefCount(psObj);
 }
 
 /*
@@ -1476,14 +1476,15 @@ TkMakeRawCurvePostscript(
 {
     int i;
     double *segPtr;
-    Tcl_Obj *psObj;
+    char buffer[200];
 
     /*
      * Put the first point into the path.
      */
 
-    psObj = Tcl_ObjPrintf("%.15g %.15g moveto\n",
+    sprintf(buffer, "%.15g %.15g moveto\n",
 	    pointPtr[0], Tk_CanvasPsY(canvas, pointPtr[1]));
+    Tcl_AppendResult(interp, buffer, NULL);
 
     /*
      * Loop through all the remaining points in the curve, generating a
@@ -1498,19 +1499,19 @@ TkMakeRawCurvePostscript(
 	     * neighbouring knots, so this segment is just a straight line.
 	     */
 
-	    Tcl_AppendPrintfToObj(psObj, "%.15g %.15g lineto\n",
+	    sprintf(buffer, "%.15g %.15g lineto\n",
 		    segPtr[6], Tk_CanvasPsY(canvas, segPtr[7]));
 	} else {
 	    /*
 	     * This is a generic Bezier curve segment.
 	     */
 
-	    Tcl_AppendPrintfToObj(psObj,
-		    "%.15g %.15g %.15g %.15g %.15g %.15g curveto\n",
+	    sprintf(buffer, "%.15g %.15g %.15g %.15g %.15g %.15g curveto\n",
 		    segPtr[2], Tk_CanvasPsY(canvas, segPtr[3]),
 		    segPtr[4], Tk_CanvasPsY(canvas, segPtr[5]),
 		    segPtr[6], Tk_CanvasPsY(canvas, segPtr[7]));
 	}
+	Tcl_AppendResult(interp, buffer, NULL);
     }
 
     /*
@@ -1535,23 +1536,20 @@ TkMakeRawCurvePostscript(
 	     * Straight line.
 	     */
 
-	    Tcl_AppendPrintfToObj(psObj, "%.15g %.15g lineto\n",
+	    sprintf(buffer, "%.15g %.15g lineto\n",
 		    control[6], Tk_CanvasPsY(canvas, control[7]));
 	} else {
 	    /*
 	     * Bezier curve segment.
 	     */
 
-	    Tcl_AppendPrintfToObj(psObj,
-		    "%.15g %.15g %.15g %.15g %.15g %.15g curveto\n",
+	    sprintf(buffer, "%.15g %.15g %.15g %.15g %.15g %.15g curveto\n",
 		    control[2], Tk_CanvasPsY(canvas, control[3]),
 		    control[4], Tk_CanvasPsY(canvas, control[5]),
 		    control[6], Tk_CanvasPsY(canvas, control[7]));
 	}
+	Tcl_AppendResult(interp, buffer, NULL);
     }
-
-    Tcl_AppendObjToObj(Tcl_GetObjResult(interp), psObj);
-    Tcl_DecrRefCount(psObj);
 }
 
 /*

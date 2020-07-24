@@ -29,7 +29,7 @@
 
 #include "vmath.h"
 #include "ged.h"
-#include "dm.h"
+#include "fb.h"
 #include "./mged.h"
 #include "./mged_dm.h"
 

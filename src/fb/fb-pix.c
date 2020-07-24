@@ -35,7 +35,7 @@
 #include "bu/getopt.h"
 #include "bu/exit.h"
 #include "vmath.h"
-#include "dm.h"
+#include "fb.h"
 
 #include "pkg.h"
 
@@ -111,7 +111,7 @@ get_args(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
-    struct fb *fbp;
+    fb *fbp;
     int y;
 
     unsigned char *scanline;	/* 1 scanline pixel buffer */
@@ -124,8 +124,6 @@ Usage: fb-pix [-i -c] [-F framebuffer]\n\
 	[-s squaresize] [-w width] [-n height] [file.pix]\n";
 
     screen_height = screen_width = 512;		/* Defaults */
-
-    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

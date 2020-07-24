@@ -35,7 +35,6 @@
 #include "bio.h"
 
 /* interface headers */
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "vmath.h"
 #include "nmg.h"
@@ -387,7 +386,6 @@ main(int argc, char *argv[])
     int c;
     double percent;
 
-    bu_setprogname(argv[0]);
     bu_setlinebuf(stderr);
 
     tree_state = rt_initial_tree_state;	/* struct copy */

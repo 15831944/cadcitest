@@ -6,7 +6,7 @@
 # ----------------------------------------------------------------------
 #   AUTHOR:  Mark L. Ulferts          E-mail: mulferts@austin.dsccc.com
 #
-#   @(#) $Id: datefield.itk 75258 2020-04-02 21:41:04Z starseeker $
+#   @(#) $Id: datefield.itk 43163 2011-02-09 15:07:48Z brlcad $
 # ----------------------------------------------------------------------
 #            Copyright (c) 1997 DSC Technologies Corporation
 # ======================================================================
@@ -362,17 +362,11 @@ itcl::body iwidgets::Datefield::show {{date "now"}} {
 # 02/29/1997 is invalid.
 # ------------------------------------------------------------------
 itcl::body iwidgets::Datefield::isvalid {} {
-    set date [$itk_component(date) get]
-    if {[package vsatisfies [package provide Tcl] 8.5]} {
-        if {$itk_option(-int)} {
-            set format {%Y-%m-%d}
-        } else {
-            set format {%m/%d/%Y}
-        }
-	return [string equal $date \
-            [clock format [clock scan $date -format $format] -format $format]]
+    if {[catch {clock scan [$itk_component(date) get]}] != 0} {
+        return 0
+    } else {
+        return 1
     }
-    return [expr {![catch {clock scan $date}]}]
 }
 
 # ------------------------------------------------------------------
@@ -1011,13 +1005,16 @@ itcl::body iwidgets::Datefield::_backward {} {
 # PROTECTED METHOD: _lastDay month year
 #
 # Internal method which determines the last day of the month for
-# the given month and year.
+# the given month and year.  We start at 28 and go forward till
+# we fail.  Crude but effective.
 # ------------------------------------------------------------------
 itcl::body iwidgets::Datefield::_lastDay {month year} {
-    scan $month %d month
-    scan $year %d year
-    incr year [expr {$month/12}]
-    incr month
-    return [clock format \
-	    [clock scan "-1 day" -base [clock scan $month/1/$year]] -format %d]
+    set lastone 28
+
+    for {set lastone 28} {$lastone < 32} {incr lastone} {
+        set nextone [expr $lastone + 1]
+        if {[catch {clock scan $month/$nextone/$year}] != 0} {
+            return $lastone
+        }
+    }
 }

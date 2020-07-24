@@ -59,18 +59,6 @@ public:
     virtual void writeULong( unsigned long l )
     { _sstream << l; addToCurrentNode( _sstream.str() ); _sstream.str(""); }
 
-    virtual void writeUInt64(uint64_t ull)
-    {_sstream << ull; addToCurrentNode( _sstream.str() ); _sstream.str("");}
-
-    virtual void writeInt64(int64_t ll)
-    {_sstream << ll; addToCurrentNode( _sstream.str() ); _sstream.str("");}
-
-    virtual void writeInt( unsigned long long ull )
-    { _sstream << ull; addToCurrentNode( _sstream.str() ); _sstream.str(""); }
-
-    virtual void writeUInt( long long ll )
-    { _sstream << ll; addToCurrentNode( _sstream.str() ); _sstream.str(""); }
-
     virtual void writeFloat( float f )
     { _sstream << f; addToCurrentNode( _sstream.str() ); _sstream.str(""); }
 
@@ -494,8 +482,7 @@ public:
 
     virtual bool matchString( const std::string& str )
     {
-        if (!prepareStream()) return false;
-
+        prepareStream();
         std::string strInStream = osgDB::trimEnclosingSpaces(_sstream.str());
         if ( strInStream==str )
         {

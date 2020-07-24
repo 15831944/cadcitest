@@ -83,7 +83,7 @@ static ThreadSpecificData *FileInit(void);
 static int		FileInputProc(ClientData instanceData, char *buf,
 			    int toRead, int *errorCode);
 static int		FileOutputProc(ClientData instanceData,
-			    const char *buf, int toWrite, int *errorCode);
+			    CONST char *buf, int toWrite, int *errorCode);
 static int		FileSeekProc(ClientData instanceData, long offset,
 			    int mode, int *errorCode);
 static Tcl_WideInt	FileWideSeekProc(ClientData instanceData,
@@ -95,12 +95,12 @@ static void		FileThreadActionProc(ClientData instanceData,
 static int		FileTruncateProc(ClientData instanceData,
 			    Tcl_WideInt length);
 static DWORD		FileGetType(HANDLE handle);
-static int		NativeIsComPort(const WCHAR *nativeName);
+static int		NativeIsComPort(CONST TCHAR *nativeName);
 /*
  * This structure describes the channel type structure for file based IO.
  */
 
-static const Tcl_ChannelType fileChannelType = {
+static Tcl_ChannelType fileChannelType = {
     "file",			/* Type name. */
     TCL_CHANNEL_VERSION_5,	/* v5 channel */
     FileCloseProc,		/* Close proc. */
@@ -117,7 +117,7 @@ static const Tcl_ChannelType fileChannelType = {
     NULL,			/* handler proc. */
     FileWideSeekProc,		/* Wide seek proc. */
     FileThreadActionProc,	/* Thread action proc. */
-    FileTruncateProc		/* Truncate proc. */
+    FileTruncateProc,		/* Truncate proc. */
 };
 
 /*
@@ -257,7 +257,7 @@ FileCheckProc(
 	    infoPtr = infoPtr->nextPtr) {
 	if (infoPtr->watchMask && !(infoPtr->flags & FILE_PENDING)) {
 	    infoPtr->flags |= FILE_PENDING;
-	    evPtr = ckalloc(sizeof(FileEvent));
+	    evPtr = (FileEvent *) ckalloc(sizeof(FileEvent));
 	    evPtr->header.proc = FileEventProc;
 	    evPtr->infoPtr = infoPtr;
 	    Tcl_QueueEvent((Tcl_Event *) evPtr, TCL_QUEUE_TAIL);
@@ -340,7 +340,7 @@ FileBlockProc(
     int mode)			/* TCL_MODE_BLOCKING or
 				 * TCL_MODE_NONBLOCKING. */
 {
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr = (FileInfo *) instanceData;
 
     /*
      * Files on Windows can not be switched between blocking and nonblocking,
@@ -378,7 +378,7 @@ FileCloseProc(
     ClientData instanceData,	/* Pointer to FileInfo structure. */
     Tcl_Interp *interp)		/* Not used. */
 {
-    FileInfo *fileInfoPtr = instanceData;
+    FileInfo *fileInfoPtr = (FileInfo *) instanceData;
     FileInfo *infoPtr;
     ThreadSpecificData *tsdPtr;
     int errorCode = 0;
@@ -424,7 +424,7 @@ FileCloseProc(
 	    break;
 	}
     }
-    ckfree(fileInfoPtr);
+    ckfree((char *)fileInfoPtr);
     return errorCode;
 }
 
@@ -453,7 +453,7 @@ FileSeekProc(
     int mode,			/* Relative to where should we seek? */
     int *errorCodePtr)		/* To store error code. */
 {
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr = (FileInfo *) instanceData;
     LONG newPos, newPosHigh, oldPos, oldPosHigh;
     DWORD moveMethod;
 
@@ -531,7 +531,7 @@ FileWideSeekProc(
     int mode,			/* Relative to where should we seek? */
     int *errorCodePtr)		/* To store error code. */
 {
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr = (FileInfo *) instanceData;
     DWORD moveMethod;
     LONG newPos, newPosHigh;
 
@@ -580,7 +580,7 @@ FileTruncateProc(
     ClientData instanceData,	/* File state. */
     Tcl_WideInt length)		/* Length to truncate at. */
 {
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr = (FileInfo *) instanceData;
     LONG newPos, newPosHigh, oldPos, oldPosHigh;
 
     /*
@@ -656,16 +656,13 @@ FileInputProc(
     int bufSize,		/* Num bytes available in buffer. */
     int *errorCode)		/* Where to store error code. */
 {
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr;
     DWORD bytesRead;
 
     *errorCode = 0;
+    infoPtr = (FileInfo *) instanceData;
 
     /*
-     * TODO: This comment appears to be out of date.  We *do* have a
-     * console driver, over in tclWinConsole.c.  After some Windows
-     * developer confirms, this comment should be revised.
-     *
      * Note that we will block on reads from a console buffer until a full
      * line has been entered. The only way I know of to get around this is to
      * write a console driver. We should probably do this at some point, but
@@ -707,11 +704,11 @@ FileInputProc(
 static int
 FileOutputProc(
     ClientData instanceData,	/* File state. */
-    const char *buf,		/* The data buffer. */
+    CONST char *buf,		/* The data buffer. */
     int toWrite,		/* How many bytes to write? */
     int *errorCode)		/* Where to store error code. */
 {
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr = (FileInfo *) instanceData;
     DWORD bytesWritten;
 
     *errorCode = 0;
@@ -758,7 +755,7 @@ FileWatchProc(
 				 * of TCL_READABLE, TCL_WRITABLE and
 				 * TCL_EXCEPTION. */
 {
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr = (FileInfo *) instanceData;
     Tcl_Time blockTime = { 0, 0 };
 
     /*
@@ -796,7 +793,7 @@ FileGetHandleProc(
     int direction,		/* TCL_READABLE or TCL_WRITABLE */
     ClientData *handlePtr)	/* Where to store the handle.  */
 {
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr = (FileInfo *) instanceData;
 
     if (direction & infoPtr->validMask) {
 	*handlePtr = (ClientData) infoPtr->handle;
@@ -836,12 +833,12 @@ TclpOpenFileChannel(
     Tcl_Channel channel = 0;
     int channelPermissions = 0;
     DWORD accessMode = 0, createMode, shareMode, flags;
-    const WCHAR *nativeName;
+    CONST TCHAR *nativeName;
     HANDLE handle;
     char channelName[16 + TCL_INTEGER_SPACE];
     TclFile readFile = NULL, writeFile = NULL;
 
-    nativeName = Tcl_FSGetNativePath(pathPtr);
+    nativeName = (TCHAR*) Tcl_FSGetNativePath(pathPtr);
     if (nativeName == NULL) {
 	if (interp != (Tcl_Interp *) NULL) {
 	    Tcl_AppendResult(interp, "couldn't open \"",
@@ -932,7 +929,7 @@ TclpOpenFileChannel(
 	    flags = FILE_ATTRIBUTE_READONLY;
 	}
     } else {
-	flags = GetFileAttributesW(nativeName);
+	flags = (*tclWinProcs->getFileAttributesProc)(nativeName);
 	if (flags == 0xFFFFFFFF) {
 	    flags = 0;
 	}
@@ -948,8 +945,8 @@ TclpOpenFileChannel(
      * Now we get to create the file.
      */
 
-    handle = CreateFileW(nativeName, accessMode, shareMode,
-	    NULL, createMode, flags, (HANDLE) NULL);
+    handle = (*tclWinProcs->createFileProc)(nativeName, accessMode,
+	    shareMode, NULL, createMode, flags, (HANDLE) NULL);
 
     if (handle == INVALID_HANDLE_VALUE) {
 	DWORD err = GetLastError();
@@ -959,9 +956,8 @@ TclpOpenFileChannel(
 	}
 	TclWinConvertError(err);
 	if (interp != (Tcl_Interp *) NULL) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "couldn't open \"%s\": %s",
-		    TclGetString(pathPtr), Tcl_PosixError(interp)));
+	    Tcl_AppendResult(interp, "couldn't open \"", TclGetString(pathPtr),
+		    "\": ", Tcl_PosixError(interp), NULL);
 	}
 	return NULL;
     }
@@ -971,7 +967,7 @@ TclpOpenFileChannel(
     switch (FileGetType(handle)) {
     case FILE_TYPE_SERIAL:
 	/*
-	 * Natively named serial ports "com1-9", "\\\\.\\comXX" are
+	 * Natively named serial ports "com1-9", "\\\\.\\comXX" are 
 	 * already done with the code above.
 	 * Here we handle all other serial port names.
 	 *
@@ -983,9 +979,9 @@ TclpOpenFileChannel(
 	if (handle == INVALID_HANDLE_VALUE) {
 	    TclWinConvertError(GetLastError());
 	    if (interp != (Tcl_Interp *) NULL) {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"couldn't reopen serial \"%s\": %s",
-			TclGetString(pathPtr), Tcl_PosixError(interp)));
+		Tcl_AppendResult(interp, "couldn't reopen serial \"",
+			TclGetString(pathPtr), "\": ",
+			Tcl_PosixError(interp), NULL);
 	    }
 	    return NULL;
 	}
@@ -1019,11 +1015,8 @@ TclpOpenFileChannel(
 	 */
 
 	channel = NULL;
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"couldn't open \"%s\": bad file type",
-		TclGetString(pathPtr)));
-	Tcl_SetErrorCode(interp, "TCL", "VALUE", "CHANNEL", "BAD_TYPE",
-		NULL);
+	Tcl_AppendResult(interp, "couldn't open \"", TclGetString(pathPtr),
+		"\": bad file type", NULL);
 	break;
     }
 
@@ -1249,8 +1242,8 @@ TclpGetDefaultStdChannel(
     Tcl_Channel channel;
     HANDLE handle;
     int mode = -1;
-    const char *bufMode = NULL;
-    DWORD handleId = (DWORD) -1;
+    char *bufMode = NULL;
+    DWORD handleId = (DWORD)-1;
 				/* Standard handle to retrieve. */
 
     switch (type) {
@@ -1349,7 +1342,7 @@ TclWinOpenFileChannel(
 	}
     }
 
-    infoPtr = ckalloc(sizeof(FileInfo));
+    infoPtr = (FileInfo *) ckalloc((unsigned) sizeof(FileInfo));
 
     /*
      * TIP #218. Removed the code inserting the new structure into the global
@@ -1363,10 +1356,10 @@ TclWinOpenFileChannel(
     infoPtr->flags = appendMode;
     infoPtr->handle = handle;
     infoPtr->dirty = 0;
-    sprintf(channelName, "file%" TCL_I_MODIFIER "x", (size_t) infoPtr);
+    sprintf(channelName, "file%" TCL_I_MODIFIER "x", (size_t)infoPtr);
 
     infoPtr->channel = Tcl_CreateChannel(&fileChannelType, channelName,
-	    infoPtr, permissions);
+	    (ClientData) infoPtr, permissions);
 
     /*
      * Files have default translation of AUTO and ^Z eof char, which means
@@ -1440,7 +1433,7 @@ FileThreadActionProc(
     int action)
 {
     ThreadSpecificData *tsdPtr = TCL_TSD_INIT(&dataKey);
-    FileInfo *infoPtr = instanceData;
+    FileInfo *infoPtr = (FileInfo *) instanceData;
 
     if (action == TCL_CHANNEL_THREAD_INSERT) {
 	infoPtr->nextPtr = tsdPtr->firstFilePtr;
@@ -1525,11 +1518,12 @@ FileGetType(
  * NativeIsComPort --
  *
  *	Determines if a path refers to a Windows serial port.
- *	A simple and efficient solution is to use a "name hint" to detect
- *      COM ports by their filename instead of resorting to a syscall
+ *	A simple and efficient solution is to use a "name hint" to detect 
+ *      COM ports by their filename instead of resorting to a syscall 
  *	to detect serialness after the fact.
  *	The following patterns cover common serial port names:
- *	    COM[1-9]
+ *	    COM[1-9]:?
+ *	    //./COM[0-9]+
  *	    \\.\COM[0-9]+
  *
  * Results:
@@ -1540,41 +1534,96 @@ FileGetType(
 
 static int
 NativeIsComPort(
-    const WCHAR *nativePath)	/* Path of file to access, native encoding. */
+    const TCHAR *nativePath)	/* Path of file to access, native encoding. */
 {
-    const WCHAR *p = (const WCHAR *) nativePath;
-    int i, len = wcslen(p);
-
     /*
-     * 1. Look for com[1-9]:?
+     * Use wide-char or plain character case-insensitive comparison
      */
+    if (tclWinProcs->useWide) {
+	const WCHAR *p = (const WCHAR *) nativePath;
+	int i, len = wcslen(p);
 
-    if ( (len == 4) && (_wcsnicmp(p, L"com", 3) == 0) ) {
 	/*
-	* The 4th character must be a digit 1..9
-	*/
+	 * 1. Look for com[1-9]:?
+	 */
 
-	if ( (p[3] < L'1') || (p[3] > L'9') ) {
-	    return 0;
-	}
-	return 1;
-    }
+	if ( (len >= 4) && (len <= 5) 
+		&& (_wcsnicmp(p, L"com", 3) == 0) ) {
+	    /*
+	    * The 4th character must be a digit 1..9 optionally followed by a ":"
+	    */
 
-    /*
-     * 2. Look for \\.\com[0-9]+
-     */
-
-    if ((len >= 8) && (_wcsnicmp(p, L"\\\\.\\com", 7) == 0)) {
-	/*
-	* Charaters 8..end must be a digits 0..9
-	*/
-
-	for ( i=7; i<len; i++ ) {
-	    if ( (p[i] < '0') || (p[i] > '9') ) {
+	    if ( (p[3] < L'1') || (p[3] > L'9') ) {
 		return 0;
 	    }
+	    if ( (len == 5) && (p[4] != L':') ) {
+		return 0;
+	    }
+	    return 1;
 	}
-	return 1;
+
+	/*
+	 * 2. Look for //./com[0-9]+ or \\.\com[0-9]+
+	 */
+
+	if ( (len >= 8) && ( 
+		   (_wcsnicmp(p, L"//./com", 7) == 0)
+		|| (_wcsnicmp(p, L"\\\\.\\com", 7) == 0) ) )
+	{
+	    /*
+	    * Charaters 8..end must be a digits 0..9
+	    */
+
+	    for ( i=7; i<len; i++ ) {
+		if ( (p[i] < '0') || (p[i] > '9') ) {
+		    return 0;
+		}
+	    }
+	    return 1;
+	}
+
+    } else {
+	const char *p = (const char *) nativePath;
+	int   i, len = strlen(p);
+
+	/*
+	 * 1. Look for com[1-9]:?
+	 */
+
+	if ( (len >= 4) && (len <= 5) 
+		&& (strnicmp(p, "com", 3) == 0) ) {
+	    /*
+	    * The 4th character must be a digit 1..9 optionally followed by a ":"
+	    */
+
+	    if ( (p[3] < '1') || (p[3] > '9') ) {
+		return 0;
+	    }
+	    if ( (len == 5) && (p[4] != ':') ) {
+		return 0;
+	    }
+	    return 1;
+	}
+
+	/*
+	 * 2. Look for //./com[0-9]+ or \\.\com[0-9]+
+	 */
+
+	if ( (len >= 8) && ( 
+		   (strnicmp(p, "//./com", 7) == 0)
+		|| (strnicmp(p, "\\\\.\\com", 7) == 0) ) )
+	{
+	    /*
+	    * Charaters 8..end must be a digits 0..9
+	    */
+
+	    for ( i=7; i<len; i++ ) {
+		if ( (p[i] < '0') || (p[i] > '9') ) {
+		    return 0;
+		}
+	    }
+	    return 1;
+	}
     }
     return 0;
 }

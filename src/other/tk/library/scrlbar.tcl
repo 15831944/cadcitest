@@ -91,28 +91,28 @@ bind Scrollbar <Control-2> {
     tk::ScrollTopBottom %W %x %y
 }
 
-bind Scrollbar <<PrevLine>> {
+bind Scrollbar <Up> {
     tk::ScrollByUnits %W v -1
 }
-bind Scrollbar <<NextLine>> {
+bind Scrollbar <Down> {
     tk::ScrollByUnits %W v 1
 }
-bind Scrollbar <<PrevPara>> {
+bind Scrollbar <Control-Up> {
     tk::ScrollByPages %W v -1
 }
-bind Scrollbar <<NextPara>> {
+bind Scrollbar <Control-Down> {
     tk::ScrollByPages %W v 1
 }
-bind Scrollbar <<PrevChar>> {
+bind Scrollbar <Left> {
     tk::ScrollByUnits %W h -1
 }
-bind Scrollbar <<NextChar>> {
+bind Scrollbar <Right> {
     tk::ScrollByUnits %W h 1
 }
-bind Scrollbar <<PrevWord>> {
+bind Scrollbar <Control-Left> {
     tk::ScrollByPages %W h -1
 }
-bind Scrollbar <<NextWord>> {
+bind Scrollbar <Control-Right> {
     tk::ScrollByPages %W h 1
 }
 bind Scrollbar <Prior> {
@@ -121,51 +121,34 @@ bind Scrollbar <Prior> {
 bind Scrollbar <Next> {
     tk::ScrollByPages %W hv 1
 }
-bind Scrollbar <<LineStart>> {
+bind Scrollbar <Home> {
     tk::ScrollToPos %W 0
 }
-bind Scrollbar <<LineEnd>> {
+bind Scrollbar <End> {
     tk::ScrollToPos %W 1
 }
 }
-
 if {[tk windowingsystem] eq "aqua"} {
     bind Scrollbar <MouseWheel> {
-	tk::ScrollByUnits %W v [expr {-(%D)}]
+        tk::ScrollByUnits %W v [expr {- (%D)}]
     }
     bind Scrollbar <Option-MouseWheel> {
-	tk::ScrollByUnits %W v [expr {-10 * (%D)}]
+        tk::ScrollByUnits %W v [expr {-10 * (%D)}]
     }
     bind Scrollbar <Shift-MouseWheel> {
-	tk::ScrollByUnits %W h [expr {-(%D)}]
+        tk::ScrollByUnits %W h [expr {- (%D)}]
     }
     bind Scrollbar <Shift-Option-MouseWheel> {
-	tk::ScrollByUnits %W h [expr {-10 * (%D)}]
+        tk::ScrollByUnits %W h [expr {-10 * (%D)}]
     }
 } else {
     bind Scrollbar <MouseWheel> {
-	if {%D >= 0} {
-	    tk::ScrollByUnits %W v [expr {-%D/30}]
-	} else {
-	    tk::ScrollByUnits %W v [expr {(29-%D)/30}]
-	}
+	tk::ScrollByUnits %W v [expr {- (%D /120 ) * 4}]
     }
     bind Scrollbar <Shift-MouseWheel> {
-	if {%D >= 0} {
-	    tk::ScrollByUnits %W h [expr {-%D/30}]
-	} else {
-	    tk::ScrollByUnits %W h [expr {(29-%D)/30}]
-	}
+	tk::ScrollByUnits %W h [expr {- (%D /120 ) * 4}]
     }
 }
-
-if {[tk windowingsystem] eq "x11"} {
-    bind Scrollbar <4> {tk::ScrollByUnits %W v -5}
-    bind Scrollbar <5> {tk::ScrollByUnits %W v 5}
-    bind Scrollbar <Shift-4> {tk::ScrollByUnits %W h -5}
-    bind Scrollbar <Shift-5> {tk::ScrollByUnits %W h 5}
-}
-
 # tk::ScrollButtonDown --
 # This procedure is invoked when a button is pressed in a scrollbar.
 # It changes the way the scrollbar is displayed and takes actions
@@ -432,9 +415,6 @@ proc ::tk::ScrollTopBottom {w x y} {
 
 proc ::tk::ScrollButton2Down {w x y} {
     variable ::tk::Priv
-    if {![winfo exists $w]} {
-        return
-    }
     set element [$w identify $x $y]
     if {[string match {arrow[12]} $element]} {
 	ScrollButtonDown $w $x $y
@@ -448,9 +428,7 @@ proc ::tk::ScrollButton2Down {w x y} {
     # slider drag.
 
     update idletasks
-    if {[winfo exists $w]} {
-        $w configure -activerelief sunken
-        $w activate slider
-        ScrollStartDrag $w $x $y
-    }
+    $w configure -activerelief sunken
+    $w activate slider
+    ScrollStartDrag $w $x $y
 }

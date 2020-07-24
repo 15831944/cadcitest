@@ -31,7 +31,6 @@
 #include <math.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/exit.h"
 
 
@@ -48,8 +47,6 @@ main(int argc, char *argv[])
     double *dp1, *dp2;
     double d;
     size_t ret;
-
-    bu_setprogname(argv[0]);
 
     if (isatty(fileno(stdin)) || isatty(fileno(stdout))) {
 	bu_exit(1, "%s", usage);

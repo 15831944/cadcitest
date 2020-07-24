@@ -14,7 +14,8 @@
 #ifndef _DEFAULT
 #define _DEFAULT
 
-#ifdef _WIN32
+#if defined(__WIN32__) || defined(_WIN32) || \
+    defined(__MINGW32__)
 #   include "tkWinDefault.h"
 #else
 #   if defined(MAC_OSX_TK)

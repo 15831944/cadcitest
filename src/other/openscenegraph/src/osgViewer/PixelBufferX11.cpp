@@ -32,15 +32,8 @@ PixelBufferX11::PixelBufferX11(osg::GraphicsContext::Traits* traits)
     _visualInfo(0),
     _initialized(false),
     _realized(false),
-    _useGLX1_3(false),
-    _useSGIX(false)
-#ifdef GLX_SGIX_pbuffer
-    ,_glXCreateGLXPbufferSGIX(NULL),
-    _glXDestroyGLXPbufferSGIX(NULL),
-    _glXQueryGLXPbufferSGIX(NULL),
-    _glXGetFBConfigFromVisualSGIX(NULL)
-#endif
-    {
+    _useGLX1_3(false)
+{
     _traits = traits;
 
     init();
@@ -181,27 +174,13 @@ void PixelBufferX11::init()
         haveGLX1_3 = true;
     }
 
-#if defined(GLX_VERSION_1_1) && defined(GLX_SGIX_pbuffer)
+#if defined(GLX_VERSION_1_1)
     // We need at least GLX 1.1 for glXQueryExtensionsString
     if (!haveGLX1_3 && 1 <= minor)
     {
         const char *extensions = glXQueryExtensionsString(_display, screen);
         haveSGIX_pbuffer = osg::isExtensionInExtensionString("GLX_SGIX_pbuffer", extensions)
            && osg::isExtensionInExtensionString("GLX_SGIX_fbconfig", extensions);
-
-        if (haveSGIX_pbuffer)
-        {
-            osg::setGLExtensionFuncPtr(_glXCreateGLXPbufferSGIX, "glXDestroyGLXPbufferSGIX");
-            osg::setGLExtensionFuncPtr(_glXDestroyGLXPbufferSGIX, "glXDestroyGLXPbufferSGIX");
-            osg::setGLExtensionFuncPtr(_glXQueryGLXPbufferSGIX, "glXDestroyGLXPbufferSGIX");
-            osg::setGLExtensionFuncPtr(_glXGetFBConfigFromVisualSGIX, "glXGetFBConfigFromVisualSGIX");
-            if (_glXCreateGLXPbufferSGIX == NULL ||
-                _glXDestroyGLXPbufferSGIX == NULL ||
-                _glXQueryGLXPbufferSGIX == NULL ||
-                _glXGetFBConfigFromVisualSGIX == NULL) {
-                haveSGIX_pbuffer = false;
-            }
-        }
     }
 #endif
 
@@ -289,7 +268,7 @@ void PixelBufferX11::init()
 
             if (_traits->width != iWidth || _traits->height != iHeight)
             {
-                OSG_NOTICE << "PixelBufferX11::init(), pbuffer created with different size then requested" << std::endl;
+                OSG_NOTICE << "PixelBufferX11::init(), pbuffer created with different size then requsted" << std::endl;
                 OSG_NOTICE << "\tRequested size (" << _traits->width << "," << _traits->height << ")" << std::endl;
                 OSG_NOTICE << "\tPbuffer size (" << iWidth << "," << iHeight << ")" << std::endl;
                 _traits->width  = iWidth;
@@ -304,7 +283,7 @@ void PixelBufferX11::init()
     // If we still have no pbuffer but a capable display with the SGIX extension, try to use that
     if (!_pbuffer && haveSGIX_pbuffer)
     {
-        GLXFBConfigSGIX fbconfig = _glXGetFBConfigFromVisualSGIX( _display, _visualInfo );
+        GLXFBConfigSGIX fbconfig = glXGetFBConfigFromVisualSGIX( _display, _visualInfo );
         typedef std::vector <int> AttributeList;
 
         AttributeList attributes;
@@ -312,18 +291,17 @@ void PixelBufferX11::init()
         attributes.push_back( GL_TRUE );
         attributes.push_back( 0L );
 
-        _pbuffer = _glXCreateGLXPbufferSGIX(_display, fbconfig, _traits->width, _traits->height,  &attributes.front() );
+        _pbuffer = glXCreateGLXPbufferSGIX(_display, fbconfig, _traits->width, _traits->height,  &attributes.front() );
         if (_pbuffer)
         {
-            _useSGIX = true;
             int iWidth = 0;
             int iHeight = 0;
-            _glXQueryGLXPbufferSGIX(_display, _pbuffer, GLX_WIDTH_SGIX , (unsigned int *)&iWidth);
-            _glXQueryGLXPbufferSGIX(_display, _pbuffer, GLX_HEIGHT_SGIX, (unsigned int *)&iHeight);
-                                                                                        
+            glXQueryGLXPbufferSGIX(_display, _pbuffer, GLX_WIDTH_SGIX , (unsigned int *)&iWidth);
+            glXQueryGLXPbufferSGIX(_display, _pbuffer, GLX_HEIGHT_SGIX, (unsigned int *)&iHeight);
+
             if (_traits->width != iWidth || _traits->height != iHeight)
             {
-                OSG_NOTICE << "PixelBufferX11::init(), SGIX_pbuffer created with different size then requested" << std::endl;
+                OSG_NOTICE << "PixelBufferX11::init(), SGIX_pbuffer created with different size then requsted" << std::endl;
                 OSG_NOTICE << "\tRequested size (" << _traits->width << "," << _traits->height << ")" << std::endl;
                 OSG_NOTICE << "\tPbuffer size (" << iWidth << "," << iHeight << ")" << std::endl;
                 _traits->width =  iWidth;
@@ -373,10 +351,7 @@ void PixelBufferX11::closeImplementation()
             else
             {
 #ifdef GLX_SGIX_pbuffer
-                if (_useSGIX)
-                {
-                    _glXDestroyGLXPbufferSGIX(_display, _pbuffer);
-                }
+                glXDestroyGLXPbufferSGIX(_display, _pbuffer);
 #endif
             }
         }

@@ -8,7 +8,6 @@ set(icv_headers
   stat.h
   )
 BRLCAD_MANAGE_FILES(icv_headers ${INCLUDE_DIR}/brlcad/icv)
-
 CMAKEFILES(CMakeLists.txt)
 
 # Local Variables:

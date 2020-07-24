@@ -32,7 +32,6 @@
 /* interface headers */
 #include "vmath.h"
 #include "bu/vls.h"
-#include "rt/defines.h"
 
 __BEGIN_DECLS
 

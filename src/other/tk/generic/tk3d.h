@@ -12,7 +12,12 @@
 #ifndef _TK3D
 #define _TK3D
 
-#include "tkInt.h"
+#include <tkInt.h>
+
+#ifdef BUILD_tk
+# undef TCL_STORAGE_CLASS
+# define TCL_STORAGE_CLASS DLLEXPORT
+#endif
 
 /*
  * One of the following data structures is allocated for each 3-D border
@@ -35,8 +40,9 @@ typedef struct TkBorder {
 				 * no longer valid and it isn't present in
 				 * borderTable: it is being kept around only
 				 * because there are objects referring to it.
-				 * The structure is freed when objRefCount and
-				 * resourceRefCount are both 0. */
+				 * The structure is freed when
+				 * resourceRefCount and objRefCount are both
+				 * 0. */
     int objRefCount;		/* The number of Tcl objects that reference
 				 * this structure. */
     XColor *bgColorPtr;		/* Background color (intensity between
@@ -54,10 +60,10 @@ typedef struct TkBorder {
     GC bgGC;			/* Used (if necessary) to draw areas in the
 				 * background color. */
     GC darkGC;			/* Used to draw darker parts of the border.
-				 * NULL means the shadow colors haven't been
+				 * TkNone means the shadow colors haven't been
 				 * allocated yet.*/
     GC lightGC;			/* Used to draw lighter parts of the border.
-				 * NULL means the shadow colors haven't been
+				 * TkNone means the shadow colors haven't been
 				 * allocated yet. */
     Tcl_HashEntry *hashPtr;	/* Entry in borderTable (needed in order to
 				 * delete structure). */
@@ -81,5 +87,8 @@ typedef struct TkBorder {
 MODULE_SCOPE TkBorder	*TkpGetBorder(void);
 MODULE_SCOPE void	TkpGetShadows(TkBorder *borderPtr, Tk_Window tkwin);
 MODULE_SCOPE void	TkpFreeBorder(TkBorder *borderPtr);
+
+# undef TCL_STORAGE_CLASS
+# define TCL_STORAGE_CLASS DLLIMPORT
 
 #endif /* _TK3D */

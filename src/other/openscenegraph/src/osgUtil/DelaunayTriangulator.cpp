@@ -289,7 +289,7 @@ public:
         //    return value is 0 - no crossing; 1,2,3 - which edge of the triangle is cut.
         if (a_==ip1)
         {
-            // first vertex is the vertex - test that a_ to p2 lies between edges a,b and a,c
+            // first vertex is the vertex - test that a_ to p2 lies beteen edges a,b and a,c
             osg::Vec3 apt=(*points)[a_];
             osg::Vec3 bpt=(*points)[b_];
             osg::Vec3 cpt=(*points)[c_];
@@ -297,7 +297,7 @@ public:
         }
         else if (b_==ip1)
         {
-            // second vertex is the vertex - test that b_ to p2 lies between edges a,b and a,c
+            // second vertex is the vertex - test that b_ to p2 lies beteen edges a,b and a,c
             osg::Vec3 apt=(*points)[b_];
             osg::Vec3 bpt=(*points)[c_];
             osg::Vec3 cpt=(*points)[a_];
@@ -305,7 +305,7 @@ public:
         }
         else if (c_==ip1)
         {
-            // 3rd vertex is the vertex - test that c_ to p2 lies between edges a,b and a,c
+            // 3rd vertex is the vertex - test that c_ to p2 lies beteen edges a,b and a,c
             osg::Vec3 apt=(*points)[c_];
             osg::Vec3 bpt=(*points)[a_];
             osg::Vec3 cpt=(*points)[b_];
@@ -415,7 +415,7 @@ int DelaunayTriangulator::getindex(const osg::Vec3 &pt,const osg::Vec3Array *poi
     return -1;
 }
 
-Triangle_list fillHole(osg::Vec3Array *points, const std::vector<int>& vindexlist)
+Triangle_list fillHole(osg::Vec3Array *points,    std::vector<unsigned int> vindexlist)
 {
     // eg clockwise vertex neighbours around the hole made by the constraint
     Triangle_list triangles; // returned list
@@ -423,7 +423,7 @@ Triangle_list fillHole(osg::Vec3Array *points, const std::vector<int>& vindexlis
     osg::ref_ptr<osg::Vec3Array> constraintverts=new osg::Vec3Array;
     osg::ref_ptr<osgUtil::Tessellator> tscx=new osgUtil::Tessellator; // this assembles all the constraints
 
-    for (std::vector<int>::const_iterator itint=vindexlist.begin(); itint!=vindexlist.end(); itint++)
+    for (std::vector<unsigned int>::iterator itint=vindexlist.begin(); itint!=vindexlist.end(); itint++)
     {
     //    OSG_WARN<< "add point " << (*itint) << " at " << (*points)[*itint].x() << ","<< (*points)[*itint].y() <<std::endl;
         constraintverts->push_back((*points)[*itint]);
@@ -838,10 +838,11 @@ bool DelaunayTriangulator::triangulate()
 
     // begin triangulation
     GLuint pidx = 0;
+    osg::Vec3Array::const_iterator i;
 
     OSG_INFO << "DelaunayTriangulator: triangulating vertex grid (" << (points->size()-3) <<" points)\n";
 
-    for (osg::Vec3Array::const_iterator i=points->begin(); i!=points->end(); ++i, ++pidx)
+    for (i=points->begin(); i!=points->end(); ++i, ++pidx)
     {
 
         // don't process supertriangle vertices
@@ -907,7 +908,7 @@ bool DelaunayTriangulator::triangulate()
             }
         }
     }
-    // dec 2006 we used to remove supertriangle vertices here, but then we can't strictly use the supertriangle
+    // dec 2006 we used to remove supertriangle vertices here, but then we cant strictly use the supertriangle
     // vertices to find intersections of constraints with terrain, so moved to later.
 
     OSG_INFO << "DelaunayTriangulator: finalizing and cleaning up structures\n";
@@ -934,13 +935,13 @@ bool DelaunayTriangulator::triangulate()
                 {
                     // loops or strips
                     // start with the last point on the loop
-                    int ip1=getindex((*vercon)[prset->index (prset->getNumIndices()-1)],points_.get());
-                    for (unsigned int i=0; i<prset->getNumIndices() && ip1>=0; i++)
+                    unsigned int ip1=getindex((*vercon)[prset->index (prset->getNumIndices()-1)],points_.get());
+                    for (unsigned int i=0; i<prset->getNumIndices(); i++)
                     {
-                        int ip2=getindex((*vercon)[prset->index(i)],points_.get());
-                        if (ip2>=0 && (i>0 || prset->getMode()==osg::PrimitiveSet::LINE_LOOP))
+                        unsigned int ip2=getindex((*vercon)[prset->index(i)],points_.get());
+                        if (i>0 || prset->getMode()==osg::PrimitiveSet::LINE_LOOP)
                         {
-                            // don't check edge from end to start
+                            // dont check edge from end to start
                             // for strips
                             // 2 points on the constraint
                             bool edgused=false;// first check for exact edge indices are used.
@@ -976,13 +977,13 @@ bool DelaunayTriangulator::triangulate()
                                     if (icut>0)
                                     {
                                         // triangle titr starts the constraint edge
-                                        std::vector<int> edgeRight, edgeLeft;
+                                        std::vector<unsigned int> edgeRight, edgeLeft;
                                         edgeRight.push_back(ip1);
                                         edgeLeft.push_back(ip1);
                                         //        OSG_WARN << "hole first " << edgeLeft.back()<<  " rt " << edgeRight.back()<< std::endl;
                                         trisToDelete.push_back(&(*titr));
                                         // now find the unique triangle that shares the defined edge
-                                        int e1, e2; // indices of ends of test triangle titr
+                                        unsigned int e1, e2; // indices of ends of test triangle titr
                                         if    (icut==1)
                                         {
                                             // icut=1 implies vertex a is not involved
@@ -992,7 +993,7 @@ bool DelaunayTriangulator::triangulate()
                                         {
                                             e1=titr->c(); e2=titr->a();
                                         }
-                                        else
+                                        else if (icut==3)
                                         {
                                             e1=titr->a(); e2=titr->b();
                                         }

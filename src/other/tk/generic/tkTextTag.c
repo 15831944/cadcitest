@@ -23,18 +23,18 @@
  * a whole is not.
  */
 
-static const char *const wrapStrings[] = {
+static const char *wrapStrings[] = {
     "char", "none", "word", "", NULL
 };
 
 /*
  * The 'TkTextTabStyle' enum in tkText.h is used to define a type for the
  * -tabstyle option of the Text widget. These values are used as indices into
- * the string table below. Tags are allowed an empty tabstyle value, but the
+ * the string table below. Tags are allowed an empty wrap value, but the
  * widget as a whole is not.
  */
 
-static const char *const tabStyleStrings[] = {
+static const char *tabStyleStrings[] = {
     "tabular", "wordprocessor", "", NULL
 };
 
@@ -61,26 +61,15 @@ static const Tk_OptionSpec tagOptionSpecs[] = {
 	NULL, -1, Tk_Offset(TkTextTag, lMargin1String), TK_OPTION_NULL_OK,0,0},
     {TK_OPTION_STRING, "-lmargin2", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, lMargin2String), TK_OPTION_NULL_OK,0,0},
-    {TK_OPTION_BORDER, "-lmargincolor", NULL, NULL,
-	NULL, -1, Tk_Offset(TkTextTag, lMarginColor), TK_OPTION_NULL_OK, 0, 0},
     {TK_OPTION_STRING, "-offset", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, offsetString), TK_OPTION_NULL_OK, 0, 0},
     {TK_OPTION_STRING, "-overstrike", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, overstrikeString),
 	TK_OPTION_NULL_OK, 0, 0},
-    {TK_OPTION_COLOR, "-overstrikefg", NULL, NULL,
-	NULL, -1, Tk_Offset(TkTextTag, overstrikeColor),
-        TK_OPTION_NULL_OK, 0, 0},
     {TK_OPTION_STRING, "-relief", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, reliefString), TK_OPTION_NULL_OK, 0, 0},
     {TK_OPTION_STRING, "-rmargin", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, rMarginString), TK_OPTION_NULL_OK, 0,0},
-    {TK_OPTION_BORDER, "-rmargincolor", NULL, NULL,
-	NULL, -1, Tk_Offset(TkTextTag, rMarginColor), TK_OPTION_NULL_OK, 0, 0},
-    {TK_OPTION_BORDER, "-selectbackground", NULL, NULL,
-	NULL, -1, Tk_Offset(TkTextTag, selBorder), TK_OPTION_NULL_OK, 0, 0},
-    {TK_OPTION_COLOR, "-selectforeground", NULL, NULL,
-	NULL, -1, Tk_Offset(TkTextTag, selFgColor), TK_OPTION_NULL_OK, 0, 0},
     {TK_OPTION_STRING, "-spacing1", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, spacing1String), TK_OPTION_NULL_OK,0,0},
     {TK_OPTION_STRING, "-spacing2", NULL, NULL,
@@ -91,17 +80,14 @@ static const Tk_OptionSpec tagOptionSpecs[] = {
 	NULL, Tk_Offset(TkTextTag, tabStringPtr), -1, TK_OPTION_NULL_OK, 0, 0},
     {TK_OPTION_STRING_TABLE, "-tabstyle", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, tabStyle),
-	TK_OPTION_NULL_OK, tabStyleStrings, 0},
+	TK_OPTION_NULL_OK, (ClientData) tabStyleStrings, 0},
     {TK_OPTION_STRING, "-underline", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, underlineString),
 	TK_OPTION_NULL_OK, 0, 0},
-    {TK_OPTION_COLOR, "-underlinefg", NULL, NULL,
-	NULL, -1, Tk_Offset(TkTextTag, underlineColor),
-        TK_OPTION_NULL_OK, 0, 0},
     {TK_OPTION_STRING_TABLE, "-wrap", NULL, NULL,
 	NULL, -1, Tk_Offset(TkTextTag, wrapMode),
-	TK_OPTION_NULL_OK, wrapStrings, 0},
-    {TK_OPTION_END, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0}
+	TK_OPTION_NULL_OK, (ClientData) wrapStrings, 0},
+    {TK_OPTION_END}
 };
 
 /*
@@ -113,8 +99,8 @@ static void		ChangeTagPriority(TkText *textPtr, TkTextTag *tagPtr,
 static TkTextTag *	FindTag(Tcl_Interp *interp, TkText *textPtr,
 			    Tcl_Obj *tagName);
 static void		SortTags(int numTags, TkTextTag **tagArrayPtr);
-static int		TagSortProc(const void *first, const void *second);
-static void		TagBindEvent(TkText *textPtr, XEvent *eventPtr,
+static int		TagSortProc(CONST VOID *first, CONST VOID *second);
+static void             TagBindEvent(TkText *textPtr, XEvent *eventPtr,
 			    int numTags, TkTextTag **tagArrayPtr);
 
 /*
@@ -140,11 +126,11 @@ TkTextTagCmd(
     register TkText *textPtr,	/* Information about text widget. */
     Tcl_Interp *interp,		/* Current interpreter. */
     int objc,			/* Number of arguments. */
-    Tcl_Obj *const objv[])	/* Argument objects. Someone else has already
+    Tcl_Obj *CONST objv[])	/* Argument objects. Someone else has already
 				 * parsed this command enough to know that
 				 * objv[1] is "tag". */
 {
-    static const char *const tagOptionStrings[] = {
+    static CONST char *tagOptionStrings[] = {
 	"add", "bind", "cget", "configure", "delete", "lower", "names",
 	"nextrange", "prevrange", "raise", "ranges", "remove", NULL
     };
@@ -158,12 +144,12 @@ TkTextTagCmd(
     TkTextIndex index1, index2;
 
     if (objc < 3) {
-	Tcl_WrongNumArgs(interp, 2, objv, "option ?arg ...?");
+	Tcl_WrongNumArgs(interp, 2, objv, "option ?arg arg ...?");
 	return TCL_ERROR;
     }
 
-    if (Tcl_GetIndexFromObjStruct(interp, objv[2], tagOptionStrings,
-	    sizeof(char *), "tag option", 0, &optionIndex) != TCL_OK) {
+    if (Tcl_GetIndexFromObj(interp, objv[2], tagOptionStrings,
+	    "tag option", 0, &optionIndex) != TCL_OK) {
 	return TCL_ERROR;
     }
 
@@ -235,7 +221,7 @@ TkTextTagCmd(
 
 		if (tagPtr == textPtr->selTagPtr) {
 		    /*
-		     * Send an event that the selection changed. This is
+		     * Send an event that the selection changed.  This is
 		     * equivalent to:
 		     *	   event generate $textWidget <<Selection>>
 		     */
@@ -243,10 +229,9 @@ TkTextTagCmd(
 		    TkTextSelectionEvent(textPtr);
 
 		    if (addTag && textPtr->exportSelection
-			    && (!Tcl_IsSafe(textPtr->interp))
 			    && !(textPtr->flags & GOT_SELECTION)) {
 			Tk_OwnSelection(textPtr->tkwin, XA_PRIMARY,
-				TkTextLostSelection, textPtr);
+				TkTextLostSelection, (ClientData) textPtr);
 			textPtr->flags |= GOT_SELECTION;
 		    }
 		    textPtr->abortSelections = 1;
@@ -274,7 +259,7 @@ TkTextTagCmd(
 	if (objc == 6) {
 	    int append = 0;
 	    unsigned long mask;
-	    const char *fifth = Tcl_GetString(objv[5]);
+	    char *fifth = Tcl_GetString(objv[5]);
 
 	    if (fifth[0] == 0) {
 		return Tk_DeleteBinding(interp,
@@ -292,27 +277,27 @@ TkTextTagCmd(
 	    if (mask == 0) {
 		return TCL_ERROR;
 	    }
-	    if (mask & ~(unsigned long)(ButtonMotionMask|Button1MotionMask
+	    if (mask & (unsigned) ~(ButtonMotionMask|Button1MotionMask
 		    |Button2MotionMask|Button3MotionMask|Button4MotionMask
 		    |Button5MotionMask|ButtonPressMask|ButtonReleaseMask
 		    |EnterWindowMask|LeaveWindowMask|KeyPressMask
 		    |KeyReleaseMask|PointerMotionMask|VirtualEventMask)) {
 		Tk_DeleteBinding(interp, textPtr->sharedTextPtr->bindingTable,
 			(ClientData) tagPtr->name, Tcl_GetString(objv[4]));
-		Tcl_SetObjResult(interp, Tcl_NewStringObj(
-			"requested illegal events; only key, button, motion,"
-			" enter, leave, and virtual events may be used", -1));
-		Tcl_SetErrorCode(interp, "TK", "TEXT", "TAG_BIND_EVENT",NULL);
+		Tcl_ResetResult(interp);
+		Tcl_AppendResult(interp, "requested illegal events; ",
+			"only key, button, motion, enter, leave, and virtual ",
+			"events may be used", NULL);
 		return TCL_ERROR;
 	    }
 	} else if (objc == 5) {
-	    const char *command;
+	    CONST char *command;
 
 	    command = Tk_GetBinding(interp,
 		    textPtr->sharedTextPtr->bindingTable,
 		    (ClientData) tagPtr->name, Tcl_GetString(objv[4]));
 	    if (command == NULL) {
-		const char *string = Tcl_GetString(Tcl_GetObjResult(interp));
+		CONST char *string = Tcl_GetStringResult(interp);
 
 		/*
 		 * Ignore missing binding errors. This is a special hack that
@@ -325,7 +310,7 @@ TkTextTagCmd(
 		}
 		Tcl_ResetResult(interp);
 	    } else {
-		Tcl_SetObjResult(interp, Tcl_NewStringObj(command, -1));
+		Tcl_SetResult(interp, (char *) command, TCL_STATIC);
 	    }
 	} else {
 	    Tk_GetAllBindings(interp, textPtr->sharedTextPtr->bindingTable,
@@ -357,7 +342,7 @@ TkTextTagCmd(
 
 	if (objc < 4) {
 	    Tcl_WrongNumArgs(interp, 3, objv,
-		    "tagName ?-option? ?value? ?-option value ...?");
+		    "tagName ?option? ?value? ?option value ...?");
 	    return TCL_ERROR;
 	}
 	tagPtr = TkTextCreateTag(textPtr, Tcl_GetString(objv[3]), &newTag);
@@ -374,7 +359,7 @@ TkTextTagCmd(
 	} else {
 	    int result = TCL_OK;
 
-	    if (Tk_SetOptions(interp, (char *) tagPtr, tagPtr->optionTable,
+	    if (Tk_SetOptions(interp, (char*)tagPtr, tagPtr->optionTable,
 		    objc-4, objv+4, textPtr->tkwin, NULL, NULL) != TCL_OK) {
 		return TCL_ERROR;
 	    }
@@ -459,7 +444,7 @@ TkTextTagCmd(
 		}
 	    }
 	    if (tagPtr->tabArrayPtr != NULL) {
-		ckfree(tagPtr->tabArrayPtr);
+		ckfree((char *) tagPtr->tabArrayPtr);
 		tagPtr->tabArrayPtr = NULL;
 	    }
 	    if (tagPtr->tabStringPtr != NULL) {
@@ -480,14 +465,11 @@ TkTextTagCmd(
 			&tagPtr->elide) != TCL_OK) {
 		    return TCL_ERROR;
 		}
-
-		/*
-		 * Indices are potentially obsolete after changing -elide,
-		 * especially those computed with "display" or "any"
-		 * submodifier, therefore increase the epoch.
-		 */
-
-		textPtr->sharedTextPtr->stateEpoch++;
+	        /* Indices are potentially obsolete after changing -elide,
+	         * especially those computed with "display" or "any"
+                 * submodifier, therefore increase the epoch.
+                 */
+	        textPtr->sharedTextPtr->stateEpoch++;
 	    }
 
 	    /*
@@ -499,24 +481,16 @@ TkTextTagCmd(
 	     */
 
 	    if (tagPtr == textPtr->selTagPtr) {
-                if (tagPtr->selBorder == NULL) {
-                    textPtr->selBorder = tagPtr->border;
-                } else {
-                    textPtr->selBorder = tagPtr->selBorder;
-                }
+		textPtr->selBorder = tagPtr->border;
 		textPtr->selBorderWidth = tagPtr->borderWidth;
 		textPtr->selBorderWidthPtr = tagPtr->borderWidthPtr;
-                if (tagPtr->selFgColor == NULL) {
-                    textPtr->selFgColorPtr = tagPtr->fgColor;
-                } else {
-                    textPtr->selFgColorPtr = tagPtr->selFgColor;
-                }
+		textPtr->selFgColorPtr = tagPtr->fgColor;
 	    }
 
 	    tagPtr->affectsDisplay = 0;
 	    tagPtr->affectsDisplayGeometry = 0;
 	    if ((tagPtr->elideString != NULL)
-		    || (tagPtr->tkfont != NULL)
+		    || (tagPtr->tkfont != TkNone)
 		    || (tagPtr->justifyString != NULL)
 		    || (tagPtr->lMargin1String != NULL)
 		    || (tagPtr->lMargin2String != NULL)
@@ -532,18 +506,12 @@ TkTextTagCmd(
 		tagPtr->affectsDisplayGeometry = 1;
 	    }
 	    if ((tagPtr->border != NULL)
-		    || (tagPtr->selBorder != NULL)
 		    || (tagPtr->reliefString != NULL)
-		    || (tagPtr->bgStipple != None)
+		    || (tagPtr->bgStipple != TkNone)
 		    || (tagPtr->fgColor != NULL)
-		    || (tagPtr->selFgColor != NULL)
-		    || (tagPtr->fgStipple != None)
+		    || (tagPtr->fgStipple != TkNone)
 		    || (tagPtr->overstrikeString != NULL)
-                    || (tagPtr->overstrikeColor != NULL)
-		    || (tagPtr->underlineString != NULL)
-                    || (tagPtr->underlineColor != NULL)
-                    || (tagPtr->lMarginColor != NULL)
-                    || (tagPtr->rMarginColor != NULL)) {
+		    || (tagPtr->underlineString != NULL)) {
 		tagPtr->affectsDisplay = 1;
 	    }
 	    if (!newTag) {
@@ -584,7 +552,7 @@ TkTextTagCmd(
 
 		continue;
 	    }
-	    tagPtr = Tcl_GetHashValue(hPtr);
+	    tagPtr = (TkTextTag *) Tcl_GetHashValue(hPtr);
 	    if (tagPtr == textPtr->selTagPtr) {
 		continue;
 	    }
@@ -645,12 +613,12 @@ TkTextTagCmd(
 	    Tcl_HashSearch search;
 	    Tcl_HashEntry *hPtr;
 
-	    arrayPtr = ckalloc(textPtr->sharedTextPtr->numTags
-		    * sizeof(TkTextTag *));
+	    arrayPtr = (TkTextTag **) ckalloc((unsigned)
+		    (textPtr->sharedTextPtr->numTags * sizeof(TkTextTag *)));
 	    for (i=0, hPtr = Tcl_FirstHashEntry(
 		    &textPtr->sharedTextPtr->tagTable, &search);
 		    hPtr != NULL; i++, hPtr = Tcl_NextHashEntry(&search)) {
-		arrayPtr[i] = Tcl_GetHashValue(hPtr);
+		arrayPtr[i] = (TkTextTag *) Tcl_GetHashValue(hPtr);
 	    }
 
 	    /*
@@ -679,14 +647,13 @@ TkTextTagCmd(
 		    Tcl_NewStringObj(tagPtr->name,-1));
 	}
 	Tcl_SetObjResult(interp, listObj);
-	ckfree(arrayPtr);
+	ckfree((char *) arrayPtr);
 	break;
     }
     case TAG_NEXTRANGE: {
 	TkTextIndex last;
 	TkTextSearch tSearch;
 	char position[TK_POS_CHARS];
-	Tcl_Obj *resultObj;
 
 	if ((objc != 5) && (objc != 6)) {
 	    Tcl_WrongNumArgs(interp, 3, objv, "tagName index1 ?index2?");
@@ -755,15 +722,11 @@ TkTextTagCmd(
 	if (TkTextIndexCmp(&tSearch.curIndex, &index2) >= 0) {
 	    return TCL_OK;
 	}
-	resultObj = Tcl_NewObj();
 	TkTextPrintIndex(textPtr, &tSearch.curIndex, position);
-	Tcl_ListObjAppendElement(NULL, resultObj,
-		Tcl_NewStringObj(position, -1));
+	Tcl_AppendElement(interp, position);
 	TkBTreeNextTag(&tSearch);
 	TkTextPrintIndex(textPtr, &tSearch.curIndex, position);
-	Tcl_ListObjAppendElement(NULL, resultObj,
-		Tcl_NewStringObj(position, -1));
-	Tcl_SetObjResult(interp, resultObj);
+	Tcl_AppendElement(interp, position);
 	break;
     }
     case TAG_PREVRANGE: {
@@ -771,7 +734,6 @@ TkTextTagCmd(
 	TkTextSearch tSearch;
 	char position1[TK_POS_CHARS];
 	char position2[TK_POS_CHARS];
-	Tcl_Obj *resultObj;
 
 	if ((objc != 5) && (objc != 6)) {
 	    Tcl_WrongNumArgs(interp, 3, objv, "tagName index1 ?index2?");
@@ -819,7 +781,8 @@ TkTextTagCmd(
 
 		TkTextPrintIndex(textPtr, &index2, position1);
 		TkTextPrintIndex(textPtr, &index1, position2);
-		goto gotPrevIndexPair;
+		Tcl_AppendElement(interp, position1);
+		Tcl_AppendElement(interp, position2);
 	    }
 	    return TCL_OK;
 	}
@@ -869,14 +832,8 @@ TkTextTagCmd(
 		}
 	    }
 	}
-
-    gotPrevIndexPair:
-	resultObj = Tcl_NewObj();
-	Tcl_ListObjAppendElement(NULL, resultObj,
-		Tcl_NewStringObj(position1, -1));
-	Tcl_ListObjAppendElement(NULL, resultObj,
-		Tcl_NewStringObj(position2, -1));
-	Tcl_SetObjResult(interp, resultObj);
+	Tcl_AppendElement(interp, position1);
+	Tcl_AppendElement(interp, position2);
 	break;
     }
     case TAG_RAISE: {
@@ -935,12 +892,12 @@ TkTextTagCmd(
 		0, &last);
 	TkBTreeStartSearch(&first, &last, tagPtr, &tSearch);
 	if (TkBTreeCharTagged(&first, tagPtr)) {
-	    Tcl_ListObjAppendElement(NULL, listObj,
+	    Tcl_ListObjAppendElement(interp, listObj,
 		    TkTextNewIndexObj(textPtr, &first));
 	    count++;
 	}
 	while (TkBTreeNextTag(&tSearch)) {
-	    Tcl_ListObjAppendElement(NULL, listObj,
+	    Tcl_ListObjAppendElement(interp, listObj,
 		    TkTextNewIndexObj(textPtr, &tSearch.curIndex));
 	    count++;
 	}
@@ -951,7 +908,7 @@ TkTextTagCmd(
 	     * closed. In this case we add the end of the range.
 	     */
 
-	    Tcl_ListObjAppendElement(NULL, listObj,
+	    Tcl_ListObjAppendElement(interp, listObj,
 		    TkTextNewIndexObj(textPtr, &last));
 	}
 	Tcl_SetObjResult(interp, listObj);
@@ -982,25 +939,25 @@ TkTextTagCmd(
 TkTextTag *
 TkTextCreateTag(
     TkText *textPtr,		/* Widget in which tag is being used. */
-    const char *tagName,	/* Name of desired tag. */
+    CONST char *tagName,	/* Name of desired tag. */
     int *newTag)		/* If non-NULL, then return 1 if new, or 0 if
 				 * already exists. */
 {
     register TkTextTag *tagPtr;
     Tcl_HashEntry *hPtr = NULL;
     int isNew;
-    const char *name;
+    CONST char *name;
 
     if (!strcmp(tagName, "sel")) {
-	if (textPtr->selTagPtr != NULL) {
+        if (textPtr->selTagPtr != NULL) {
 	    if (newTag != NULL) {
-		*newTag = 0;
+	        *newTag = 0;
 	    }
-	    return textPtr->selTagPtr;
-	}
+            return textPtr->selTagPtr;
+        }
 	if (newTag != NULL) {
 	    *newTag = 1;
-	}
+        }
 	name = "sel";
     } else {
 	hPtr = Tcl_CreateHashEntry(&textPtr->sharedTextPtr->tagTable,
@@ -1009,7 +966,7 @@ TkTextCreateTag(
 	    *newTag = isNew;
 	}
 	if (!isNew) {
-	    return Tcl_GetHashValue(hPtr);
+	    return (TkTextTag *) Tcl_GetHashValue(hPtr);
 	}
 	name = Tcl_GetHashKey(&textPtr->sharedTextPtr->tagTable, hPtr);
     }
@@ -1019,7 +976,7 @@ TkTextCreateTag(
      * to it to the hash table entry.
      */
 
-    tagPtr = ckalloc(sizeof(TkTextTag));
+    tagPtr = (TkTextTag *) ckalloc(sizeof(TkTextTag));
     tagPtr->name = name;
     tagPtr->textPtr = NULL;
     tagPtr->toggleCount = 0;
@@ -1030,27 +987,22 @@ TkTextCreateTag(
     tagPtr->borderWidthPtr = NULL;
     tagPtr->reliefString = NULL;
     tagPtr->relief = TK_RELIEF_FLAT;
-    tagPtr->bgStipple = None;
+    tagPtr->bgStipple = TkNone;
     tagPtr->fgColor = NULL;
     tagPtr->tkfont = NULL;
-    tagPtr->fgStipple = None;
+    tagPtr->fgStipple = TkNone;
     tagPtr->justifyString = NULL;
     tagPtr->justify = TK_JUSTIFY_LEFT;
     tagPtr->lMargin1String = NULL;
     tagPtr->lMargin1 = 0;
     tagPtr->lMargin2String = NULL;
     tagPtr->lMargin2 = 0;
-    tagPtr->lMarginColor = NULL;
     tagPtr->offsetString = NULL;
     tagPtr->offset = 0;
     tagPtr->overstrikeString = NULL;
     tagPtr->overstrike = 0;
-    tagPtr->overstrikeColor = NULL;
     tagPtr->rMarginString = NULL;
     tagPtr->rMargin = 0;
-    tagPtr->rMarginColor = NULL;
-    tagPtr->selBorder = NULL;
-    tagPtr->selFgColor = NULL;
     tagPtr->spacing1String = NULL;
     tagPtr->spacing1 = 0;
     tagPtr->spacing2String = NULL;
@@ -1062,7 +1014,6 @@ TkTextCreateTag(
     tagPtr->tabStyle = TK_TEXT_TABSTYLE_NONE;
     tagPtr->underlineString = NULL;
     tagPtr->underline = 0;
-    tagPtr->underlineColor = NULL;
     tagPtr->elideString = NULL;
     tagPtr->elide = 0;
     tagPtr->wrapMode = TEXT_WRAPMODE_NULL;
@@ -1073,7 +1024,6 @@ TkTextCreateTag(
 	tagPtr->textPtr = textPtr;
 	textPtr->refCount++;
     } else {
-	CLANG_ASSERT(hPtr);
 	Tcl_SetHashValue(hPtr, tagPtr);
     }
     tagPtr->optionTable =
@@ -1105,27 +1055,24 @@ FindTag(
 				 * NULL, then don't record an error
 				 * message. */
     TkText *textPtr,		/* Widget in which tag is being used. */
-    Tcl_Obj *tagName)		/* Name of desired tag. */
+    Tcl_Obj *tagName)	        /* Name of desired tag. */
 {
     Tcl_HashEntry *hPtr;
     int len;
-    const char *str;
+    CONST char *str;
 
     str = Tcl_GetStringFromObj(tagName, &len);
-    if (len == 3 && !strcmp(str, "sel")) {
-	return textPtr->selTagPtr;
+    if (len == 3 && !strcmp(str,"sel")) {
+        return textPtr->selTagPtr;
     }
     hPtr = Tcl_FindHashEntry(&textPtr->sharedTextPtr->tagTable,
 	    Tcl_GetString(tagName));
     if (hPtr != NULL) {
-	return Tcl_GetHashValue(hPtr);
+	return (TkTextTag *) Tcl_GetHashValue(hPtr);
     }
     if (interp != NULL) {
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"tag \"%s\" isn't defined in text widget",
-		Tcl_GetString(tagName)));
-	Tcl_SetErrorCode(interp, "TK", "LOOKUP", "TEXT_TAG",
-		Tcl_GetString(tagName), NULL);
+	Tcl_AppendResult(interp, "tag \"", Tcl_GetString(tagName),
+		"\" isn't defined in text widget", NULL);
     }
     return NULL;
 }
@@ -1232,7 +1179,7 @@ TkTextFreeTag(
      */
 
     if (tagPtr->tabArrayPtr != NULL) {
-	ckfree(tagPtr->tabArrayPtr);
+	ckfree((char *) tagPtr->tabArrayPtr);
     }
 
     /*
@@ -1259,8 +1206,9 @@ TkTextFreeTag(
 	if (textPtr != tagPtr->textPtr) {
 	    Tcl_Panic("Tag being deleted from wrong widget");
 	}
-	if (textPtr->refCount-- <= 1) {
-	    ckfree(textPtr);
+	textPtr->refCount--;
+	if (textPtr->refCount == 0) {
+	    ckfree((char *) textPtr);
 	}
 	tagPtr->textPtr = NULL;
     }
@@ -1269,7 +1217,7 @@ TkTextFreeTag(
      * Finally free the tag's memory.
      */
 
-    ckfree(tagPtr);
+    ckfree((char *) tagPtr);
 }
 
 /*
@@ -1342,8 +1290,8 @@ SortTags(
 
 static int
 TagSortProc(
-    const void *first,
-    const void *second)		/* Elements to be compared. */
+    CONST void *first,
+    CONST void *second)		/* Elements to be compared. */
 {
     TkTextTag *tagPtr1, *tagPtr2;
 
@@ -1412,7 +1360,7 @@ ChangeTagPriority(
     }
     for (hPtr = Tcl_FirstHashEntry(&textPtr->sharedTextPtr->tagTable, &search);
 	    hPtr != NULL; hPtr = Tcl_NextHashEntry(&search)) {
-	tagPtr2 = Tcl_GetHashValue(hPtr);
+	tagPtr2 = (TkTextTag *) Tcl_GetHashValue(hPtr);
 	if ((tagPtr2->priority >= low) && (tagPtr2->priority <= high)) {
 	    tagPtr2->priority += delta;
 	}
@@ -1443,8 +1391,11 @@ TkTextBindProc(
     ClientData clientData,	/* Pointer to canvas structure. */
     XEvent *eventPtr)		/* Pointer to X event that just happened. */
 {
-    TkText *textPtr = clientData;
-    int repick = 0;
+    TkText *textPtr = (TkText *) clientData;
+    int repick  = 0;
+
+# define AnyButtonMask \
+	(Button1Mask|Button2Mask|Button3Mask|Button4Mask|Button5Mask)
 
     textPtr->refCount++;
 
@@ -1457,16 +1408,35 @@ TkTextBindProc(
     if (eventPtr->type == ButtonPress) {
 	textPtr->flags |= BUTTON_DOWN;
     } else if (eventPtr->type == ButtonRelease) {
-	unsigned int mask;
+	int mask;
 
-	mask = TkGetButtonMask(eventPtr->xbutton.button);
-	if ((eventPtr->xbutton.state & ALL_BUTTONS) == mask) {
+	switch (eventPtr->xbutton.button) {
+	case Button1:
+	    mask = Button1Mask;
+	    break;
+	case Button2:
+	    mask = Button2Mask;
+	    break;
+	case Button3:
+	    mask = Button3Mask;
+	    break;
+	case Button4:
+	    mask = Button4Mask;
+	    break;
+	case Button5:
+	    mask = Button5Mask;
+	    break;
+	default:
+	    mask = 0;
+	    break;
+	}
+	if ((eventPtr->xbutton.state & AnyButtonMask) == (unsigned) mask) {
 	    textPtr->flags &= ~BUTTON_DOWN;
 	    repick = 1;
 	}
     } else if ((eventPtr->type == EnterNotify)
 	    || (eventPtr->type == LeaveNotify)) {
-	if (eventPtr->xcrossing.state & ALL_BUTTONS) {
+	if (eventPtr->xcrossing.state & AnyButtonMask)  {
 	    textPtr->flags |= BUTTON_DOWN;
 	} else {
 	    textPtr->flags &= ~BUTTON_DOWN;
@@ -1474,7 +1444,7 @@ TkTextBindProc(
 	TkTextPickCurrent(textPtr, eventPtr);
 	goto done;
     } else if (eventPtr->type == MotionNotify) {
-	if (eventPtr->xmotion.state & ALL_BUTTONS) {
+	if (eventPtr->xmotion.state & AnyButtonMask)  {
 	    textPtr->flags |= BUTTON_DOWN;
 	} else {
 	    textPtr->flags &= ~BUTTON_DOWN;
@@ -1491,7 +1461,8 @@ TkTextBindProc(
 	unsigned int oldState;
 
 	oldState = eventPtr->xbutton.state;
-	eventPtr->xbutton.state &= ~(unsigned long)ALL_BUTTONS;
+	eventPtr->xbutton.state &= ~(Button1Mask|Button2Mask
+		|Button3Mask|Button4Mask|Button5Mask);
 	if (!(textPtr->flags & DESTROYED)) {
 	    TkTextPickCurrent(textPtr, eventPtr);
 	}
@@ -1499,8 +1470,8 @@ TkTextBindProc(
     }
 
   done:
-    if (textPtr->refCount-- <= 1) {
-	ckfree(textPtr);
+    if (--textPtr->refCount == 0) {
+	ckfree((char *) textPtr);
     }
 }
 
@@ -1585,7 +1556,7 @@ TkTextPickCurrent(
 	    textPtr->pickEvent.xcrossing.display = eventPtr->xmotion.display;
 	    textPtr->pickEvent.xcrossing.window = eventPtr->xmotion.window;
 	    textPtr->pickEvent.xcrossing.root = eventPtr->xmotion.root;
-	    textPtr->pickEvent.xcrossing.subwindow = None;
+	    textPtr->pickEvent.xcrossing.subwindow = TkNone;
 	    textPtr->pickEvent.xcrossing.time = eventPtr->xmotion.time;
 	    textPtr->pickEvent.xcrossing.x = eventPtr->xmotion.x;
 	    textPtr->pickEvent.xcrossing.y = eventPtr->xmotion.y;
@@ -1597,7 +1568,7 @@ TkTextPickCurrent(
 		    = eventPtr->xmotion.same_screen;
 	    textPtr->pickEvent.xcrossing.focus = False;
 	    textPtr->pickEvent.xcrossing.state = eventPtr->xmotion.state;
-	} else {
+	} else  {
 	    textPtr->pickEvent = *eventPtr;
 	}
     }
@@ -1632,7 +1603,7 @@ TkTextPickCurrent(
     SortTags(textPtr->numCurTags, textPtr->curTagArrayPtr);
     if (numNewTags > 0) {
 	size = numNewTags * sizeof(TkTextTag *);
-	copyArrayPtr = ckalloc(size);
+	copyArrayPtr = (TkTextTag **) ckalloc((unsigned) size);
 	memcpy(copyArrayPtr, newArrayPtr, (size_t) size);
 	for (i = 0; i < textPtr->numCurTags; i++) {
 	    for (j = 0; j < numNewTags; j++) {
@@ -1674,7 +1645,7 @@ TkTextPickCurrent(
 	    event.xcrossing.detail = NotifyAncestor;
 	    TagBindEvent(textPtr, &event, numOldTags, oldArrayPtr);
 	}
-	ckfree(oldArrayPtr);
+	ckfree((char *) oldArrayPtr);
     }
 
     /*
@@ -1696,7 +1667,7 @@ TkTextPickCurrent(
 	    event.xcrossing.detail = NotifyAncestor;
 	    TagBindEvent(textPtr, &event, numNewTags, copyArrayPtr);
 	}
-	ckfree(copyArrayPtr);
+	ckfree((char *) copyArrayPtr);
     }
 }
 
@@ -1726,9 +1697,9 @@ TagBindEvent(
     int numTags,		/* Number of relevant tags. */
     TkTextTag **tagArrayPtr)	/* Array of relevant tags. */
 {
-#   define NUM_BIND_TAGS 10
-    const char *nameArray[NUM_BIND_TAGS];
-    const char **nameArrPtr;
+    #define NUM_BIND_TAGS 10
+    CONST char *nameArray[NUM_BIND_TAGS];
+    CONST char **nameArrPtr;
     int i;
 
     /*
@@ -1736,7 +1707,7 @@ TagBindEvent(
      */
 
     if (numTags > NUM_BIND_TAGS) {
-	nameArrPtr = ckalloc(numTags * sizeof(const char *));
+	nameArrPtr = (CONST char **) ckalloc(numTags * sizeof(CONST char *));
     } else {
 	nameArrPtr = nameArray;
     }
@@ -1749,7 +1720,6 @@ TagBindEvent(
 
     for (i = 0; i < numTags; i++) {
 	TkTextTag *tagPtr = tagArrayPtr[i];
-
 	if (tagPtr != NULL) {
 	    nameArrPtr[i] = tagPtr->name;
 	} else {
@@ -1766,7 +1736,7 @@ TagBindEvent(
 	    textPtr->tkwin, numTags, (ClientData *) nameArrPtr);
 
     if (numTags > NUM_BIND_TAGS) {
-	ckfree(nameArrPtr);
+	ckfree((char *) nameArrPtr);
     }
 }
 

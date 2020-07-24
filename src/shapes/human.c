@@ -31,7 +31,6 @@
 #  include <unistd.h>
 #endif
 
-#include "bu/app.h"
 #include "wdb.h"
 #include "ged.h"
 
@@ -43,8 +42,6 @@ int main(int ac, char *av[])
     struct ged ged;
     int ret;
     const char *filename = NULL;
-
-    bu_setprogname(av[0]);
 
     filename = DEFAULT_FILENAME;
 

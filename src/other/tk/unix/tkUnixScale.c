@@ -13,10 +13,6 @@
 #include "tkInt.h"
 #include "tkScale.h"
 
-#if defined(_WIN32)
-#define snprintf _snprintf
-#endif
-
 /*
  * Forward declarations for functions defined later in this file:
  */
@@ -24,13 +20,11 @@
 static void		DisplayHorizontalScale(TkScale *scalePtr,
 			    Drawable drawable, XRectangle *drawnAreaPtr);
 static void		DisplayHorizontalValue(TkScale *scalePtr,
-			    Drawable drawable, double value, int top,
-			    const char *format);
+			    Drawable drawable, double value, int top);
 static void		DisplayVerticalScale(TkScale *scalePtr,
 			    Drawable drawable, XRectangle *drawnAreaPtr);
 static void		DisplayVerticalValue(TkScale *scalePtr,
-			    Drawable drawable, double value, int rightEdge,
-			    const char *format);
+			    Drawable drawable, double value, int rightEdge);
 
 /*
  *----------------------------------------------------------------------
@@ -52,7 +46,7 @@ TkScale *
 TkpCreateScale(
     Tk_Window tkwin)
 {
-    return ckalloc(sizeof(TkScale));
+    return (TkScale *) ckalloc(sizeof(TkScale));
 }
 
 /*
@@ -77,7 +71,7 @@ void
 TkpDestroyScale(
     TkScale *scalePtr)
 {
-    Tcl_EventuallyFree(scalePtr, TCL_DYNAMIC);
+    Tcl_EventuallyFree((ClientData) scalePtr, TCL_DYNAMIC);
 }
 
 /*
@@ -152,11 +146,11 @@ DisplayVerticalScale(
 	    for (tickValue = scalePtr->fromValue; ;
 		    tickValue += tickInterval) {
 		/*
-		 * The TkRoundValueToResolution call gets rid of accumulated
+		 * The TkRoundToResolution call gets rid of accumulated
 		 * round-off errors, if any.
 		 */
 
-		tickValue = TkRoundValueToResolution(scalePtr, tickValue);
+		tickValue = TkRoundToResolution(scalePtr, tickValue);
 		if (scalePtr->toValue >= scalePtr->fromValue) {
 		    if (tickValue > scalePtr->toValue) {
 			break;
@@ -167,7 +161,7 @@ DisplayVerticalScale(
 		    }
 		}
 		DisplayVerticalValue(scalePtr, drawable, tickValue,
-			scalePtr->vertTickRightX, scalePtr->tickFormat);
+			scalePtr->vertTickRightX);
 	    }
 	}
     }
@@ -178,7 +172,7 @@ DisplayVerticalScale(
 
     if (scalePtr->showValue) {
 	DisplayVerticalValue(scalePtr, drawable, scalePtr->value,
-		scalePtr->vertValueRightX, scalePtr->valueFormat);
+		scalePtr->vertValueRightX);
     }
 
     /*
@@ -230,8 +224,8 @@ DisplayVerticalScale(
 	Tk_GetFontMetrics(scalePtr->tkfont, &fm);
 	Tk_DrawChars(scalePtr->display, drawable, scalePtr->textGC,
 		scalePtr->tkfont, scalePtr->label,
-		scalePtr->labelLength, scalePtr->vertLabelX,
-		scalePtr->inset + (3 * fm.ascent) / 2);
+                scalePtr->labelLength, scalePtr->vertLabelX,
+                scalePtr->inset + (3*fm.ascent)/2);
     }
 }
 
@@ -263,9 +257,8 @@ DisplayVerticalValue(
     double value,		/* Y-coordinate of number to display,
 				 * specified in application coords, not in
 				 * pixels (we'll compute pixels). */
-    int rightEdge,		/* X-coordinate of right edge of text,
+    int rightEdge)		/* X-coordinate of right edge of text,
 				 * specified in pixels. */
-    const char *format)		/* Format string to use for the value */
 {
     register Tk_Window tkwin = scalePtr->tkwin;
     int y, width, length;
@@ -274,9 +267,7 @@ DisplayVerticalValue(
 
     Tk_GetFontMetrics(scalePtr->tkfont, &fm);
     y = TkScaleValueToPixel(scalePtr, value) + fm.ascent/2;
-    if (snprintf(valueString, TCL_DOUBLE_SPACE, format, value) < 0) {
-	valueString[TCL_DOUBLE_SPACE - 1] = '\0';
-    }
+    sprintf(valueString, scalePtr->format, value);
     length = (int) strlen(valueString);
     width = Tk_TextWidth(scalePtr->tkfont, valueString, length);
 
@@ -285,10 +276,10 @@ DisplayVerticalValue(
      * the window.
      */
 
-    if (y - fm.ascent < scalePtr->inset + SPACING) {
+    if ((y - fm.ascent) < (scalePtr->inset + SPACING)) {
 	y = scalePtr->inset + SPACING + fm.ascent;
     }
-    if (y + fm.descent > Tk_Height(tkwin) - scalePtr->inset - SPACING) {
+    if ((y + fm.descent) > (Tk_Height(tkwin) - scalePtr->inset - SPACING)) {
 	y = Tk_Height(tkwin) - scalePtr->inset - SPACING - fm.descent;
     }
     Tk_DrawChars(scalePtr->display, drawable, scalePtr->textGC,
@@ -327,7 +318,7 @@ DisplayHorizontalScale(
 {
     register Tk_Window tkwin = scalePtr->tkwin;
     int x, y, width, height, shadowWidth;
-    double tickInterval = scalePtr->tickInterval;
+    double tickValue, tickInterval = scalePtr->tickInterval;
     Tk_3DBorder sliderBorder;
 
     /*
@@ -351,7 +342,7 @@ DisplayHorizontalScale(
 
 	if (tickInterval != 0) {
 	    char valueString[TCL_DOUBLE_SPACE];
-	    double ticks, maxTicks, tickValue;
+	    double ticks, maxTicks;
 
 	    /*
 	     * Ensure that we will only draw enough of the tick values such
@@ -361,23 +352,20 @@ DisplayHorizontalScale(
 
 	    ticks = fabs((scalePtr->toValue - scalePtr->fromValue)
 		    / tickInterval);
-	    if (snprintf(valueString, TCL_DOUBLE_SPACE, scalePtr->tickFormat,
-		    scalePtr->fromValue) < 0) {
-		valueString[TCL_DOUBLE_SPACE - 1] = '\0';
-	    }
+	    sprintf(valueString, scalePtr->format, scalePtr->fromValue);
 	    maxTicks = (double) Tk_Width(tkwin)
 		    / (double) Tk_TextWidth(scalePtr->tkfont, valueString, -1);
 	    if (ticks > maxTicks) {
-		tickInterval *= ticks / maxTicks;
+		tickInterval *= (ticks / maxTicks);
 	    }
-	    tickValue = scalePtr->fromValue;
-	    while (1) {
+	    for (tickValue = scalePtr->fromValue; ;
+		 tickValue += tickInterval) {
 		/*
-		 * The TkRoundValueToResolution call gets rid of accumulated
+		 * The TkRoundToResolution call gets rid of accumulated
 		 * round-off errors, if any.
 		 */
 
-		tickValue = TkRoundValueToResolution(scalePtr, tickValue);
+		tickValue = TkRoundToResolution(scalePtr, tickValue);
 		if (scalePtr->toValue >= scalePtr->fromValue) {
 		    if (tickValue > scalePtr->toValue) {
 			break;
@@ -388,8 +376,7 @@ DisplayHorizontalScale(
 		    }
 		}
 		DisplayHorizontalValue(scalePtr, drawable, tickValue,
-			scalePtr->horizTickY, scalePtr->tickFormat);
-		tickValue += tickInterval;
+			scalePtr->horizTickY);
 	    }
 	}
     }
@@ -400,7 +387,7 @@ DisplayHorizontalScale(
 
     if (scalePtr->showValue) {
 	DisplayHorizontalValue(scalePtr, drawable, scalePtr->value,
-		scalePtr->horizValueY, scalePtr->valueFormat);
+		scalePtr->horizValueY);
     }
 
     /*
@@ -453,8 +440,8 @@ DisplayHorizontalScale(
 	Tk_GetFontMetrics(scalePtr->tkfont, &fm);
 	Tk_DrawChars(scalePtr->display, drawable, scalePtr->textGC,
 		scalePtr->tkfont, scalePtr->label,
-		scalePtr->labelLength, scalePtr->inset + fm.ascent/2,
-		scalePtr->horizLabelY + fm.ascent);
+                scalePtr->labelLength, scalePtr->inset + fm.ascent/2,
+                scalePtr->horizLabelY + fm.ascent);
     }
 }
 
@@ -486,9 +473,8 @@ DisplayHorizontalValue(
     double value,		/* X-coordinate of number to display,
 				 * specified in application coords, not in
 				 * pixels (we'll compute pixels). */
-    int top,			/* Y-coordinate of top edge of text, specified
+    int top)			/* Y-coordinate of top edge of text, specified
 				 * in pixels. */
-    const char *format)		/* Format string to use for the value */
 {
     register Tk_Window tkwin = scalePtr->tkwin;
     int x, y, length, width;
@@ -498,9 +484,7 @@ DisplayHorizontalValue(
     x = TkScaleValueToPixel(scalePtr, value);
     Tk_GetFontMetrics(scalePtr->tkfont, &fm);
     y = top + fm.ascent;
-    if (snprintf(valueString, TCL_DOUBLE_SPACE, format, value) < 0) {
-	valueString[TCL_DOUBLE_SPACE - 1] = '\0';
-    }
+    sprintf(valueString, scalePtr->format, value);
     length = (int) strlen(valueString);
     width = Tk_TextWidth(scalePtr->tkfont, valueString, length);
 
@@ -509,8 +493,8 @@ DisplayHorizontalValue(
      * the window.
      */
 
-    x -= width / 2;
-    if (x < scalePtr->inset + SPACING) {
+    x -= (width)/2;
+    if (x < (scalePtr->inset + SPACING)) {
 	x = scalePtr->inset + SPACING;
     }
 
@@ -553,7 +537,6 @@ TkpDisplayScale(
     int result;
     char string[TCL_DOUBLE_SPACE];
     XRectangle drawnArea;
-    Tcl_DString buf;
 
     scalePtr->flags &= ~REDRAW_PENDING;
     if ((scalePtr->tkwin == NULL) || !Tk_IsMapped(scalePtr->tkwin)) {
@@ -564,31 +547,24 @@ TkpDisplayScale(
      * Invoke the scale's command if needed.
      */
 
-    Tcl_Preserve(scalePtr);
+    Tcl_Preserve((ClientData) scalePtr);
     if ((scalePtr->flags & INVOKE_COMMAND) && (scalePtr->command != NULL)) {
-	Tcl_Preserve(interp);
-	if (snprintf(string, TCL_DOUBLE_SPACE, scalePtr->valueFormat,
-		scalePtr->value) < 0) {
-	    string[TCL_DOUBLE_SPACE - 1] = '\0';
-	}
-	Tcl_DStringInit(&buf);
-	Tcl_DStringAppend(&buf, scalePtr->command, -1);
-	Tcl_DStringAppend(&buf, " ", -1);
-	Tcl_DStringAppend(&buf, string, -1);
-	result = Tcl_EvalEx(interp, Tcl_DStringValue(&buf), -1, 0);
-	Tcl_DStringFree(&buf);
+	Tcl_Preserve((ClientData) interp);
+	sprintf(string, scalePtr->format, scalePtr->value);
+	result = Tcl_VarEval(interp, scalePtr->command, " ", string,
+		(char *) NULL);
 	if (result != TCL_OK) {
 	    Tcl_AddErrorInfo(interp, "\n    (command executed by scale)");
-	    Tcl_BackgroundException(interp, result);
+	    Tcl_BackgroundError(interp);
 	}
-	Tcl_Release(interp);
+	Tcl_Release((ClientData) interp);
     }
     scalePtr->flags &= ~INVOKE_COMMAND;
     if (scalePtr->flags & SCALE_DELETED) {
-	Tcl_Release(scalePtr);
+	Tcl_Release((ClientData) scalePtr);
 	return;
     }
-    Tcl_Release(scalePtr);
+    Tcl_Release((ClientData) scalePtr);
 
 #ifndef TK_NO_DOUBLE_BUFFERING
     /*
@@ -639,7 +615,7 @@ TkpDisplayScale(
 		gc = Tk_GCForColor(scalePtr->highlightColorPtr, pixmap);
 	    } else {
 		gc = Tk_GCForColor(
-			Tk_3DBorderColor(scalePtr->highlightBorder), pixmap);
+                        Tk_3DBorderColor(scalePtr->highlightBorder), pixmap);
 	    }
 	    Tk_DrawFocusHighlight(tkwin, gc, scalePtr->highlightWidth, pixmap);
 	}
@@ -701,7 +677,7 @@ TkpScaleElement(
 	if (y < sliderFirst) {
 	    return TROUGH1;
 	}
-	if (y < sliderFirst + scalePtr->sliderLength) {
+	if (y < (sliderFirst+scalePtr->sliderLength)) {
 	    return SLIDER;
 	}
 	return TROUGH2;
@@ -721,7 +697,7 @@ TkpScaleElement(
     if (x < sliderFirst) {
 	return TROUGH1;
     }
-    if (x < sliderFirst + scalePtr->sliderLength) {
+    if (x < (sliderFirst+scalePtr->sliderLength)) {
 	return SLIDER;
     }
     return TROUGH2;

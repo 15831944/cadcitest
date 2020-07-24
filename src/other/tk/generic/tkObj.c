@@ -33,8 +33,8 @@ typedef struct PixelRep {
     (PTR2INT((objPtr)->internalRep.twoPtrValue.ptr1))
 
 #define SET_COMPLEXPIXEL(objPtr, repPtr)		\
-    (objPtr)->internalRep.twoPtrValue.ptr1 = NULL;		\
-    (objPtr)->internalRep.twoPtrValue.ptr2 = repPtr
+    (objPtr)->internalRep.twoPtrValue.ptr1 = 0;		\
+    (objPtr)->internalRep.twoPtrValue.ptr2 = (VOID *) repPtr
 
 #define GET_COMPLEXPIXEL(objPtr)			\
     ((PixelRep *) (objPtr)->internalRep.twoPtrValue.ptr2)
@@ -47,7 +47,7 @@ typedef struct PixelRep {
  * thread.
  */
 
-typedef struct {
+typedef struct ThreadSpecificData {
     const Tcl_ObjType *doubleTypePtr;
     const Tcl_ObjType *intTypePtr;
 } ThreadSpecificData;
@@ -82,8 +82,8 @@ typedef struct WindowRep {
  */
 
 static void		DupMMInternalRep(Tcl_Obj *srcPtr, Tcl_Obj *copyPtr);
-static void		DupPixelInternalRep(Tcl_Obj *srcPtr, Tcl_Obj*copyPtr);
-static void		DupWindowInternalRep(Tcl_Obj *srcPtr,Tcl_Obj*copyPtr);
+static void		DupPixelInternalRep(Tcl_Obj *srcPtr, Tcl_Obj *copyPtr);
+static void		DupWindowInternalRep(Tcl_Obj *srcPtr,Tcl_Obj *copyPtr);
 static void		FreeMMInternalRep(Tcl_Obj *objPtr);
 static void		FreePixelInternalRep(Tcl_Obj *objPtr);
 static void		FreeWindowInternalRep(Tcl_Obj *objPtr);
@@ -96,10 +96,10 @@ static int		SetWindowFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr);
 /*
  * The following structure defines the implementation of the "pixel" Tcl
  * object, used for measuring distances. The pixel object remembers its
- * initial display-independent settings.
+ * initial display-independant settings.
  */
 
-static const Tcl_ObjType pixelObjType = {
+static Tcl_ObjType pixelObjType = {
     "pixel",			/* name */
     FreePixelInternalRep,	/* freeIntRepProc */
     DupPixelInternalRep,	/* dupIntRepProc */
@@ -110,10 +110,10 @@ static const Tcl_ObjType pixelObjType = {
 /*
  * The following structure defines the implementation of the "pixel" Tcl
  * object, used for measuring distances. The pixel object remembers its
- * initial display-independent settings.
+ * initial display-independant settings.
  */
 
-static const Tcl_ObjType mmObjType = {
+static Tcl_ObjType mmObjType = {
     "mm",			/* name */
     FreeMMInternalRep,		/* freeIntRepProc */
     DupMMInternalRep,		/* dupIntRepProc */
@@ -126,7 +126,7 @@ static const Tcl_ObjType mmObjType = {
  * Tcl object.
  */
 
-static const Tcl_ObjType windowObjType = {
+static Tcl_ObjType windowObjType = {
     "window",			/* name */
     FreeWindowInternalRep,	/* freeIntRepProc */
     DupWindowInternalRep,	/* dupIntRepProc */
@@ -147,25 +147,14 @@ static const Tcl_ObjType windowObjType = {
  */
 
 static ThreadSpecificData *
-GetTypeCache(void)
+GetTypeCache()
 {
-    ThreadSpecificData *tsdPtr =
+    ThreadSpecificData *tsdPtr = (ThreadSpecificData *)
 	    Tcl_GetThreadData(&dataKey, sizeof(ThreadSpecificData));
 
     if (tsdPtr->doubleTypePtr == NULL) {
-	/* Smart initialization of doubleTypePtr/intTypePtr without
-	 * hash-table lookup or creating complete Tcl_Obj's */
-	Tcl_Obj obj;
-	obj.length = 3;
-	obj.bytes = (char *)"0.0";
-	obj.typePtr = NULL;
-	Tcl_GetDoubleFromObj(NULL, &obj, &obj.internalRep.doubleValue);
-	tsdPtr->doubleTypePtr = obj.typePtr;
-	obj.bytes += 2;
-	obj.length = 1;
-	obj.typePtr = NULL;
-	Tcl_GetLongFromObj(NULL, &obj, &obj.internalRep.longValue);
-	tsdPtr->intTypePtr = obj.typePtr;
+	tsdPtr->doubleTypePtr = Tcl_GetObjType("double");
+	tsdPtr->intTypePtr = Tcl_GetObjType("int");
     }
     return tsdPtr;
 }
@@ -203,7 +192,7 @@ GetPixelsFromObjEx(
     int result, fresh;
     double d;
     PixelRep *pixelPtr;
-    static const double bias[] = {
+    static double bias[] = {
 	1.0,	10.0,	25.4,	0.35278 /*25.4 / 72.0*/
     };
 
@@ -382,7 +371,7 @@ FreePixelInternalRep(
     if (!SIMPLE_PIXELREP(objPtr)) {
 	PixelRep *pixelPtr = GET_COMPLEXPIXEL(objPtr);
 
-	ckfree(pixelPtr);
+	ckfree((char *) pixelPtr);
     }
     SET_SIMPLEPIXEL(objPtr, 0);
     objPtr->typePtr = NULL;
@@ -419,7 +408,7 @@ DupPixelInternalRep(
 	PixelRep *oldPtr, *newPtr;
 
 	oldPtr = GET_COMPLEXPIXEL(srcPtr);
-	newPtr = ckalloc(sizeof(PixelRep));
+	newPtr = (PixelRep *) ckalloc(sizeof(PixelRep));
 	newPtr->value = oldPtr->value;
 	newPtr->units = oldPtr->units;
 	newPtr->tkwin = oldPtr->tkwin;
@@ -453,8 +442,7 @@ SetPixelFromAny(
     Tcl_Obj *objPtr)		/* The object to convert. */
 {
     const Tcl_ObjType *typePtr;
-    const char *string;
-    char *rest;
+    char *string, *rest;
     double d;
     int i, units;
 
@@ -494,7 +482,7 @@ SetPixelFromAny(
 
     typePtr = objPtr->typePtr;
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
-	typePtr->freeIntRepProc(objPtr);
+	(*typePtr->freeIntRepProc)(objPtr);
     }
 
     objPtr->typePtr = &pixelObjType;
@@ -503,7 +491,7 @@ SetPixelFromAny(
     if ((units < 0) && (i == d)) {
 	SET_SIMPLEPIXEL(objPtr, i);
     } else {
-	PixelRep *pixelPtr = ckalloc(sizeof(PixelRep));
+	PixelRep *pixelPtr = (PixelRep *) ckalloc(sizeof(PixelRep));
 
 	pixelPtr->value = d;
 	pixelPtr->units = units;
@@ -515,9 +503,16 @@ SetPixelFromAny(
 
   error:
     if (interp != NULL) {
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"bad screen distance \"%.50s\"", string));
-	Tcl_SetErrorCode(interp, "TK", "VALUE", "PIXELS", NULL);
+	/*
+	 * Must copy string before resetting the result in case a caller is
+	 * trying to convert the interpreter's result to pixels.
+	 */
+
+	char buf[100];
+
+	sprintf(buf, "bad screen distance \"%.50s\"", string);
+	Tcl_ResetResult(interp);
+	Tcl_AppendResult(interp, buf, NULL);
     }
     return TCL_ERROR;
 }
@@ -553,7 +548,7 @@ Tk_GetMMFromObj(
     int result;
     double d;
     MMRep *mmPtr;
-    static const double bias[] = {
+    static double bias[] = {
 	10.0,	25.4,	1.0,	0.35278 /*25.4 / 72.0*/
     };
 
@@ -564,7 +559,7 @@ Tk_GetMMFromObj(
 	}
     }
 
-    mmPtr = objPtr->internalRep.twoPtrValue.ptr1;
+    mmPtr = (MMRep *) objPtr->internalRep.twoPtrValue.ptr1;
     if (mmPtr->tkwin != tkwin) {
 	d = mmPtr->value;
 	if (mmPtr->units == -1) {
@@ -603,7 +598,7 @@ static void
 FreeMMInternalRep(
     Tcl_Obj *objPtr)		/* MM object with internal rep to free. */
 {
-    ckfree(objPtr->internalRep.twoPtrValue.ptr1);
+    ckfree((char *) objPtr->internalRep.twoPtrValue.ptr1);
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
     objPtr->typePtr = NULL;
 }
@@ -634,13 +629,13 @@ DupMMInternalRep(
     MMRep *oldPtr, *newPtr;
 
     copyPtr->typePtr = srcPtr->typePtr;
-    oldPtr = srcPtr->internalRep.twoPtrValue.ptr1;
-    newPtr = ckalloc(sizeof(MMRep));
+    oldPtr = (MMRep *) srcPtr->internalRep.twoPtrValue.ptr1;
+    newPtr = (MMRep *) ckalloc(sizeof(MMRep));
     newPtr->value = oldPtr->value;
     newPtr->units = oldPtr->units;
     newPtr->tkwin = oldPtr->tkwin;
     newPtr->returnValue = oldPtr->returnValue;
-    copyPtr->internalRep.twoPtrValue.ptr1 = newPtr;
+    copyPtr->internalRep.twoPtrValue.ptr1 = (VOID *) newPtr;
 }
 
 /*
@@ -668,18 +663,18 @@ UpdateStringOfMM(
 {
     MMRep *mmPtr;
     char buffer[TCL_DOUBLE_SPACE];
-    size_t len;
+    register int len;
 
-    mmPtr = objPtr->internalRep.twoPtrValue.ptr1;
+    mmPtr = (MMRep *) objPtr->internalRep.twoPtrValue.ptr1;
     /* assert( mmPtr->units == -1 && objPtr->bytes == NULL ); */
     if ((mmPtr->units != -1) || (objPtr->bytes != NULL)) {
 	Tcl_Panic("UpdateStringOfMM: false precondition");
     }
 
     Tcl_PrintDouble(NULL, mmPtr->value, buffer);
-    len = strlen(buffer);
+    len = (int)strlen(buffer);
 
-    objPtr->bytes = ckalloc(len + 1);
+    objPtr->bytes = (char *) ckalloc((unsigned) len + 1);
     strcpy(objPtr->bytes, buffer);
     objPtr->length = len;
 }
@@ -710,8 +705,7 @@ SetMMFromAny(
 {
     ThreadSpecificData *typeCache = GetTypeCache();
     const Tcl_ObjType *typePtr;
-    const char *string;
-    char *rest;
+    char *string, *rest;
     double d;
     int units;
     MMRep *mmPtr;
@@ -746,9 +740,8 @@ SetMMFromAny(
 	     */
 
 	error:
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "bad screen distance \"%s\"", string));
-	    Tcl_SetErrorCode(interp, "TK", "VALUE", "DISTANCE", NULL);
+	    Tcl_AppendResult(interp, "bad screen distance \"", string,
+		    "\"", NULL);
 	    return TCL_ERROR;
 	}
 	while ((*rest != '\0') && isspace(UCHAR(*rest))) {
@@ -782,18 +775,18 @@ SetMMFromAny(
 
     typePtr = objPtr->typePtr;
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
-	typePtr->freeIntRepProc(objPtr);
+	(*typePtr->freeIntRepProc)(objPtr);
     }
 
     objPtr->typePtr = &mmObjType;
 
-    mmPtr = ckalloc(sizeof(MMRep));
+    mmPtr = (MMRep *) ckalloc(sizeof(MMRep));
     mmPtr->value = d;
     mmPtr->units = units;
     mmPtr->tkwin = NULL;
     mmPtr->returnValue	= d;
 
-    objPtr->internalRep.twoPtrValue.ptr1 = mmPtr;
+    objPtr->internalRep.twoPtrValue.ptr1 = (VOID *) mmPtr;
 
     return TCL_OK;
 }
@@ -828,19 +821,19 @@ TkGetWindowFromObj(
 {
     TkMainInfo *mainPtr = ((TkWindow *) tkwin)->mainPtr;
     register WindowRep *winPtr;
+    int result;
 
-    if (objPtr->typePtr != &windowObjType) {
-	int result = SetWindowFromAny(interp, objPtr);
-	if (result != TCL_OK) {
-	    return result;
-	}
+    result = Tcl_ConvertToType(interp, objPtr, &windowObjType);
+    if (result != TCL_OK) {
+	return result;
     }
 
-    winPtr = objPtr->internalRep.twoPtrValue.ptr1;
+    winPtr = (WindowRep *) objPtr->internalRep.twoPtrValue.ptr1;
     if (winPtr->tkwin == NULL
 	    || winPtr->mainPtr == NULL
 	    || winPtr->mainPtr != mainPtr
-	    || winPtr->epoch != mainPtr->deletionEpoch) {
+	    || winPtr->epoch != mainPtr->deletionEpoch)
+    {
 	/*
 	 * Cache is invalid.
 	 */
@@ -892,18 +885,18 @@ SetWindowFromAny(
      * Free the old internalRep before setting the new one.
      */
 
-    Tcl_GetString(objPtr);
+    (void)Tcl_GetString(objPtr);
     typePtr = objPtr->typePtr;
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
-	typePtr->freeIntRepProc(objPtr);
+	(*typePtr->freeIntRepProc)(objPtr);
     }
 
-    winPtr = ckalloc(sizeof(WindowRep));
+    winPtr = (WindowRep *) ckalloc(sizeof(WindowRep));
     winPtr->tkwin = NULL;
     winPtr->mainPtr = NULL;
     winPtr->epoch = 0;
 
-    objPtr->internalRep.twoPtrValue.ptr1 = winPtr;
+    objPtr->internalRep.twoPtrValue.ptr1 = (VOID*)winPtr;
     objPtr->typePtr = &windowObjType;
 
     return TCL_OK;
@@ -935,11 +928,11 @@ DupWindowInternalRep(
     register WindowRep *oldPtr, *newPtr;
 
     oldPtr = srcPtr->internalRep.twoPtrValue.ptr1;
-    newPtr = ckalloc(sizeof(WindowRep));
+    newPtr = (WindowRep *) ckalloc(sizeof(WindowRep));
     newPtr->tkwin = oldPtr->tkwin;
     newPtr->mainPtr = oldPtr->mainPtr;
     newPtr->epoch = oldPtr->epoch;
-    copyPtr->internalRep.twoPtrValue.ptr1 = newPtr;
+    copyPtr->internalRep.twoPtrValue.ptr1 = (VOID *)newPtr;
     copyPtr->typePtr = srcPtr->typePtr;
 }
 
@@ -965,43 +958,9 @@ static void
 FreeWindowInternalRep(
     Tcl_Obj *objPtr)		/* Window object with internal rep to free. */
 {
-    ckfree(objPtr->internalRep.twoPtrValue.ptr1);
+    ckfree((char *) objPtr->internalRep.twoPtrValue.ptr1);
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
     objPtr->typePtr = NULL;
-}
-
-/*
- *----------------------------------------------------------------------
- *
- * TkNewWindowObj --
- *
- *	This function allocates a new Tcl_Obj that refers to a particular to a
- *	particular Tk window.
- *
- * Results:
- *	A standard Tcl object reference, with refcount 0.
- *
- * Side effects:
- *	None.
- *
- *----------------------------------------------------------------------
- */
-
-Tcl_Obj *
-TkNewWindowObj(
-    Tk_Window tkwin)
-{
-    Tcl_Obj *objPtr = Tcl_NewStringObj(Tk_PathName(tkwin), -1);
-    TkMainInfo *mainPtr = ((TkWindow *) tkwin)->mainPtr;
-    register WindowRep *winPtr;
-
-    SetWindowFromAny(NULL, objPtr);
-
-    winPtr = objPtr->internalRep.twoPtrValue.ptr1;
-    winPtr->tkwin = tkwin;
-    winPtr->mainPtr = mainPtr;
-    winPtr->epoch = mainPtr->deletionEpoch;
-    return objPtr;
 }
 
 /*
@@ -1045,11 +1004,11 @@ TkParsePadAmount(
      */
 
     if (specObj->typePtr == &pixelObjType) {
-	if (Tk_GetPixelsFromObj(interp, tkwin, specObj, &firstInt) != TCL_OK){
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "bad pad value \"%s\": must be positive screen distance",
-		    Tcl_GetString(specObj)));
-	    Tcl_SetErrorCode(interp, "TK", "VALUE", "PADDING", "DIST", NULL);
+	if (Tk_GetPixelsFromObj(interp, tkwin, specObj, &firstInt) != TCL_OK) {
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "bad pad value \"",
+		    Tcl_GetString(specObj),
+		    "\": must be positive screen distance", NULL);
 	    return TCL_ERROR;
 	}
 	secondInt = firstInt;
@@ -1065,9 +1024,8 @@ TkParsePadAmount(
 	return TCL_ERROR;
     }
     if (objc != 1 && objc != 2) {
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(
-		"wrong number of parts to pad specification", -1));
-	Tcl_SetErrorCode(interp, "TK", "VALUE", "PADDING", "PARTS", NULL);
+	Tcl_AppendResult(interp,
+		"wrong number of parts to pad specification", NULL);
 	return TCL_ERROR;
     }
 
@@ -1077,10 +1035,9 @@ TkParsePadAmount(
 
     if (Tk_GetPixelsFromObj(interp, tkwin, objv[0], &firstInt) != TCL_OK ||
 	    (firstInt < 0)) {
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"bad pad value \"%s\": must be positive screen distance",
-		Tcl_GetString(objv[0])));
-	Tcl_SetErrorCode(interp, "TK", "VALUE", "PADDING", "DIST", NULL);
+	Tcl_ResetResult(interp);
+	Tcl_AppendResult(interp, "bad pad value \"", Tcl_GetString(objv[0]),
+		"\": must be positive screen distance", NULL);
 	return TCL_ERROR;
     }
 
@@ -1093,10 +1050,10 @@ TkParsePadAmount(
 	secondInt = firstInt;
     } else if (Tk_GetPixelsFromObj(interp, tkwin, objv[1],
 	    &secondInt) != TCL_OK || (secondInt < 0)) {
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"bad 2nd pad value \"%s\": must be positive screen distance",
-		Tcl_GetString(objv[1])));
-	Tcl_SetErrorCode(interp, "TK", "VALUE", "PADDING", "DIST", NULL);
+	Tcl_ResetResult(interp);
+	Tcl_AppendResult(interp, "bad 2nd pad value \"",
+		Tcl_GetString(objv[1]),
+		"\": must be positive screen distance", NULL);
 	return TCL_ERROR;
     }
 
@@ -1123,7 +1080,7 @@ TkParsePadAmount(
  *	None
  *
  * Side effects:
- *	All instances of Tcl_ObjType structures used in Tk are registered with
+ *	All instances of Tcl_ObjType structues used in Tk are registered with
  *	Tcl.
  *
  *----------------------------------------------------------------------
@@ -1138,6 +1095,7 @@ TkRegisterObjTypes(void)
     Tcl_RegisterObjType(&tkCursorObjType);
     Tcl_RegisterObjType(&tkFontObjType);
     Tcl_RegisterObjType(&mmObjType);
+    Tcl_RegisterObjType(&tkOptionObjType);
     Tcl_RegisterObjType(&pixelObjType);
     Tcl_RegisterObjType(&tkStateKeyObjType);
     Tcl_RegisterObjType(&windowObjType);

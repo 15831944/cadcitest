@@ -17,6 +17,7 @@
 #include <iterator>
 
 #include <osg/Node>
+#include <osg/NodeCallback>
 #include <osg/ObserverNodePath>
 
 namespace osg

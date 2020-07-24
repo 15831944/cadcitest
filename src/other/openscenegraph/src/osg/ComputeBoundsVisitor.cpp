@@ -48,6 +48,11 @@ void ComputeBoundsVisitor::getBase(osg::Polytope& polytope, float margin) const
     polytope.add( osg::Plane(0.0, 0.0, 1.0, -(_bb.zMin()-delta)) );
 }
 
+void ComputeBoundsVisitor::apply(osg::Node& node)
+{
+    traverse(node);
+}
+
 void ComputeBoundsVisitor::apply(osg::Transform& transform)
 {
     osg::Matrix matrix;
@@ -62,24 +67,31 @@ void ComputeBoundsVisitor::apply(osg::Transform& transform)
     popMatrix();
 }
 
-void ComputeBoundsVisitor::apply(osg::Drawable& drawable)
+void ComputeBoundsVisitor::apply(osg::Geode& geode)
 {
-    applyBoundingBox(drawable.getBoundingBox());
+    for(unsigned int i=0; i<geode.getNumDrawables(); ++i)
+    {
+        applyDrawable(geode.getDrawable(i));
+    }
 }
 
-void ComputeBoundsVisitor::applyBoundingBox(const osg::BoundingBox& bbox)
+void ComputeBoundsVisitor::applyDrawable(osg::Drawable* drawable)
 {
-    if (_matrixStack.empty()) _bb.expandBy(bbox);
-    else if (bbox.valid())
+    if (_matrixStack.empty()) _bb.expandBy(drawable->getBound());
+    else
     {
-        const osg::Matrix& matrix = _matrixStack.back();
-        _bb.expandBy(bbox.corner(0) * matrix);
-        _bb.expandBy(bbox.corner(1) * matrix);
-        _bb.expandBy(bbox.corner(2) * matrix);
-        _bb.expandBy(bbox.corner(3) * matrix);
-        _bb.expandBy(bbox.corner(4) * matrix);
-        _bb.expandBy(bbox.corner(5) * matrix);
-        _bb.expandBy(bbox.corner(6) * matrix);
-        _bb.expandBy(bbox.corner(7) * matrix);
+        osg::Matrix& matrix = _matrixStack.back();
+        const osg::BoundingBox& dbb = drawable->getBound();
+        if (dbb.valid())
+        {
+            _bb.expandBy(dbb.corner(0) * matrix);
+            _bb.expandBy(dbb.corner(1) * matrix);
+            _bb.expandBy(dbb.corner(2) * matrix);
+            _bb.expandBy(dbb.corner(3) * matrix);
+            _bb.expandBy(dbb.corner(4) * matrix);
+            _bb.expandBy(dbb.corner(5) * matrix);
+            _bb.expandBy(dbb.corner(6) * matrix);
+            _bb.expandBy(dbb.corner(7) * matrix);
+        }
     }
 }

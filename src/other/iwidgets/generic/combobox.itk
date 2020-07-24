@@ -521,7 +521,7 @@ itcl::body iwidgets::Combobox::insert {component index args} {
 	    } else {
 		if {$itk_option(-state) == "normal"} {
 		    eval iwidgets::Entryfield::insert $index $args
-		    eval [itcl::code $this _lookup ""]
+		    [itcl::code $this _lookup ""]
 		}
 	    }
 	}
@@ -1258,7 +1258,7 @@ itcl::body iwidgets::Combobox::_slbListbox {} {
 itcl::body iwidgets::Combobox::_stateSelect {} {
     switch --  $itk_option(-state) {
 	normal {
-	    eval [itcl::code $this _selectCmd]
+	    [itcl::code $this _selectCmd]
 	}
     }
 }

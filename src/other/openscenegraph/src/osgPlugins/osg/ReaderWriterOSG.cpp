@@ -254,13 +254,14 @@ class OSGReaderWriter : public ReaderWriter
             fr.attach(&fin);
             fr.setOptions(options);
 
-            osg::NodeList nodeList;
+            typedef std::vector<osg::Node*> NodeList;
+            NodeList nodeList;
 
             // load all nodes in file, placing them in a group.
             while(!fr.eof())
             {
-                osg::ref_ptr<Node> node = fr.readNode();
-                if (node.valid()) nodeList.push_back(node);
+                Node *node = fr.readNode();
+                if (node) nodeList.push_back(node);
                 else fr.advanceOverCurrentFieldOrBlock();
             }
 

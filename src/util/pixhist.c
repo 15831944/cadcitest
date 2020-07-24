@@ -31,11 +31,10 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/log.h"
 #include "bu/str.h"
-#include "dm.h"
+#include "fb.h"
 
 
 #define IBUFSIZE 3*2048		/* Max read size in rgb pixels */
@@ -46,7 +45,7 @@ long bin_g[256];
 long bin_b[256];
 int verbose = 0;
 
-struct fb *fbp;
+fb *fbp;
 
 static long max;
 static double scalefactor;
@@ -58,8 +57,6 @@ int
 main(int argc, char **argv)
 {
     int i;
-
-    bu_setprogname(argv[0]);
 
     /* check for verbose flag */
     if (argc > 1 && BU_STR_EQUAL(argv[1], "-v")) {

@@ -179,8 +179,7 @@ void IntersectVisitor::IntersectState::addLineSegment(osg::LineSegment* seg)
 }
 
 
-IntersectVisitor::IntersectVisitor():
-    osg::NodeVisitor(osg::NodeVisitor::INTERSECTION_VISITOR, osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN)
+IntersectVisitor::IntersectVisitor()
 {
 
     // override the default node visitor mode.
@@ -205,7 +204,7 @@ void IntersectVisitor::reset()
 {
     _intersectStateStack.clear();
 
-    // create a empty IntersectState on the intersectStateStack.
+    // create a empty IntersectState on the the intersectStateStack.
     _intersectStateStack.push_back(new IntersectState);
 
     _segHitList.clear();
@@ -400,6 +399,7 @@ void IntersectVisitor::apply(Node& node)
     leaveNode();
 }
 
+
 struct TriangleHit
 {
     TriangleHit(unsigned int index, const osg::Vec3& normal, float r1, const osg::Vec3* v1, float r2, const osg::Vec3* v2, float r3, const osg::Vec3* v3):
@@ -473,7 +473,7 @@ struct TriangleIntersect
     }
 
     //   bool intersect(const Vec3& v1,const Vec3& v2,const Vec3& v3,float& r)
-    inline void operator () (const Vec3& v1,const Vec3& v2,const Vec3& v3)
+    inline void operator () (const Vec3& v1,const Vec3& v2,const Vec3& v3, bool treatVertexDataAsTemporary)
     {
         ++_index;
 
@@ -570,7 +570,14 @@ struct TriangleIntersect
         float r = d/_length;
 
 
-        _thl.insert(std::pair<const float,TriangleHit>(r,TriangleHit(_index-1,normal,r1,&v1,r2,&v2,r3,&v3)));
+        if (treatVertexDataAsTemporary)
+        {
+            _thl.insert(std::pair<const float,TriangleHit>(r,TriangleHit(_index-1,normal,r1,0,r2,0,r3,0)));
+        }
+        else
+        {
+            _thl.insert(std::pair<const float,TriangleHit>(r,TriangleHit(_index-1,normal,r1,&v1,r2,&v2,r3,&v3)));
+        }
         _hit = true;
 
     }
@@ -583,7 +590,7 @@ bool IntersectVisitor::intersect(Drawable& drawable)
 
     IntersectState* cis = _intersectStateStack.back().get();
 
-    const BoundingBox& bb = drawable.getBoundingBox();
+    const BoundingBox& bb = drawable.getBound();
 
     for(IntersectState::LineSegmentList::iterator sitr=cis->_segList.begin();
         sitr!=cis->_segList.end();
@@ -652,12 +659,6 @@ bool IntersectVisitor::intersect(Drawable& drawable)
 
     return hitFlag;
 
-}
-
-
-void IntersectVisitor::apply(Drawable& drawable)
-{
-    intersect(drawable);
 }
 
 void IntersectVisitor::apply(Geode& geode)

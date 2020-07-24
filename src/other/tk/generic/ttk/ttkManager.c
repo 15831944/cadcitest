@@ -188,7 +188,7 @@ static void SlaveEventHandler(ClientData clientData, XEvent *eventPtr)
 static Ttk_Slave *NewSlave(
     Ttk_Manager *mgr, Tk_Window slaveWindow, void *slaveData)
 {
-    Ttk_Slave *slave = ckalloc(sizeof(*slave));
+    Ttk_Slave *slave = (Ttk_Slave*)ckalloc(sizeof(*slave));
 
     slave->slaveWindow = slaveWindow;
     slave->manager = mgr;
@@ -200,7 +200,7 @@ static Ttk_Slave *NewSlave(
 
 static void DeleteSlave(Ttk_Slave *slave)
 {
-    ckfree(slave);
+    ckfree((ClientData)slave);
 }
 
 /*------------------------------------------------------------------------
@@ -210,7 +210,7 @@ static void DeleteSlave(Ttk_Slave *slave)
 Ttk_Manager *Ttk_CreateManager(
     Ttk_ManagerSpec *managerSpec, void *managerData, Tk_Window masterWindow)
 {
-    Ttk_Manager *mgr = ckalloc(sizeof(*mgr));
+    Ttk_Manager *mgr = (Ttk_Manager*)ckalloc(sizeof(*mgr));
 
     mgr->managerSpec 	= managerSpec;
     mgr->managerData	= managerData;
@@ -234,12 +234,12 @@ void Ttk_DeleteManager(Ttk_Manager *mgr)
 	Ttk_ForgetSlave(mgr, mgr->nSlaves - 1);
     }
     if (mgr->slaves) {
-	ckfree(mgr->slaves);
+	ckfree((ClientData)mgr->slaves);
     }
 
     Tcl_CancelIdleCall(ManagerIdleProc, mgr);
 
-    ckfree(mgr);
+    ckfree((ClientData)mgr);
 }
 
 /*------------------------------------------------------------------------
@@ -252,7 +252,8 @@ void Ttk_DeleteManager(Ttk_Manager *mgr)
 static void InsertSlave(Ttk_Manager *mgr, Ttk_Slave *slave, int index)
 {
     int endIndex = mgr->nSlaves++;
-    mgr->slaves = ckrealloc(mgr->slaves, mgr->nSlaves * sizeof(Ttk_Slave *));
+    mgr->slaves = (Ttk_Slave**)ckrealloc(
+	    (ClientData)mgr->slaves, mgr->nSlaves * sizeof(Ttk_Slave *));
 
     while (endIndex > index) {
 	mgr->slaves[endIndex] = mgr->slaves[endIndex - 1];
@@ -455,9 +456,10 @@ int Ttk_GetSlaveIndexFromObj(
      */
     if (Tcl_GetIntFromObj(NULL, objPtr, &slaveIndex) == TCL_OK) {
 	if (slaveIndex < 0 || slaveIndex >= mgr->nSlaves) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"Slave index %d out of bounds", slaveIndex));
-	    Tcl_SetErrorCode(interp, "TTK", "SLAVE", "INDEX", NULL);
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp,
+		"Slave index ", Tcl_GetString(objPtr), " out of bounds",
+		NULL);
 	    return TCL_ERROR;
 	}
 	*indexPtr = slaveIndex;
@@ -466,23 +468,23 @@ int Ttk_GetSlaveIndexFromObj(
 
     /* Try interpreting as a slave window name;
      */
-    if ((*string == '.') &&
-	    (tkwin = Tk_NameToWindow(interp, string, mgr->masterWindow))) {
+    if (   (*string == '.')
+	&& (tkwin = Tk_NameToWindow(interp, string, mgr->masterWindow)))
+    {
 	slaveIndex = Ttk_SlaveIndex(mgr, tkwin);
 	if (slaveIndex < 0) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "%s is not managed by %s", string,
-		    Tk_PathName(mgr->masterWindow)));
-	    Tcl_SetErrorCode(interp, "TTK", "SLAVE", "MANAGER", NULL);
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp,
+		string, " is not managed by ", Tk_PathName(mgr->masterWindow),
+		NULL);
 	    return TCL_ERROR;
 	}
 	*indexPtr = slaveIndex;
 	return TCL_OK;
     }
 
-    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-	    "Invalid slave specification %s", string));
-    Tcl_SetErrorCode(interp, "TTK", "SLAVE", "SPEC", NULL);
+    Tcl_ResetResult(interp);
+    Tcl_AppendResult(interp, "Invalid slave specification ", string, NULL);
     return TCL_ERROR;
 }
 
@@ -541,9 +543,10 @@ int Ttk_Maintainable(Tcl_Interp *interp, Tk_Window slave, Tk_Window master)
     return 1;
 
 badWindow:
-    Tcl_SetObjResult(interp, Tcl_ObjPrintf("can't add %s as slave of %s",
-	    Tk_PathName(slave), Tk_PathName(master)));
-    Tcl_SetErrorCode(interp, "TTK", "GEOMETRY", "MAINTAINABLE", NULL);
+    Tcl_AppendResult(interp,
+	"can't add ", Tk_PathName(slave),
+	" as slave of ", Tk_PathName(master),
+	NULL);
     return 0;
 }
 

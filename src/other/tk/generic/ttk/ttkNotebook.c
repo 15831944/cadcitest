@@ -69,8 +69,8 @@ static Tk_OptionSpec TabOptionSpecs[] =
     {TK_OPTION_STRING, "-image", "image", "Image", NULL/*default*/,
 	Tk_Offset(Tab,imageObj), -1, TK_OPTION_NULL_OK,0,GEOMETRY_CHANGED },
     {TK_OPTION_STRING_TABLE, "-compound", "compound", "Compound",
-	NULL, Tk_Offset(Tab,compoundObj), -1,
-	TK_OPTION_NULL_OK,(ClientData)ttkCompoundStrings,GEOMETRY_CHANGED },
+	"none", Tk_Offset(Tab,compoundObj), -1,
+	0,(ClientData)ttkCompoundStrings,GEOMETRY_CHANGED },
     {TK_OPTION_INT, "-underline", "underline", "Underline", "-1",
 	Tk_Offset(Tab,underlineObj), -1, 0,0,GEOMETRY_CHANGED },
     {TK_OPTION_END, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0 }
@@ -288,14 +288,13 @@ static void ActivateTab(Notebook *nb, int index)
  * TabState --
  * 	Return the state of the specified tab, based on
  * 	notebook state, currentIndex, activeIndex, and user-specified tab state.
- *	The USER1 bit is set for the leftmost visible tab, and USER2
- * 	is set for the rightmost visible tab.
+ *	The USER1 bit is set for the leftmost tab, and USER2
+ * 	is set for the rightmost tab.
  */
 static Ttk_State TabState(Notebook *nb, int index)
 {
     Ttk_State state = nb->core.state;
     Tab *tab = Ttk_SlaveData(nb->notebook.mgr, index);
-    int i = 0;
 
     if (index == nb->notebook.currentIndex) {
 	state |= TTK_STATE_SELECTED;
@@ -306,25 +305,11 @@ static Ttk_State TabState(Notebook *nb, int index)
     if (index == nb->notebook.activeIndex) {
 	state |= TTK_STATE_ACTIVE;
     }
-    for (i = 0; i < Ttk_NumberSlaves(nb->notebook.mgr); ++i) {
-	Tab *tab = Ttk_SlaveData(nb->notebook.mgr, i);
-	if (tab->state == TAB_STATE_HIDDEN) {
-	    continue;
-	}
-	if (index == i) {
-	    state |= TTK_STATE_USER1;
-	}
-	break;
+    if (index == 0) {
+    	state |= TTK_STATE_USER1;
     }
-    for (i = Ttk_NumberSlaves(nb->notebook.mgr) - 1; i >= 0; --i) {
-	Tab *tab = Ttk_SlaveData(nb->notebook.mgr, i);
-	if (tab->state == TAB_STATE_HIDDEN) {
-	    continue;
-	}
-	if (index == i) {
-	    state |= TTK_STATE_USER2;
-	}
-	break;
+    if (index == Ttk_NumberSlaves(nb->notebook.mgr) - 1) {
+    	state |= TTK_STATE_USER2;
     }
     if (tab->state == TAB_STATE_DISABLED) {
 	state |= TTK_STATE_DISABLED;
@@ -340,8 +325,6 @@ static Ttk_State TabState(Notebook *nb, int index)
 /* TabrowSize --
  *	Compute max height and total width of all tabs (horizontal layouts)
  *	or total height and max width (vertical layouts).
- *	The -mintabwidth style option is taken into account (for the width
- *	only).
  *
  * Side effects:
  * 	Sets width and height fields for all tabs.
@@ -351,7 +334,7 @@ static Ttk_State TabState(Notebook *nb, int index)
  * 	(max height/width) but not parallel (total width/height).
  */
 static void TabrowSize(
-    Notebook *nb, Ttk_Orient orient, int minTabWidth, int *widthPtr, int *heightPtr)
+    Notebook *nb, Ttk_Orient orient, int *widthPtr, int *heightPtr)
 {
     Ttk_Layout tabLayout = nb->notebook.tabLayout;
     int tabrowWidth = 0, tabrowHeight = 0;
@@ -363,7 +346,6 @@ static void TabrowSize(
 
 	Ttk_RebindSublayout(tabLayout, tab);
 	Ttk_LayoutSize(tabLayout,tabState,&tab->width,&tab->height);
-        tab->width = MAX(tab->width, minTabWidth);
 
 	if (orient == TTK_ORIENT_HORIZONTAL) {
 	    tabrowHeight = MAX(tabrowHeight, tab->height);
@@ -424,7 +406,7 @@ static int NotebookSize(void *clientData, int *widthPtr, int *heightPtr)
 
     /* Tab row:
      */
-    TabrowSize(nb, nbstyle.tabOrient, nbstyle.minTabWidth, &tabrowWidth, &tabrowHeight);
+    TabrowSize(nb, nbstyle.tabOrient, &tabrowWidth, &tabrowHeight);
     tabrowHeight += Ttk_PaddingHeight(nbstyle.tabMargins);
     tabrowWidth += Ttk_PaddingWidth(nbstyle.tabMargins);
 
@@ -454,30 +436,47 @@ static int NotebookSize(void *clientData, int *widthPtr, int *heightPtr)
 
 /* SqueezeTabs --
  *	Squeeze or stretch tabs to fit within the tab area parcel.
- *	This happens independently of the -mintabwidth style option.
  *
- *	All tabs are adjusted by an equal amount.
+ *	All tabs are adjusted by an equal amount, but will not be made
+ *	smaller than the minimum width.  (If all the tabs still do
+ *	not fit in the available space, the rightmost ones will
+ *	be further squozen by PlaceTabs()).
+ *
+ *	The algorithm does not always yield an optimal layout, but does
+ *	have the important property that decreasing the available width
+ *	by one pixel will cause at most one tab to shrink by one pixel;
+ *	this means that tabs resize "smoothly" when the window shrinks
+ *	and grows.
  *
  * @@@ <<NOTE-TABPOSITION>> bug: only works for horizontal orientations
  * @@@ <<NOTE-SQUEEZE-HIDDEN>> does not account for hidden tabs.
  */
 
 static void SqueezeTabs(
-    Notebook *nb, int needed, int available)
+    Notebook *nb, int needed, int available, int minTabWidth)
 {
     int nTabs = Ttk_NumberSlaves(nb->notebook.mgr);
 
     if (nTabs > 0) {
-	int difference = available - needed;
-	double delta = (double)difference / needed;
-	double slack = 0;
+	int difference = available - needed,
+	    delta = difference / nTabs,
+	    remainder = difference % nTabs,
+	    slack = 0;
 	int i;
+
+	if (remainder < 0) { remainder += nTabs; --delta; }
 
 	for (i = 0; i < nTabs; ++i) {
 	    Tab *tab = Ttk_SlaveData(nb->notebook.mgr,i);
-	    double ad = slack + tab->width * delta;
-	    tab->width += (int)ad;
-	    slack = ad - (int)ad;
+	    int adj = delta + (i < remainder) + slack;
+
+	    if (tab->width + adj >= minTabWidth) {
+		tab->width += adj;
+		slack = 0;
+	    } else {
+		slack = adj - (minTabWidth - tab->width);
+		tab->width = minTabWidth;
+	    }
 	}
     }
 }
@@ -540,13 +539,8 @@ static void NotebookDoLayout(void *recordPtr)
     Ttk_PlaceLayout(nb->core.layout, nb->core.state, Ttk_WinBox(nbwin));
 
     /* Place tabs:
-     * Note: TabrowSize() takes into account -mintabwidth, but the tabs will
-     * actually have this minimum size when displayed only if there is enough
-     * space to draw the tabs with this width. Otherwise some of the tabs can
-     * be squeezed to a size smaller than -mintabwidth because we prefer
-     * displaying all tabs than than honoring -mintabwidth for all of them.
      */
-    TabrowSize(nb, nbstyle.tabOrient, nbstyle.minTabWidth, &tabrowWidth, &tabrowHeight);
+    TabrowSize(nb, nbstyle.tabOrient, &tabrowWidth, &tabrowHeight);
     tabrowBox = Ttk_PadBox(
 		    Ttk_PositionBox(&cavity,
 			tabrowWidth + Ttk_PaddingWidth(nbstyle.tabMargins),
@@ -554,7 +548,7 @@ static void NotebookDoLayout(void *recordPtr)
 			nbstyle.tabPosition),
 		    nbstyle.tabMargins);
 
-    SqueezeTabs(nb, tabrowWidth, tabrowBox.width);
+    SqueezeTabs(nb, tabrowWidth, tabrowBox.width, nbstyle.minTabWidth);
     PlaceTabs(nb, tabrowBox, nbstyle.tabPlacement);
 
     /* Layout for client area frame:
@@ -627,12 +621,9 @@ static void SelectTab(Notebook *nb, int index)
 	Ttk_UnmapSlave(nb->notebook.mgr, currentIndex);
     }
 
-    /* Must be set before calling NotebookPlaceSlave(), otherwise it may
-     * happen that NotebookPlaceSlaves(), triggered by an interveaning
-     * geometry request, will swap to old index. */
-    nb->notebook.currentIndex = index;
-
     NotebookPlaceSlave(nb, index);
+
+    nb->notebook.currentIndex = index;
     TtkRedisplayWidget(&nb->core);
 
     TtkSendVirtualEvent(nb->core.tkwin, "NotebookTabChanged");
@@ -736,9 +727,9 @@ static int AddTab(
     }
 #if 0 /* can't happen */
     if (Ttk_SlaveIndex(nb->notebook.mgr, slaveWindow) >= 0) {
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf("%s already added",
-	    Tk_PathName(slaveWindow)));
-	Tcl_SetErrorCode(interp, "TTK", "NOTEBOOK", "PRESENT", NULL);
+	Tcl_AppendResult(interp,
+	    Tk_PathName(slaveWindow), " already added",
+	    NULL);
 	return TCL_ERROR;
     }
 #endif
@@ -868,9 +859,10 @@ static int GetTabIndex(
     int status = FindTabIndex(interp, nb, objPtr, index_rtn);
 
     if (status == TCL_OK && *index_rtn < 0) {
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-	    "tab '%s' not found", Tcl_GetString(objPtr)));
-	Tcl_SetErrorCode(interp, "TTK", "NOTEBOOK", "TAB", NULL);
+	Tcl_ResetResult(interp);
+	Tcl_AppendResult(interp,
+	    "tab '", Tcl_GetString(objPtr), "' not found",
+	    NULL);
 	status = TCL_ERROR;
     }
     return status;
@@ -1067,8 +1059,9 @@ static int NotebookIdentifyCommand(
 
     if (   Tcl_GetIntFromObj(interp, objv[objc-2], &x) != TCL_OK
 	|| Tcl_GetIntFromObj(interp, objv[objc-1], &y) != TCL_OK
-	|| (objc == 5 && Tcl_GetIndexFromObjStruct(interp, objv[2], whatTable,
-		sizeof(char *), "option", 0, &what) != TCL_OK)
+	|| (objc == 5 &&
+	    Tcl_GetIndexFromObj(interp, objv[2], whatTable, "option", 0, &what)
+		!= TCL_OK)
     ) {
 	return TCL_ERROR;
     }
@@ -1089,8 +1082,7 @@ static int NotebookIdentifyCommand(
 	case IDENTIFY_ELEMENT:
 	    if (element) {
 		const char *elementName = Ttk_ElementName(element);
-
-		Tcl_SetObjResult(interp, Tcl_NewStringObj(elementName, -1));
+		Tcl_SetObjResult(interp,Tcl_NewStringObj(elementName,-1));
 	    }
 	    break;
 	case IDENTIFY_TAB:
@@ -1181,10 +1173,10 @@ static int NotebookTabsCommand(
     result = Tcl_NewListObj(0, NULL);
     for (i = 0; i < Ttk_NumberSlaves(mgr); ++i) {
 	const char *pathName = Tk_PathName(Ttk_SlaveWindow(mgr,i));
-
-	Tcl_ListObjAppendElement(NULL, result, Tcl_NewStringObj(pathName,-1));
+	Tcl_ListObjAppendElement(interp, result, Tcl_NewStringObj(pathName,-1));
     }
     Tcl_SetObjResult(interp, result);
+
     return TCL_OK;
 }
 

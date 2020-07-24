@@ -27,7 +27,6 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 
 int
 main(int ac, char *av[])
@@ -36,8 +35,6 @@ main(int ac, char *av[])
     unsigned char obuf[512];
 
     size_t num, i;
-
-    bu_setprogname(av[0]);
 
     if (isatty(fileno(stdin)) || isatty(fileno(stdout))) {
 	fprintf(stderr, "Usage: %s < u_shorts > bwfile\n",

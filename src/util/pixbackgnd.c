@@ -33,7 +33,6 @@
 #include "bio.h"
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
 #include "bu/exit.h"
@@ -255,8 +254,6 @@ main(int argc, char **argv)
     unsigned char *horiz_buf;
     unsigned char *vert_buf;
     unsigned char *vp;
-
-    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv) || isatty(fileno(stdout))) {
 	(void)fputs(usage, stderr);

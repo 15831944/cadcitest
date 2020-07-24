@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/log.h"
 #include "bu/malloc.h"
@@ -153,8 +152,6 @@ main(int argc, char *argv[])
     /* geometry */
     point2d_t *verts = NULL;
     size_t num_verts = 0;
-
-    bu_setprogname(argv[0]);
 
     if (argc < 2) {
 	usage(argv0);

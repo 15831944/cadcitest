@@ -41,7 +41,6 @@
 #include "bio.h"
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bu/file.h"
 #include "bu/malloc.h"
 #include "bu/getopt.h"
@@ -366,8 +365,6 @@ main(int argc, char **argv)
     int tmp;
     int n;
     unsigned long clip_high = 0L , clip_low = 0L ;
-
-    bu_setprogname(argv[0]);
 
     setmode(fileno(stdin), O_BINARY);
     setmode(fileno(stdout), O_BINARY);

@@ -15,6 +15,11 @@
 
 #define OSType long
 
+#ifdef BUILD_tk
+# undef TCL_STORAGE_CLASS
+# define TCL_STORAGE_CLASS DLLEXPORT
+#endif
+
 typedef struct GlobPattern {
     struct GlobPattern *next;	/* Chains to the next glob pattern in a glob
 				 * pattern list */
@@ -75,4 +80,6 @@ MODULE_SCOPE int	TkGetFileFilters(Tcl_Interp *interp,
     			    FileFilterList *flistPtr, Tcl_Obj *valuePtr,
 			    int isWindows);
 
-#endif	/* _TK_FILE_FILTER */
+# undef TCL_STORAGE_CLASS
+# define TCL_STORAGE_CLASS DLLIMPORT
+#endif

@@ -27,6 +27,10 @@
 #include "bu/log.h"
 #include "icv_private.h"
 
+/* defined in encoding.c */
+extern double *uchar2double(unsigned char *data, size_t size);
+extern unsigned char *data2uchar(const icv_image_t *bif);
+
 int
 pix_write(icv_image_t *bif, const char *filename)
 {
@@ -48,7 +52,7 @@ pix_write(icv_image_t *bif, const char *filename)
 	return -1;
     }
 
-    data =  icv_data2uchar(bif);
+    data =  data2uchar(bif);
     size = (size_t) bif->width*bif->height*3;
     ret = fwrite(data, 1, size, fp);
     fclose(fp);
@@ -71,7 +75,6 @@ pix_read(const char* filename, size_t width, size_t height)
 
     if (filename == NULL) {
 	fp = stdin;
-	setmode(fileno(fp), O_BINARY);
     } else if ((fp = fopen(filename, "rb")) == NULL) {
 	bu_log("pix_read: Cannot open file for reading\n");
 	return NULL;
@@ -115,7 +118,7 @@ pix_read(const char* filename, size_t width, size_t height)
 	bif->width = width;
     }
     if (size)
-	bif->data = icv_uchar2double(data, size);
+	bif->data = uchar2double(data, size);
     else {
 	/* zero sized image */
 	bu_free(bif, "icv container");
@@ -123,7 +126,7 @@ pix_read(const char* filename, size_t width, size_t height)
 	fclose(fp);
 	return NULL;
     }
-    bif->data = icv_uchar2double(data, size);
+    bif->data = uchar2double(data, size);
     bu_free(data, "pix_read : unsigned char data");
     bif->magic = ICV_IMAGE_MAGIC;
     bif->channels = 3;

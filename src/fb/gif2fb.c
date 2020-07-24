@@ -44,11 +44,10 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/exit.h"
 #include "vmath.h"
-#include "dm.h"
+#include "fb.h"
 
 
 #define LSB 0 /* Least Significant Byte */
@@ -129,10 +128,8 @@ main(int argc, char **argv)
     static int lace[4] = {8, 8, 4, 2};
     static int offs[4] = {0, 4, 2, 1};
 
-    struct fb *fbp;
+    fb *fbp;
     FILE *fp;
-
-    bu_setprogname(argv[0]);
 
     while ((code = bu_getopt(argc, argv, "HvFh?")) != -1) {
 	switch (code) {

@@ -22,7 +22,6 @@ set(LIBBN_SOURCES
   marker.c
   mat.c
   msr.c
-  mt19937ar.c
   multipoly.c
   noise.c
   plane.cpp
@@ -30,6 +29,7 @@ set(LIBBN_SOURCES
   poly.c
   qmath.c
   rand.c
+  randmt.c
   randsph.c
   scale.c
   sobolseq.c

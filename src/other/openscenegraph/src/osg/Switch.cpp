@@ -196,10 +196,7 @@ BoundingSphere Switch::computeBound() const
         if (!transform || transform->getReferenceFrame()==osg::Transform::RELATIVE_RF)
         {
             if( _values[pos] == true )
-            {
-                const osg::BoundingSphere& bs = _children[pos]->getBound();
-                bb.expandBy(bs);
-            }
+                bb.expandBy(_children[pos]->getBound());
         }
     }
 
@@ -216,10 +213,7 @@ BoundingSphere Switch::computeBound() const
         if (!transform || transform->getReferenceFrame()==osg::Transform::RELATIVE_RF)
         {
             if( _values[pos] == true )
-            {
-                const osg::BoundingSphere& bs = _children[pos]->getBound();
-                bsphere.expandRadiusBy(bs);
-            }
+                bsphere.expandRadiusBy(_children[pos]->getBound());
         }
     }
     return bsphere;

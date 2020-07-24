@@ -503,8 +503,6 @@ main(int argc, char *argv[])
     int includeExabyteTests;
     int verbose;
 
-    bu_setprogname(argv[0]);
-
     buflen = 4;
     includeNegScale = 0;
     includeExabyteTests = 0;

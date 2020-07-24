@@ -15,7 +15,7 @@
 #ifndef OSGUTIL_TRANSFORMCALLBACK
 #define OSGUTIL_TRANSFORMCALLBACK 1
 
-#include <osg/Callback>
+#include <osg/Node>
 #include <osgUtil/Export>
 
 namespace osgUtil

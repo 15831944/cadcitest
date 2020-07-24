@@ -39,7 +39,6 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
@@ -47,7 +46,7 @@
 #include "bu/exit.h"
 #include "bu/log.h"
 #include "vmath.h"
-#include "dm.h"
+#include "fb.h"
 
 
 int skipbytes(int fd, b_off_t num);
@@ -76,7 +75,7 @@ static int blueflag  = 0;
 static char *framebuffer = NULL;
 static char *file_name;
 static int infd;
-static struct fb *fbp;
+static fb *fbp;
 
 static char usage[] = "\
 Usage: bw-fb [-a -i -c -z -R -G -B] [-F framebuffer]\n\
@@ -187,8 +186,6 @@ main(int argc, char **argv)
     int x, y, n;
     long xout, yout;		/* number of screen output lines */
     long xstart, xskip;
-
-    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

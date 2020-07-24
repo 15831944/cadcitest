@@ -7,9 +7,7 @@ rm -f current_rev.txt git.log nsha1.txt rev_gsha1s.txt svn_msgs.txt branches.txt
 REPODIR="$PWD/brlcad_repo"
 
 if [ ! -e "cvs-fast-export" ]; then
-        curl -o cvs-fast-export.tar.gz https://gitlab.com/esr/cvs-fast-export/-/archive/1.48/cvs-fast-export-1.48.tar.gz
-	tar -xvf cvs-fast-export.tar.gz
-	mv cvs-fast-export-1.48 cvs-fast-export
+        git clone https://gitlab.com/esr/cvs-fast-export.git
 fi
 cd cvs-fast-export && make cvs-fast-export && cd ..
 

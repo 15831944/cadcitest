@@ -12,7 +12,7 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
-#include "tkInt.h"
+#include <tkInt.h>
 
 #if !defined(MAC_OSX_TK)
 #   include <X11/Xlib.h>
@@ -50,8 +50,8 @@
 static TkpClipMask *AllocClipMask(GC gc) {
     TkpClipMask *clip_mask = (TkpClipMask*) gc->clip_mask;
 
-    if (clip_mask == NULL) {
-	clip_mask = ckalloc(sizeof(TkpClipMask));
+    if (clip_mask == TkNone) {
+	clip_mask = (TkpClipMask*) ckalloc(sizeof(TkpClipMask));
 	gc->clip_mask = (Pixmap) clip_mask;
 #ifdef MAC_OSX_TK
     } else if (clip_mask->type == TKP_CLIP_REGION) {
@@ -78,14 +78,14 @@ static TkpClipMask *AllocClipMask(GC gc) {
  */
 
 static void FreeClipMask(GC gc) {
-    if (gc->clip_mask != None) {
+    if (gc->clip_mask != TkNone) {
 #ifdef MAC_OSX_TK
 	if (((TkpClipMask*) gc->clip_mask)->type == TKP_CLIP_REGION) {
 	    TkpReleaseRegion(((TkpClipMask*) gc->clip_mask)->value.region);
 	}
 #endif
-	ckfree(gc->clip_mask);
-	gc->clip_mask = None;
+	ckfree((char*) gc->clip_mask);
+	gc->clip_mask = TkNone;
     }
 }
 
@@ -117,15 +117,16 @@ XCreateGC(
     /*
      * In order to have room for a dash list, MAX_DASH_LIST_SIZE extra chars
      * are defined, which is invisible from the outside. The list is assumed
-     * to end with a 0-char, so this must be set explicitly during
+     * to end with a 0-char, so this must be set explicitely during
      * initialization.
      */
 
 #define MAX_DASH_LIST_SIZE 10
 
-    gp = ckalloc(sizeof(XGCValues) + MAX_DASH_LIST_SIZE + gcCacheSize);
+    gp = (XGCValues *) ckalloc(sizeof(XGCValues) + MAX_DASH_LIST_SIZE +
+	    gcCacheSize);
     if (!gp) {
-	return NULL;
+	return TkNone;
     }
 
 #define InitField(name,maskbit,default) \
@@ -144,11 +145,11 @@ XCreateGC(
     InitField(fill_style,	  GCFillStyle,		FillSolid);
     InitField(fill_rule,	  GCFillRule,		WindingRule);
     InitField(arc_mode,		  GCArcMode,		ArcPieSlice);
-    InitField(tile,		  GCTile,		None);
-    InitField(stipple,		  GCStipple,		None);
+    InitField(tile,		  GCTile,		TkNone);
+    InitField(stipple,		  GCStipple,		TkNone);
     InitField(ts_x_origin,	  GCTileStipXOrigin,	0);
     InitField(ts_y_origin,	  GCTileStipYOrigin,	0);
-    InitField(font,		  GCFont,		None);
+    InitField(font,		  GCFont,		TkNone);
     InitField(subwindow_mode,	  GCSubwindowMode,	ClipByChildren);
     InitField(graphics_exposures, GCGraphicsExposures,	True);
     InitField(clip_x_origin,	  GCClipXOrigin,	0);
@@ -157,7 +158,7 @@ XCreateGC(
     InitField(dashes,		  GCDashList,		4);
     (&(gp->dashes))[1] = 0;
 
-    gp->clip_mask = None;
+    gp->clip_mask = TkNone;
     if (mask & GCClipMask) {
 	TkpClipMask *clip_mask = AllocClipMask(gp);
 
@@ -268,10 +269,10 @@ int XFreeGC(
     Display *d,
     GC gc)
 {
-    if (gc != NULL) {
+    if (gc != TkNone) {
 	FreeClipMask(gc);
 	TkpFreeGCCache(gc);
-	ckfree(gc);
+	ckfree((char *) gc);
     }
     return Success;
 }
@@ -453,19 +454,19 @@ XSetClipOrigin(
  *	None.
  *
  * Side effects:
- *	Allocates or deallocates a TkpClipMask.
+ *	Allocates or dealloates a TkpClipMask.
  *
  *----------------------------------------------------------------------
  */
 
-int
+void
 TkSetRegion(
     Display *display,
     GC gc,
     TkRegion r)
 {
-    if (r == NULL) {
-	Tcl_Panic("must not pass NULL to TkSetRegion for compatibility with X11; use XSetClipMask instead");
+    if (r == TkNone) {
+	Tcl_Panic("must not pass TkNone to TkSetRegion for compatibility with X11; use XSetClipMask instead");
     } else {
 	TkpClipMask *clip_mask = AllocClipMask(gc);
 
@@ -475,7 +476,6 @@ TkSetRegion(
 	TkpRetainRegion(r);
 #endif
     }
-    return Success;
 }
 
 int
@@ -484,7 +484,7 @@ XSetClipMask(
     GC gc,
     Pixmap pixmap)
 {
-    if (pixmap == None) {
+    if (pixmap == TkNone) {
 	FreeClipMask(gc);
     } else {
 	TkpClipMask *clip_mask = AllocClipMask(gc);
@@ -561,7 +561,7 @@ XDrawSegments(
     XSegment *segments,
     int nsegments)
 {
-    return BadDrawable;
+    return Success;
 }
 #endif
 

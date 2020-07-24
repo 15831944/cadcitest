@@ -59,25 +59,6 @@ class OSGUTIL_EXPORT CullVisitor : public osg::NodeVisitor, public osg::CullStac
 
         META_NodeVisitor(osgUtil, CullVisitor)
 
-        /** Convert 'this' into a osgUtil::CullVisitor pointer if Object is a osgUtil::CullVisitor, otherwise return 0.
-          * Equivalent to dynamic_cast<osgUtil::CullVisitor*>(this).*/
-        virtual osgUtil::CullVisitor* asCullVisitor() { return this; }
-
-        /** convert 'const this' into a const osgUtil::CullVisitor pointer if Object is a osgUtil::CullVisitor, otherwise return 0.
-          * Equivalent to dynamic_cast<const osgUtil::CullVisitor*>(this).*/
-        virtual const osgUtil::CullVisitor* asCullVisitor() const { return this; }
-
-        /** Convert 'this' into a osg::CullStack pointer if Object is a osg::CullStack, otherwise return 0.
-          * Equivalent to dynamic_cast<osg::CullStack*>(this).*/
-        virtual osg::CullStack* asCullStack() { return static_cast<osg::CullStack*>(this); }
-
-        /** convert 'const this' into a const osg::CullStack pointer if Object is a osg::CullStack, otherwise return 0.
-          * Equivalent to dynamic_cast<const osg::CullStack*>(this).*/
-        virtual const osg::CullStack* asCullStack() const { return static_cast<const osg::CullStack*>(this); }
-
-
-        using osg::NodeVisitor::clone;
-
         /** Create a shallow copy of the CullVisitor, used by CullVisitor::create() to clone the prototype. */
         virtual CullVisitor* clone() const { return new CullVisitor(*this); }
 
@@ -109,7 +90,6 @@ class OSGUTIL_EXPORT CullVisitor : public osg::NodeVisitor, public osg::CullStac
 
         virtual void apply(osg::Node&);
         virtual void apply(osg::Geode& node);
-        virtual void apply(osg::Drawable& drawable);
         virtual void apply(osg::Billboard& node);
         virtual void apply(osg::LightSource& node);
         virtual void apply(osg::ClipNode& node);
@@ -136,10 +116,7 @@ class OSGUTIL_EXPORT CullVisitor : public osg::NodeVisitor, public osg::CullStac
         {
             _currentStateGraph = _currentStateGraph->find_or_insert(ss);
 
-            bool useRenderBinDetails = (ss->useRenderBinDetails() && !ss->getBinName().empty()) &&
-                                       (_numberOfEncloseOverrideRenderBinDetails==0 || (ss->getRenderBinMode()&osg::StateSet::PROTECTED_RENDERBIN_DETAILS)!=0);
-
-            if (useRenderBinDetails)
+            if (_numberOfEncloseOverrideRenderBinDetails==0 && ss->useRenderBinDetails() && !ss->getBinName().empty())
             {
                 _renderBinStack.push_back(_currentRenderBin);
 
@@ -148,7 +125,7 @@ class OSGUTIL_EXPORT CullVisitor : public osg::NodeVisitor, public osg::CullStac
                     _currentRenderBin->getStage()->find_or_insert(ss->getBinNumber(),ss->getBinName());
             }
 
-            if ((ss->getRenderBinMode()&osg::StateSet::OVERRIDE_RENDERBIN_DETAILS)!=0)
+            if (ss->getRenderBinMode()==osg::StateSet::OVERRIDE_RENDERBIN_DETAILS)
             {
                 ++_numberOfEncloseOverrideRenderBinDetails;
             }
@@ -161,15 +138,11 @@ class OSGUTIL_EXPORT CullVisitor : public osg::NodeVisitor, public osg::CullStac
         inline void popStateSet()
         {
             const osg::StateSet* ss = _currentStateGraph->getStateSet();
-            if ((ss->getRenderBinMode()&osg::StateSet::OVERRIDE_RENDERBIN_DETAILS)!=0)
+            if (ss->getRenderBinMode()==osg::StateSet::OVERRIDE_RENDERBIN_DETAILS)
             {
                 --_numberOfEncloseOverrideRenderBinDetails;
             }
-
-            bool useRenderBinDetails = (ss->useRenderBinDetails() && !ss->getBinName().empty()) &&
-                                       (_numberOfEncloseOverrideRenderBinDetails==0 || (ss->getRenderBinMode()&osg::StateSet::PROTECTED_RENDERBIN_DETAILS)!=0);
-
-            if (useRenderBinDetails)
+            if (_numberOfEncloseOverrideRenderBinDetails==0 && ss->useRenderBinDetails() && !ss->getBinName().empty())
             {
                 if (_renderBinStack.empty())
                 {
@@ -335,29 +308,29 @@ class OSGUTIL_EXPORT CullVisitor : public osg::NodeVisitor, public osg::CullStac
 
         inline void handle_cull_callbacks_and_traverse(osg::Node& node)
         {
-            osg::Callback* callback = node.getCullCallback();
-            if (callback) callback->run(&node,this);
+            osg::NodeCallback* callback = node.getCullCallback();
+            if (callback) (*callback)(&node,this);
             else traverse(node);
         }
 
         inline void handle_cull_callbacks_and_accept(osg::Node& node,osg::Node* acceptNode)
         {
-            osg::Callback* callback = node.getCullCallback();
-            if (callback) callback->run(&node,this);
+            osg::NodeCallback* callback = node.getCullCallback();
+            if (callback) (*callback)(&node,this);
             else acceptNode->accept(*this);
         }
 
-        osg::ref_ptr<StateGraph>  _rootStateGraph;
-        StateGraph*               _currentStateGraph;
+        osg::ref_ptr<StateGraph>                                   _rootStateGraph;
+        StateGraph*                                                _currentStateGraph;
 
-        osg::ref_ptr<RenderStage> _rootRenderStage;
-        RenderBin*                _currentRenderBin;
-        std::vector<RenderBin*>   _renderBinStack;
+        osg::ref_ptr<RenderStage>                                   _rootRenderStage;
+        RenderBin*                                                  _currentRenderBin;
+        std::vector<RenderBin*>                                     _renderBinStack;
 
-        value_type                _computed_znear;
-        value_type                _computed_zfar;
+        unsigned int             _traversalNumber;
 
-        unsigned int              _traversalOrderNumber;
+        value_type               _computed_znear;
+        value_type               _computed_zfar;
 
 
         typedef std::vector< osg::ref_ptr<RenderLeaf> > RenderLeafList;
@@ -466,7 +439,7 @@ inline RenderLeaf* CullVisitor::createOrReuseRenderLeaf(osg::Drawable* drawable,
     while (_currentReuseRenderLeafIndex<_reuseRenderLeafList.size() &&
            _reuseRenderLeafList[_currentReuseRenderLeafIndex]->referenceCount()>1)
     {
-        osg::notify(osg::INFO)<<"CullVisitor:createOrReuseRenderLeaf() skipping multiply referenced entry. _reuseRenderLeafList.size()="<< _reuseRenderLeafList.size()<<" _reuseRenderLeafList["<<_currentReuseRenderLeafIndex<<"]->referenceCount()="<<_reuseRenderLeafList[_currentReuseRenderLeafIndex]->referenceCount()<<std::endl;
+        osg::notify(osg::NOTICE)<<"Warning:createOrReuseRenderLeaf() skipping multiply refrenced entry."<< std::endl;
         ++_currentReuseRenderLeafIndex;
     }
 
@@ -474,19 +447,19 @@ inline RenderLeaf* CullVisitor::createOrReuseRenderLeaf(osg::Drawable* drawable,
     if (_currentReuseRenderLeafIndex<_reuseRenderLeafList.size())
     {
         RenderLeaf* renderleaf = _reuseRenderLeafList[_currentReuseRenderLeafIndex++].get();
-        renderleaf->set(drawable,projection,matrix,depth,_traversalOrderNumber++);
+        renderleaf->set(drawable,projection,matrix,depth,_traversalNumber++);
         return renderleaf;
     }
 
-
     // Otherwise need to create new renderleaf.
-    RenderLeaf* renderleaf = new RenderLeaf(drawable,projection,matrix,depth,_traversalOrderNumber++);
+    RenderLeaf* renderleaf = new RenderLeaf(drawable,projection,matrix,depth,_traversalNumber++);
     _reuseRenderLeafList.push_back(renderleaf);
-
     ++_currentReuseRenderLeafIndex;
     return renderleaf;
 }
 
+
 }
 
 #endif
+

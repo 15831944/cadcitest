@@ -30,7 +30,6 @@
 #include <math.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/units.h"
 #include "bu/exit.h"
@@ -317,8 +316,6 @@ int main(int ac, char **av)
     int vert_bricks;
     double horiz_spacing;
     double vert_spacing;
-
-    bu_setprogname(av[0]);
 
     if (ac == 1 && isatty(fileno(stdin)) && isatty(fileno(stdout)))
 	usage("\n");

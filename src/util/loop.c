@@ -43,7 +43,6 @@
 
 #include "vmath.h"
 
-#include "bu/app.h"
 #include "bu/log.h"
 #include "bu/str.h"
 
@@ -74,8 +73,6 @@ main(int argc, char *argv[])
     long int cincr;
 
     int oneone;
-
-    bu_setprogname(argv[0]);
 
     if (argc < 3 || argc > 5) {
 	usage();

@@ -29,7 +29,6 @@
 #include <string.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
 #include "bu/file.h"
@@ -242,8 +241,6 @@ parse_args(int ac, char **av)
 int main(int ac, char **av)
 {
     UCHAR *buffer = (UCHAR *)NULL;
-
-    bu_setprogname(av[0]);
 
     (void)parse_args(ac, av);
     if (isatty(fileno(stdin)))

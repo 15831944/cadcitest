@@ -270,7 +270,7 @@ GlobalFadeText* getGlobalFadeText()
     return s_globalFadeText.get();
 }
 
-struct FadeText::FadeTextUpdateCallback : public osg::DrawableUpdateCallback
+struct FadeText::FadeTextUpdateCallback : public osg::Drawable::UpdateCallback
 {
     FadeTextData _ftd;
 
@@ -393,8 +393,11 @@ void FadeText::drawImplementation(osg::RenderInfo& renderInfo) const
         userData->_fadeTextInView.clear();
     }
 
-    osg::Matrix lmv = state.getModelViewMatrix();
-    computeMatrix(lmv, &state);
+
+
+    osgText::Text::AutoTransformCache& atc = _autoTransformCache[renderInfo.getContextID()];
+
+    osg::Matrix lmv = atc._matrix;
     lmv.postMult(state.getModelViewMatrix());
 
     if (renderInfo.getView() && renderInfo.getView()->getCamera())

@@ -52,7 +52,6 @@
 #include "common.h"
 
 #include "bio.h"
-#include "bu/app.h"
 #include "bu/log.h"
 
 #include "twistedcube.h"
@@ -239,8 +238,6 @@ main(int argc, char** argv)
     ON_TextLog error_log;
     const char* id_name = "B-Rep Example";
     const char* geom_name = "cube.s";
-
-    bu_setprogname(argv[0]);
 
     if (BU_STR_EQUAL(argv[1], "-h") || BU_STR_EQUAL(argv[1], "-?")) {
     	printusage();

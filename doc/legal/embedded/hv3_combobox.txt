@@ -27,4 +27,3 @@
 #
 # ... and many others over the years.
 
-file:/src/tclscripts/hv3/combobox.tcl

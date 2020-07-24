@@ -43,7 +43,6 @@
 #include "bio.h"
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bu/cv.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
@@ -681,8 +680,6 @@ main(int ac, char *av[])
 
     /* function to call to generate the terrain.  Default noise pattern is fbm */
     void (*terrain_func)(unsigned short *);
-
-    bu_setprogname(av[0]);
 
     terrain_func = NULL;
     arg_count = parse_args(ac, av, &terrain_func);

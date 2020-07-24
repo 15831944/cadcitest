@@ -15,11 +15,9 @@
 #include <osg/Notify>
 #include <osg/ImageSequence>
 #include <osgDB/ReadFile>
-#include <osgDB/WriteFile>
 #include <osgDB/XmlParser>
 #include <osgDB/FileNameUtils>
 #include <osgDB/ObjectWrapper>
-#include <osgDB/ConvertBase64>
 
 using namespace osgDB;
 
@@ -67,9 +65,6 @@ InputStream::InputStream( const osgDB::Options* options )
         resetSchema();
         s_lastSchema.clear();
     }
-
-    // assign dummy object to used for reading field properties that will be discarded.
-    _dummyReadObject = new osg::DummyObject;
 }
 
 InputStream::~InputStream()
@@ -187,10 +182,7 @@ InputStream& InputStream::operator>>( osg::Vec4d& v )
 
 
 InputStream& InputStream::operator>>( osg::Quat& q )
-{
-    double x, y, z, w; *this >> x >> y >> z >> w;
-    q.set( x, y, z, w ); return *this;
-}
+{ *this >> q.x() >> q.y() >> q.z() >> q.w(); return *this; }
 
 InputStream& InputStream::operator>>( osg::Plane& p )
 {
@@ -297,33 +289,7 @@ InputStream& InputStream::operator>>( osg::Matrixd& mat )
 }
 #endif
 
-InputStream& InputStream::operator>>( osg::BoundingBoxf& bb)
-{
-    float p0, p1, p2, p3, p4, p5; *this >> p0 >> p1 >> p2 >> p3>> p4>> p5;
-    bb.set( p0, p1, p2, p3, p4, p5 ); return *this;
-}
-
-InputStream& InputStream::operator>>( osg::BoundingBoxd& bb)
-{
-    double p0, p1, p2, p3, p4, p5; *this >> p0 >> p1 >> p2 >> p3>> p4>> p5;
-    bb.set( p0, p1, p2, p3, p4, p5 ); return *this;
-}
-
-InputStream& InputStream::operator>>( osg::BoundingSpheref& bs)
-{
-    float p0, p1, p2, p3; *this >> p0 >> p1 >> p2 >> p3;
-    bs.set( osg::Vec3f(p0, p1, p2), p3 ); return *this;
-}
-
-InputStream& InputStream::operator>>( osg::BoundingSphered& bs)
-{
-    double p0, p1, p2, p3; *this >> p0 >> p1 >> p2 >> p3;
-    bs.set( osg::Vec3d(p0, p1, p2), p3 ); return *this;
-}
-
-
-
-osg::ref_ptr<osg::Array> InputStream::readArray()
+osg::Array* InputStream::readArray()
 {
     osg::ref_ptr<osg::Array> array = NULL;
 
@@ -522,51 +488,6 @@ osg::ref_ptr<osg::Array> InputStream::readArray()
             array = va;
         }
         break;
-
-    case ID_VEC2I_ARRAY:
-        {
-            osg::Vec2iArray* va = new osg::Vec2iArray;
-            readArrayImplementation( va, 2, INT_SIZE );
-            array = va;
-        }
-        break;
-    case ID_VEC3I_ARRAY:
-        {
-            osg::Vec3iArray* va = new osg::Vec3iArray;
-            readArrayImplementation( va, 3, INT_SIZE );
-            array = va;
-        }
-        break;
-    case ID_VEC4I_ARRAY:
-        {
-            osg::Vec4iArray* va = new osg::Vec4iArray;
-            readArrayImplementation( va, 4, INT_SIZE );
-            array = va;
-        }
-        break;
-
-    case ID_VEC2UI_ARRAY:
-        {
-            osg::Vec2uiArray* va = new osg::Vec2uiArray;
-            readArrayImplementation( va, 2, INT_SIZE );
-            array = va;
-        }
-        break;
-    case ID_VEC3UI_ARRAY:
-        {
-            osg::Vec3uiArray* va = new osg::Vec3uiArray;
-            readArrayImplementation( va, 3, INT_SIZE );
-            array = va;
-        }
-        break;
-    case ID_VEC4UI_ARRAY:
-        {
-            osg::Vec4uiArray* va = new osg::Vec4uiArray;
-            readArrayImplementation( va, 4, INT_SIZE );
-            array = va;
-        }
-        break;
-
     default:
         throwException( "InputStream::readArray(): Unsupported array type." );
     }
@@ -574,10 +495,10 @@ osg::ref_ptr<osg::Array> InputStream::readArray()
     if ( getException() ) return NULL;
     _arrayMap[id] = array;
 
-    return array;
+    return array.release();
 }
 
-osg::ref_ptr<osg::PrimitiveSet> InputStream::readPrimitiveSet()
+osg::PrimitiveSet* InputStream::readPrimitiveSet()
 {
     osg::ref_ptr<osg::PrimitiveSet> primitive = NULL;
 
@@ -666,10 +587,10 @@ osg::ref_ptr<osg::PrimitiveSet> InputStream::readPrimitiveSet()
     }
 
     if ( getException() ) return NULL;
-    return primitive;
+    return primitive.release();
 }
 
-osg::ref_ptr<osg::Image> InputStream::readImage(bool readFromExternal)
+osg::Image* InputStream::readImage(bool readFromExternal)
 {
     std::string className = "osg::Image";
     if ( _fileVersion>94 )  // ClassName property is only supported in 3.1.4 and higher
@@ -712,12 +633,7 @@ osg::ref_ptr<osg::Image> InputStream::readImage(bool readFromExternal)
                 char* data = new char[size];
                 if ( !data )
                     throwException( "InputStream::readImage() Out of memory." );
-
-                if ( getException() )
-                {
-                    delete [] data;
-                    return NULL;
-                }
+                if ( getException() ) return NULL;
 
                 readCharArray( data, size );
                 image = new osg::Image;
@@ -735,61 +651,6 @@ osg::ref_ptr<osg::Image> InputStream::readImage(bool readFromExternal)
             }
             if ( image && levelSize>0 )
                 image->setMipmapLevels( levels );
-            readFromExternal = false;
-        } else { // ASCII
-            // _origin, _s & _t & _r, _internalTextureFormat
-            int origin, s, t, r, internalFormat;
-            *this >> PROPERTY("Origin") >> origin;
-            *this >> PROPERTY("Size") >> s >> t >> r;
-            *this >> PROPERTY("InternalTextureFormat") >> internalFormat;
-
-            // _pixelFormat, _dataType, _packing, _allocationMode
-            int pixelFormat, dataType, packing, mode;
-            *this >> PROPERTY("PixelFormat") >> pixelFormat;
-            *this >> PROPERTY("DataType") >> dataType;
-            *this >> PROPERTY("Packing") >> packing;
-            *this >> PROPERTY("AllocationMode") >> mode;
-
-            *this >> PROPERTY("Data");
-            unsigned int levelSize = readSize()-1;
-            *this >> BEGIN_BRACKET;
-
-            // _data
-            std::vector<std::string> encodedData;
-            encodedData.resize(levelSize+1);
-            readWrappedString(encodedData.at(0));
-
-            // Read all mipmap levels and to also add them to char* data
-            // _mipmapData
-            osg::Image::MipmapDataType levels(levelSize);
-            for ( unsigned int i=1; i<=levelSize; ++i )
-            {
-                //*this >> levels[i];
-                readWrappedString(encodedData.at(i));
-            }
-
-            Base64decoder d;
-            char* data = d.decode(encodedData, levels);
-            // remove last item as we do not need the actual size
-            // of the image including all mipmaps
-            levels.pop_back();
-
-            *this >> END_BRACKET;
-
-            if ( !data )
-                throwException( "InputStream::readImage() Decoding of stream failed. Out of memory." );
-            if ( getException() ) return NULL;
-
-            image = new osg::Image;
-            image->setOrigin( (osg::Image::Origin)origin );
-            image->setImage( s, t, r, internalFormat, pixelFormat, dataType,
-                (unsigned char*)data, (osg::Image::AllocationMode)mode, packing );
-
-            // Level positions (size of mipmap data)
-            // from actual size of mipmap data read before
-            if ( image && levelSize>0 )
-                image->setMipmapLevels( levels );
-
             readFromExternal = false;
         }
         break;
@@ -821,7 +682,7 @@ osg::ref_ptr<osg::Image> InputStream::readImage(bool readFromExternal)
                     else
                     {
                         OSG_WARN << "InputStream::readImage(): "
-                                               << rr.statusMessage() << std::endl;
+                                               << rr.message() << std::endl;
                     }
                 }
                 else
@@ -840,72 +701,43 @@ osg::ref_ptr<osg::Image> InputStream::readImage(bool readFromExternal)
         break;
     }
 
-    bool loadedFromCache = false;
     if ( readFromExternal && !name.empty() )
     {
-        ReaderWriter::ReadResult rr = Registry::instance()->readImage(name, getOptions());
-        if (rr.validImage())
-        {
-            image = rr.takeImage();
-            loadedFromCache = rr.loadedFromCache();
-        }
-        else
-        {
-           if (!rr.success()) OSG_WARN << "InputStream::readImage(): " << rr.statusMessage() << ", filename: " << name << std::endl;
-        }
-
+        image = osgDB::readImageFile( name, getOptions() );
         if ( !image && _forceReadingImage ) image = new osg::Image;
     }
 
-    if (loadedFromCache)
+    image = static_cast<osg::Image*>( readObjectFields(className, id, image.get()) );
+    if ( image.valid() )
     {
-        // we don't want to overwrite the properties of the image in the cache as this could cause threading problems if the object is currently being used
-        // so we read the properties from the file into a dummy object and discard the changes.
-        osg::ref_ptr<osg::Object> temp_obj = readObjectFields("osg::Object", id, _dummyReadObject.get() );
-        _identifierMap[id] = image;
+        image->setFileName( name );
+        image->setWriteHint( (osg::Image::WriteHint)writeHint );
     }
-    else
-    {
-        image = readObjectFieldsOfType<osg::Image>("osg::Object", id, image.get());// leaves _identifierMap[id] pointing at DummyObject if image invalid
-        if ( image.valid() )
-        {
-            image->setFileName( name );
-            image->setWriteHint( (osg::Image::WriteHint)writeHint );
-        }
-        _identifierMap[id] = image;//valid or invalid, don't leave this pointing at an osg::Dummyobject as it's used with a static_cast when recycled
-    }
-    return image;
+    return image.release();
 }
 
-osg::ref_ptr<osg::Object> InputStream::readObject( osg::Object* existingObj )
+osg::Object* InputStream::readObject( osg::Object* existingObj )
 {
     std::string className;
     unsigned int id = 0;
-    *this >> className;
-
-    if (className=="NULL")
-    {
-        return 0;
-    }
-
-    *this >> BEGIN_BRACKET >> PROPERTY("UniqueID") >> id;
-    if ( getException() ) return 0;
+    *this >> className >> BEGIN_BRACKET >> PROPERTY("UniqueID") >> id;
+    if ( getException() ) return NULL;
 
     IdentifierMap::iterator itr = _identifierMap.find( id );
     if ( itr!=_identifierMap.end() )
     {
         advanceToCurrentEndBracket();
-        return itr->second;
+        return itr->second.get();
     }
 
     osg::ref_ptr<osg::Object> obj = readObjectFields( className, id, existingObj );
 
     advanceToCurrentEndBracket();
 
-    return obj;
+    return obj.release();
 }
 
-osg::ref_ptr<osg::Object> InputStream::readObjectFields( const std::string& className, unsigned int id, osg::Object* existingObj )
+osg::Object* InputStream::readObjectFields( const std::string& className, unsigned int id, osg::Object* existingObj )
 {
     ObjectWrapper* wrapper = Registry::instance()->getObjectWrapperManager()->findWrapper( className );
     if ( !wrapper )
@@ -914,39 +746,29 @@ osg::ref_ptr<osg::Object> InputStream::readObjectFields( const std::string& clas
                                << className << std::endl;
         return NULL;
     }
-    int inputVersion =  getFileVersion(wrapper->getDomain());
 
-    osg::ref_ptr<osg::Object> obj = existingObj ? existingObj : wrapper->createInstance();
+    osg::ref_ptr<osg::Object> obj = existingObj ? existingObj : wrapper->getProto()->cloneType();
     _identifierMap[id] = obj;
     if ( obj.valid() )
     {
-        const ObjectWrapper::RevisionAssociateList& associates = wrapper->getAssociates();
-        for ( ObjectWrapper::RevisionAssociateList::const_iterator itr=associates.begin(); itr!=associates.end(); ++itr )
+        const StringList& associates = wrapper->getAssociates();
+        for ( StringList::const_iterator itr=associates.begin(); itr!=associates.end(); ++itr )
         {
-            if ( itr->_firstVersion <= inputVersion &&
-                    inputVersion <= itr->_lastVersion)
+            ObjectWrapper* assocWrapper = Registry::instance()->getObjectWrapperManager()->findWrapper(*itr);
+            if ( !assocWrapper )
             {
-                ObjectWrapper* assocWrapper = Registry::instance()->getObjectWrapperManager()->findWrapper(itr->_name);
-                if ( !assocWrapper )
-                {
-                    OSG_WARN << "InputStream::readObject(): Unsupported associated class "
-                                           << itr->_name << std::endl;
-                    continue;
-                }
-                _fields.push_back( assocWrapper->getName() );
-                assocWrapper->read( *this, *obj );
-                if ( getException() ) return NULL;
+                OSG_WARN << "InputStream::readObject(): Unsupported associated class "
+                                       << *itr << std::endl;
+                continue;
+            }
+            _fields.push_back( assocWrapper->getName() );
+            assocWrapper->read( *this, *obj );
+            if ( getException() ) return NULL;
 
-                _fields.pop_back();
-            }
-            else
-            {
-               /* OSG_INFO << "InputStream::readObject():"<<className<<" Ignoring associated class due to version mismatch"
-                         << itr->_name<<"["<<itr->_firstVersion <<","<<itr->_lastVersion <<"]for version "<<inputVersion<< std::endl;*/
-            }
+            _fields.pop_back();
         }
     }
-    return obj;
+    return obj.release();
 }
 
 void InputStream::readSchema( std::istream& fin )
@@ -1042,8 +864,8 @@ void InputStream::decompress()
         BaseCompressor* compressor = Registry::instance()->getObjectWrapperManager()->findCompressor(compressorName);
         if ( !compressor )
         {
-            throwException( "InputStream: Failed to decompress stream, No such compressor." );
-            return;
+            OSG_WARN << "InputStream::decompress(): No such compressor "
+                                   << compressorName << std::endl;
         }
 
         if ( !compressor->decompress(*(_in->getStream()), data) )
@@ -1078,7 +900,7 @@ void InputStream::setWrapperSchema( const std::string& name, const std::string& 
     }
 
     StringList schema, methods, keyAndValue;
-    ObjectWrapper::TypeList types;
+    std::vector<int> types;
     split( properties, schema );
     for ( StringList::iterator itr=schema.begin(); itr!=schema.end(); ++itr )
     {
@@ -1086,12 +908,12 @@ void InputStream::setWrapperSchema( const std::string& name, const std::string& 
         if ( keyAndValue.size()>1 )
         {
             methods.push_back( keyAndValue.front() );
-            types.push_back( static_cast<BaseSerializer::Type>(atoi(keyAndValue.back().c_str())) );
+            types.push_back( atoi(keyAndValue.back().c_str()) );
         }
         else
         {
             methods.push_back( *itr );
-            types.push_back( BaseSerializer::RW_UNDEFINED );
+            types.push_back( 0 );
         }
         keyAndValue.clear();
     }

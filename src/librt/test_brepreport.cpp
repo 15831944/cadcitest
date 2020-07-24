@@ -155,8 +155,6 @@ main(int argc, char *argv[])
     int nonconvertable = 0;
     struct type_counts cnts;
 
-    bu_setprogname(argv[0]);
-
     cnts.planar = 0;
     cnts.spherical = 0;
     cnts.cylindrical = 0;

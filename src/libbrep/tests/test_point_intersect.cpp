@@ -26,7 +26,6 @@
 #include "common.h"
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bu/log.h"
 
 #include "brep.h"
@@ -114,9 +113,8 @@ rand_f(double min, double max)
 
 
 int
-main(int, char**av)
+main(int, char**)
 {
-    bu_setprogname(av[0]);
     srand(time(0));
 
     ON_3dPoint center(0.0, 0.0, 0.0);

@@ -141,12 +141,12 @@ mmenu_set_all(int index, struct menu_item *value)
 	if (p->dml_tie)
 	    curr_cmd_list = p->dml_tie;
 
-	set_curr_dm(p);
+	curr_dm_list = p;
 	mmenu_set(index, value);
     }
 
     curr_cmd_list = save_cmd_list;
-    set_curr_dm(save_dm_list);
+    curr_dm_list = save_dm_list;
 }
 
 

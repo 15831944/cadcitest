@@ -14,13 +14,16 @@
 #ifndef _TKPORT
 #define _TKPORT
 
-#if defined(_WIN32)
-#   include "tkWinPort.h"
-#endif
 #ifndef _TK
-#   include "tk.h"
+#include "tk.h"
 #endif
-#if !defined(_WIN32)
+#ifndef _TCL
+#include "tcl.h"
+#endif
+
+#if defined(__WIN32__) || defined(_WIN32)
+#   include "tkWinPort.h"
+#else
 #   if defined(MAC_OSX_TK)
 #	include "tkMacOSXPort.h"
 #   else

@@ -68,8 +68,6 @@ main(int ac, char *av[])
     vect_t center = VINIT_ZERO;
     int failures = 0;
 
-    bu_setprogname(av[0]);
-
     if (ac == 1 || ac > 2) {
 	bu_log("Usage: %s {gigabytes}\n\n", av[0]);
 	bu_log("This program creates a .g geometry database at least {gigabytes} in\n"

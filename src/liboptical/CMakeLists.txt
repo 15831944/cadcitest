@@ -5,11 +5,8 @@ set(OPTICAL_INCLUDE_DIRS
   ${BU_INCLUDE_DIRS}
   ${BN_INCLUDE_DIRS}
   ${RT_INCLUDE_DIRS}
-  ${TCL_INCLUDE_PATH}
+  ${TCL_INCLUDE_DIRS}
   )
-if (BRLCAD_ENABLE_TCL)
-  set(OPTICAL_INCLUDE_DIRS ${OPTICAL_INCLUDE_DIRS} ${TCL_INCLUDE_PATH})
-endif (BRLCAD_ENABLE_TCL)
 BRLCAD_LIB_INCLUDE_DIRS(optical OPTICAL_INCLUDE_DIRS "")
 
 set(LIBOPTICAL_SOURCES
@@ -39,6 +36,7 @@ set(LIBOPTICAL_SOURCES
   sh_spm.c
   sh_stack.c
   sh_stxt.c
+  sh_tcl.c
   sh_text.c
   sh_toon.c
   sh_toyota.c
@@ -50,10 +48,6 @@ set(LIBOPTICAL_SOURCES
   vers.c
   wray.c
   )
-
-if(BRLCAD_ENABLE_TCL)
-  set(LIBOPTICAL_SOURCES ${LIBOPTICAL_SOURCES} sh_tcl.c)
-endif(BRLCAD_ENABLE_TCL)
 
 if(BRLCAD_ENABLE_OSL)
 
@@ -113,19 +107,11 @@ if(BRLCAD_ENABLE_OSL)
   set(LIBOPTICAL_SOURCES ${LIBOPTICAL_SOURCES} sh_osl.cpp)
 
   # Link liboptical with osl-renderer library
-  if (BRLCAD_ENABLE_TCL)
-    BRLCAD_ADDLIB(liboptical "${LIBOPTICAL_SOURCES}" "librt;libbn;libbu;liboslrend;${TCL_LIBRARY}")
-  else (BRLCAD_ENABLE_TCL)
-    BRLCAD_ADDLIB(liboptical "${LIBOPTICAL_SOURCES}" "librt;libbn;libbu;liboslrend")
-  endif (BRLCAD_ENABLE_TCL)
+  BRLCAD_ADDLIB(liboptical "${LIBOPTICAL_SOURCES}" "librt;libbn;libbu;liboslrend;${TCL_LIBRARY}")
 
 else(BRLCAD_ENABLE_OSL)
 
-  if (BRLCAD_ENABLE_TCL)
-    BRLCAD_ADDLIB(liboptical "${LIBOPTICAL_SOURCES}" "librt;libbn;libbu;${TCL_LIBRARY}")
-  else (BRLCAD_ENABLE_TCL)
-    BRLCAD_ADDLIB(liboptical "${LIBOPTICAL_SOURCES}" "librt;libbn;libbu")
-  endif (BRLCAD_ENABLE_TCL)
+  BRLCAD_ADDLIB(liboptical "${LIBOPTICAL_SOURCES}" "librt;libbn;libbu;${TCL_LIBRARY}")
 
 endif(BRLCAD_ENABLE_OSL)
 
@@ -135,7 +121,6 @@ CMAKEFILES(
   oslexec_pvt.h
   render_svc.h
   sh_osl.cpp
-  sh_tcl.c
   liboslrend.h
   constantpool.h
   render_svc.cpp

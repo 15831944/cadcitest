@@ -30,8 +30,6 @@ main(int argc, char **argv)
 {
     int test_num = 0;
 
-    bu_setprogname(argv[0]);
-
     if (argc != 2)
 	bu_exit(1, "ERROR: [%s] input format is: test_number\n", argv[0]);
 
@@ -48,7 +46,7 @@ main(int argc, char **argv)
 	VSET(Q0, 3.44524589136147830,7.67444957869714628,22.91984784277452647);
 	VSET(Q1, 3.56555225936148323,7.98564760063074353,23.37334866995422900);
 
-	dist = sqrt(bg_lseg_lseg_dist_sq(&c0, &c1, P0, P1, Q0, Q1));
+	dist = bg_lseg_lseg_dist(&c0, &c1, P0, P1, Q0, Q1);
 
 	if (dist < 0) {
 	    bu_exit(-1, "Fatal error - mesh validity test failed\n");

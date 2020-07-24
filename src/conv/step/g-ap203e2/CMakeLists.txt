@@ -45,7 +45,7 @@ list(APPEND gap203e2_LIBS ${gap203e2_LIBS})
 BRLCAD_ADDEXEC(g-ap203e2 "${gap203e2_SOURCES}" "${gap203e2_LIBS}" NO_STRICT)
 add_dependencies(g-ap203e2 step-express-${SCHEMA_NAME}-gap203e2)
 
-if (HIDE_INTERNAL_SYMBOLS)
+if(MSVC)
   set(gap203e2_IMPORTS
     BU_DLL_IMPORTS
     BN_DLL_IMPORTS
@@ -57,8 +57,8 @@ if (HIDE_INTERNAL_SYMBOLS)
     SC_UTILS_DLL_IMPORTS
     )
   list(APPEND gap203e2_IMPORTS ${gap203e2_IMPORTS})
-  set_property(TARGET g-step APPEND PROPERTY COMPILE_DEFINITIONS "${gap203e2_IMPORTS}")
-endif (HIDE_INTERNAL_SYMBOLS)
+  set_target_properties(g-step PROPERTIES COMPILE_DEFINITIONS "${gap203e2_IMPORTS}")
+endif(MSVC)
 
 set(IGNORE_FILES
   CMakeLists.txt

@@ -33,7 +33,6 @@ namespace osg
             osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_PARENTS),
             _haltTraversalAtNode(haltTraversalAtNode)
         {
-            setNodeMaskOverride(0xffffffff);
         }
 
         virtual void apply(osg::Node& node)
@@ -53,8 +52,6 @@ namespace osg
         NodePathList    _nodePaths;
     };
 }
-
-
 
 Node::Node()
     :Object(true)
@@ -92,22 +89,22 @@ Node::Node(const Node& node,const CopyOp& copyop):
 
 Node::~Node()
 {
-    // cleanly detach any associated stateset (include remove parent links)
+    // cleanly detatch any associated stateset (include remove parent links)
     setStateSet(0);
 }
 
-void Node::addParent(osg::Group* parent)
+void Node::addParent(osg::Group* node)
 {
     OpenThreads::ScopedPointerLock<OpenThreads::Mutex> lock(getRefMutex());
 
-    _parents.push_back(parent);
+    _parents.push_back(node);
 }
 
-void Node::removeParent(osg::Group* parent)
+void Node::removeParent(osg::Group* node)
 {
     OpenThreads::ScopedPointerLock<OpenThreads::Mutex> lock(getRefMutex());
 
-    ParentList::iterator pitr = std::find(_parents.begin(), _parents.end(), parent);
+    ParentList::iterator pitr = std::find(_parents.begin(),_parents.end(),node);
     if (pitr!=_parents.end()) _parents.erase(pitr);
 }
 
@@ -204,7 +201,7 @@ MatrixList Node::getWorldMatrices(const osg::Node* haltTraversalAtNode) const
     return matrices;
 }
 
-void Node::setUpdateCallback(Callback* nc)
+void Node::setUpdateCallback(NodeCallback* nc)
 {
     // if no changes just return.
     if (_updateCallback==nc) return;
@@ -282,7 +279,7 @@ void Node::setNumChildrenRequiringUpdateTraversal(unsigned int num)
 }
 
 
-void Node::setEventCallback(Callback* nc)
+void Node::setEventCallback(NodeCallback* nc)
 {
     // if no changes just return.
     if (_eventCallback==nc) return;

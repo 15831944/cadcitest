@@ -49,7 +49,6 @@
 #  undef VMIN
 #endif
 
-#include "bu/app.h"
 #include "bu/str.h"
 #include "bu/process.h"
 #include "bu/snooze.h"
@@ -58,7 +57,7 @@
 #include "raytrace.h"
 #include "optical/debug.h"
 #include "pkg.h"
-#include "dm.h"
+#include "fb.h"
 #include "icv.h"
 
 #include "../rt/rtuif.h"
@@ -76,7 +75,7 @@ struct pkg_queue {
 
 
 /***** Variables shared with viewing model *** */
-struct fb *fbp = FB_NULL;	/* Framebuffer handle */
+fb *fbp = FB_NULL;	/* Framebuffer handle */
 FILE *outfp = NULL;	/* optional pixel output file */
 
 mat_t view2model;
@@ -162,8 +161,6 @@ int
 main(int argc, char **argv)
 {
     int n;
-
-    bu_setprogname(argv[0]);
 
     if (argc < 2) {
 	fprintf(stderr, "%s", srv_usage);

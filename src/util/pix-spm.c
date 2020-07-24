@@ -28,10 +28,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "bu/app.h"
 #include "bu/exit.h"
 #include "bn/spm.h"
-#include "dm.h"
+#include "fb.h"
 
 
 int
@@ -39,8 +38,6 @@ main(int argc, char **argv)
 {
     int size;
     bn_spm_map_t *mp;
-
-    bu_setprogname(argv[0]);
 
     if (argc != 3) {
 	bu_exit(1, "Usage: pix-spm file.pix size > file.spm\n");

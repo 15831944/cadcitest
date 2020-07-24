@@ -54,15 +54,13 @@ bool osgDB::queryPlugin(const std::string& fileName, ReaderWriterInfoList& infoL
     typedef std::set<const ReaderWriter*> ReaderWriterSet;
     ReaderWriterSet previouslyLoadedReaderWriters;
 
+    const Registry::ReaderWriterList& rwList = osgDB::Registry::instance()->getReaderWriterList();
+    for(Registry::ReaderWriterList::const_iterator itr = rwList.begin();
+        itr != rwList.end();
+        ++itr)
     {
-        const Registry::ReaderWriterList& rwList = osgDB::Registry::instance()->getReaderWriterList();
-        for(Registry::ReaderWriterList::const_iterator itr = rwList.begin();
-            itr != rwList.end();
-            ++itr)
-        {
-            const ReaderWriter* rw = itr->get();
-            previouslyLoadedReaderWriters.insert(rw);
-        }
+        const ReaderWriter* rw = itr->get();
+        previouslyLoadedReaderWriters.insert(rw);
     }
 
     if (osgDB::Registry::instance()->loadLibrary(fileName))

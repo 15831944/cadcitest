@@ -21,7 +21,7 @@
 #include <osg/Matrixf>
 #include <osg/Matrixd>
 #include <osg/Quat>
-#include <osg/Callback>
+#include <osg/NodeCallback>
 
 namespace osg {
 
@@ -229,9 +229,7 @@ class OSG_EXPORT AnimationPathCallback : public NodeCallback
             _pauseTime(0.0) {}
 
         AnimationPathCallback(const AnimationPathCallback& apc,const CopyOp& copyop):
-            Object(apc, copyop),
-            Callback(apc, copyop),
-            NodeCallback(apc, copyop),
+            NodeCallback(apc,copyop),
             _animationPath(apc._animationPath),
             _pivotPoint(apc._pivotPoint),
             _useInverseMatrix(apc._useInverseMatrix),

@@ -40,7 +40,7 @@ typedef struct {
  */
 
 static struct CursorName {
-    const char *name;
+    char *name;
     LPCTSTR id;
 } cursorNames[] = {
     {"starting",		IDC_APPSTARTING},
@@ -71,7 +71,8 @@ static struct CursorName {
  * The default cursor is used whenever no other cursor has been specified.
  */
 
-#define TK_DEFAULT_CURSOR	(LPCWSTR)IDC_ARROW
+#define TK_DEFAULT_CURSOR	IDC_ARROW
+
 
 /*
  *----------------------------------------------------------------------
@@ -99,7 +100,7 @@ TkGetCursorByName(
     struct CursorName *namePtr;
     TkWinCursor *cursorPtr;
     int argc;
-    const char **argv = NULL;
+    CONST char **argv = NULL;
 
     /*
      * All cursor names are valid lists of one element (for
@@ -113,7 +114,7 @@ TkGetCursorByName(
 	goto badCursorSpec;
     }
 
-    cursorPtr = ckalloc(sizeof(TkWinCursor));
+    cursorPtr = (TkWinCursor *) ckalloc(sizeof(TkWinCursor));
     cursorPtr->info.cursor = (Tk_Cursor) cursorPtr;
     cursorPtr->winCursor = NULL;
     cursorPtr->system = 0;
@@ -130,14 +131,13 @@ TkGetCursorByName(
 	 */
 
 	if (Tcl_IsSafe(interp)) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj(
-		    "can't get cursor from a file in a safe interpreter",-1));
-	    Tcl_SetErrorCode(interp, "TK", "SAFE", "CURSOR_FILE", NULL);
-	    ckfree(argv);
-	    ckfree(cursorPtr);
+	    Tcl_AppendResult(interp, "can't get cursor from a file in",
+		    " a safe interpreter", NULL);
+	    ckfree((char *) argv);
+	    ckfree((char *) cursorPtr);
 	    return NULL;
 	}
-	cursorPtr->winCursor = LoadCursorFromFileA(&(argv[0][1]));
+	cursorPtr->winCursor = LoadCursorFromFile(&(argv[0][1]));
     } else {
 	/*
 	 * Check for the cursor in the system cursor set.
@@ -145,7 +145,7 @@ TkGetCursorByName(
 
 	for (namePtr = cursorNames; namePtr->name != NULL; namePtr++) {
 	    if (strcmp(namePtr->name, argv[0]) == 0) {
-		cursorPtr->winCursor = LoadCursorW(NULL, (LPCWSTR) namePtr->id);
+		cursorPtr->winCursor = LoadCursor(NULL, namePtr->id);
 		break;
 	    }
 	}
@@ -156,23 +156,22 @@ TkGetCursorByName(
 	     * one of our application resources.
 	     */
 
-	    cursorPtr->winCursor = LoadCursorA(Tk_GetHINSTANCE(), argv[0]);
+	    cursorPtr->winCursor = LoadCursor(Tk_GetHINSTANCE(), argv[0]);
 	} else {
 	    cursorPtr->system = 1;
 	}
     }
 
     if (cursorPtr->winCursor == NULL) {
-	ckfree(cursorPtr);
+	ckfree((char *) cursorPtr);
     badCursorSpec:
-	ckfree(argv);
-	Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		"bad cursor spec \"%s\"", string));
-	Tcl_SetErrorCode(interp, "TK", "VALUE", "CURSOR", NULL);
+	ckfree((char *) argv);
+	Tcl_AppendResult(interp, "bad cursor spec \"", string, "\"", NULL);
 	return NULL;
+    } else {
+	ckfree((char *) argv);
+	return (TkCursor *) cursorPtr;
     }
-    ckfree(argv);
-    return (TkCursor *) cursorPtr;
 }
 
 /*
@@ -194,8 +193,8 @@ TkGetCursorByName(
 TkCursor *
 TkCreateCursorFromData(
     Tk_Window tkwin,		/* Window in which cursor will be used. */
-    const char *source,		/* Bitmap data for cursor shape. */
-    const char *mask,		/* Bitmap data for cursor mask. */
+    CONST char *source,		/* Bitmap data for cursor shape. */
+    CONST char *mask,		/* Bitmap data for cursor mask. */
     int width, int height,	/* Dimensions of cursor. */
     int xHot, int yHot,		/* Location of hot-spot in cursor. */
     XColor fgColor,		/* Foreground color for cursor. */
@@ -233,7 +232,7 @@ TkpFreeCursor(
  *
  * TkpSetCursor --
  *
- *	Set the global cursor. If the cursor is None, then use the default Tk
+ *	Set the global cursor. If the cursor is TkNone, then use the default Tk
  *	cursor.
  *
  * Results:
@@ -253,7 +252,7 @@ TkpSetCursor(
     TkWinCursor *winCursor = (TkWinCursor *) cursor;
 
     if (winCursor == NULL || winCursor->winCursor == NULL) {
-	hcursor = LoadCursorW(NULL, TK_DEFAULT_CURSOR);
+	hcursor = LoadCursor(NULL, TK_DEFAULT_CURSOR);
     } else {
 	hcursor = winCursor->winCursor;
     }

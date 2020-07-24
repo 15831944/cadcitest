@@ -37,7 +37,7 @@
  * Tk_SetCaretPos --
  *
  *	This enables correct placement of the XIM caret. This is called by
- *	widgets to indicate their cursor placement. This is currently only
+ *	widgets to indicate their cursor placement.  This is currently only
  *	used for over-the-spot XIM.
  *
  *----------------------------------------------------------------------
@@ -53,10 +53,11 @@ Tk_SetCaretPos(
     TkWindow *winPtr = (TkWindow *) tkwin;
     TkDisplay *dispPtr = winPtr->dispPtr;
 
-    if ((dispPtr->caret.winPtr == winPtr)
-	    && (dispPtr->caret.x == x)
-	    && (dispPtr->caret.y == y)
-	    && (dispPtr->caret.height == height)) {
+    if (   dispPtr->caret.winPtr == winPtr
+	&& dispPtr->caret.x == x
+	&& dispPtr->caret.y == y
+	&& dispPtr->caret.height == height)
+    {
 	return;
     }
 
@@ -65,21 +66,22 @@ Tk_SetCaretPos(
     dispPtr->caret.y = y;
     dispPtr->caret.height = height;
 
+#ifdef TK_USE_INPUT_METHODS
     /*
      * Adjust the XIM caret position.
      */
-
-#ifdef TK_USE_INPUT_METHODS
-    if ((dispPtr->flags & TK_DISPLAY_USE_IM)
-	    && (dispPtr->inputStyle & XIMPreeditPosition)
-	    && (winPtr->inputContext != NULL)) {
+    if (   (dispPtr->flags & TK_DISPLAY_USE_IM)
+	&& (dispPtr->inputStyle & XIMPreeditPosition)
+	&& (winPtr->inputContext != NULL) )
+    {
 	XVaNestedList preedit_attr;
 	XPoint spot;
 
 	spot.x = dispPtr->caret.x;
 	spot.y = dispPtr->caret.y + dispPtr->caret.height;
 	preedit_attr = XVaCreateNestedList(0, XNSpotLocation, &spot, NULL);
-	XSetICValues(winPtr->inputContext, XNPreeditAttributes, preedit_attr,
+	XSetICValues(winPtr->inputContext,
+		XNPreeditAttributes, preedit_attr,
 		NULL);
 	XFree(preedit_attr);
     }
@@ -104,7 +106,7 @@ Tk_SetCaretPos(
  *----------------------------------------------------------------------
  */
 
-const char *
+char *
 TkpGetString(
     TkWindow *winPtr,		/* Window where event occurred */
     XEvent *eventPtr,		/* X keyboard event. */
@@ -125,21 +127,11 @@ TkpGetString(
 	return Tcl_DStringValue(dsPtr);
     }
 
-    /*
-     * Only do this for KeyPress events, otherwise
-     * further Xlib function behavior might be undefined.
-     */
-
-    if (eventPtr->type != KeyPress) {
-	len = 0;
-	Tcl_DStringSetLength(dsPtr, len);
-	goto done;
-    }
-
 #ifdef TK_USE_INPUT_METHODS
     if ((winPtr->dispPtr->flags & TK_DISPLAY_USE_IM)
 	    && (winPtr->inputContext != NULL)
-	    && (eventPtr->type == KeyPress)) {
+	    && (eventPtr->type == KeyPress))
+    {
 	Status status;
 
 #if X_HAVE_UTF8_STRING
@@ -148,11 +140,7 @@ TkpGetString(
 		Tcl_DStringValue(dsPtr), Tcl_DStringLength(dsPtr),
 		&kePtr->keysym, &status);
 
-	if (status == XBufferOverflow) {
-	    /*
-	     * Expand buffer and try again.
-	     */
-
+	if (status == XBufferOverflow) { /* Expand buffer and try again */
 	    Tcl_DStringSetLength(dsPtr, len);
 	    len = Xutf8LookupString(winPtr->inputContext, &eventPtr->xkey,
 		    Tcl_DStringValue(dsPtr), Tcl_DStringLength(dsPtr),
@@ -169,6 +157,7 @@ TkpGetString(
 
 	Tcl_DStringInit(&buf);
 	Tcl_DStringSetLength(&buf, TCL_DSTRING_STATIC_SIZE-1);
+
 	len = XmbLookupString(winPtr->inputContext, &eventPtr->xkey,
 		Tcl_DStringValue(&buf), Tcl_DStringLength(&buf),
                 &kePtr->keysym, &status);
@@ -185,6 +174,7 @@ TkpGetString(
 	if ((status != XLookupChars) && (status != XLookupBoth)) {
 	    len = 0;
 	}
+
 	Tcl_DStringSetLength(&buf, len);
 	Tcl_ExternalToUtfDString(NULL, Tcl_DStringValue(&buf), len, dsPtr);
 	Tcl_DStringFree(&buf);
@@ -208,7 +198,7 @@ TkpGetString(
 	Tcl_DStringValue(&buf)[len] = '\0';
 
 	if (len == 1) {
-	    len = TkUniCharToUtf((unsigned char) Tcl_DStringValue(&buf)[0],
+	    len = Tcl_UniCharToUtf((unsigned char) Tcl_DStringValue(&buf)[0],
 		    Tcl_DStringValue(dsPtr));
 	    Tcl_DStringSetLength(dsPtr, len);
 	} else {
@@ -228,8 +218,7 @@ TkpGetString(
      * from having to reenter the XIM engine. [Bug 1373712]
      */
 
-done:
-    kePtr->charValuePtr = ckalloc(len + 1);
+    kePtr->charValuePtr = ckalloc((unsigned) len + 1);
     kePtr->charValueLen = len;
     memcpy(kePtr->charValuePtr, Tcl_DStringValue(dsPtr), (unsigned) len + 1);
     return Tcl_DStringValue(dsPtr);
@@ -248,7 +237,7 @@ TkpSetKeycodeAndState(
     XEvent *eventPtr)
 {
     TkDisplay *dispPtr = ((TkWindow *) tkwin)->dispPtr;
-    int state, mincode, maxcode;
+    int state;
     KeyCode keycode;
 
     if (keySym == NoSymbol) {
@@ -270,21 +259,6 @@ TkpSetKeycodeAndState(
 	    }
 	}
     }
-
-    /*
-     * Filter keycodes out of range, otherwise further Xlib function
-     * behavior might be undefined, in particular XIM could cause crashes.
-     */
-
-    mincode = 0;
-    maxcode = -1;
-    XDisplayKeycodes(dispPtr->display, &mincode, &maxcode);
-    if (keycode < mincode) {
-	keycode = mincode;
-    } else if (keycode > maxcode) {
-	keycode = maxcode;
-    }
-
     eventPtr->xkey.keycode = keycode;
 }
 
@@ -460,7 +434,7 @@ TkpInitKeymapInfo(
     dispPtr->metaModMask = 0;
     dispPtr->altModMask = 0;
     codePtr = modMapPtr->modifiermap;
-    max = 8 * modMapPtr->max_keypermod;
+    max = 8*modMapPtr->max_keypermod;
     for (i = 0; i < max; i++, codePtr++) {
 	if (*codePtr == 0) {
 	    continue;
@@ -482,11 +456,12 @@ TkpInitKeymapInfo(
      */
 
     if (dispPtr->modKeyCodes != NULL) {
-	ckfree(dispPtr->modKeyCodes);
+	ckfree((char *) dispPtr->modKeyCodes);
     }
     dispPtr->numModKeyCodes = 0;
     arraySize = KEYCODE_ARRAY_SIZE;
-    dispPtr->modKeyCodes = ckalloc(KEYCODE_ARRAY_SIZE * sizeof(KeyCode));
+    dispPtr->modKeyCodes = (KeyCode *)
+	    ckalloc((unsigned) (KEYCODE_ARRAY_SIZE * sizeof(KeyCode)));
     for (i = 0, codePtr = modMapPtr->modifiermap; i < max; i++, codePtr++) {
 	if (*codePtr == 0) {
 	    continue;
@@ -498,26 +473,23 @@ TkpInitKeymapInfo(
 
 	for (j = 0; j < dispPtr->numModKeyCodes; j++) {
 	    if (dispPtr->modKeyCodes[j] == *codePtr) {
-		/*
-		 * 'continue' the outer loop.
-		 */
-
 		goto nextModCode;
 	    }
 	}
 	if (dispPtr->numModKeyCodes >= arraySize) {
-	    KeyCode *newCodes;
+	    KeyCode *new;
 
 	    /*
 	     * Ran out of space in the array; grow it.
 	     */
 
 	    arraySize *= 2;
-	    newCodes = ckalloc(arraySize * sizeof(KeyCode));
-	    memcpy(newCodes, dispPtr->modKeyCodes,
-		    dispPtr->numModKeyCodes * sizeof(KeyCode));
-	    ckfree(dispPtr->modKeyCodes);
-	    dispPtr->modKeyCodes = newCodes;
+	    new = (KeyCode *)
+		    ckalloc((unsigned) (arraySize * sizeof(KeyCode)));
+	    memcpy(new, dispPtr->modKeyCodes,
+		    (dispPtr->numModKeyCodes * sizeof(KeyCode)));
+	    ckfree((char *) dispPtr->modKeyCodes);
+	    dispPtr->modKeyCodes = new;
 	}
 	dispPtr->modKeyCodes[dispPtr->numModKeyCodes] = *codePtr;
 	dispPtr->numModKeyCodes++;

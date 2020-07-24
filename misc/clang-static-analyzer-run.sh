@@ -91,6 +91,7 @@ cleantest libanalyze
 cleantest liboptical
 cleantest libicv
 failingtest libged
+cleantest libcursor
 cleantest libdm
 cleantest libfft
 failingtest libtclcad

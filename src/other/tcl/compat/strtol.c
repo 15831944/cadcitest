@@ -1,4 +1,4 @@
-/*
+/* 
  * strtol.c --
  *
  *	Source code for the "strtol" library procedure.
@@ -10,6 +10,7 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+#include <ctype.h>
 #include "tclInt.h"
 
 /*
@@ -33,7 +34,7 @@
 
 long int
 strtol(
-    const char *string,		/* String of ASCII digits, possibly preceded
+    CONST char *string,		/* String of ASCII digits, possibly preceded
 				 * by white space. For bases greater than 10,
 				 * either lower- or upper-case digits may be
 				 * used. */
@@ -45,7 +46,7 @@ strtol(
 				 * hex, "0" means octal, anything else means
 				 * decimal. */
 {
-    register const char *p;
+    register CONST char *p;
     long result;
 
     /*
@@ -53,7 +54,7 @@ strtol(
      */
 
     p = string;
-    while (TclIsSpaceProc(*p)) {
+    while (isspace(UCHAR(*p))) {
 	p += 1;
     }
 

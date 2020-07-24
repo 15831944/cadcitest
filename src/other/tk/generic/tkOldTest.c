@@ -16,12 +16,6 @@
  */
 
 #define USE_OLD_IMAGE
-#ifndef USE_TCL_STUBS
-#   define USE_TCL_STUBS
-#endif
-#ifndef USE_TK_STUBS
-#   define USE_TK_STUBS
-#endif
 #include "tkInt.h"
 
 /*
@@ -73,17 +67,16 @@ static Tk_ImageType imageType = {
     ImageFree,			/* freeProc */
     ImageDelete,		/* deleteProc */
     NULL,			/* postscriptPtr */
-    NULL,			/* nextPtr */
-    NULL
+    NULL			/* nextPtr */
 };
 
 /*
  * Forward declarations for functions defined later in this file:
  */
 
-static int              ImageObjCmd(ClientData dummy,
-                            Tcl_Interp *interp, int objc,
-            			    Tcl_Obj * const objv[]);
+static int              ImageCmd(ClientData dummy,
+                            Tcl_Interp *interp, int argc, CONST char **argv);
+MODULE_SCOPE int	TkOldTestInit(Tcl_Interp *interp);
 
 
 /*
@@ -91,7 +84,7 @@ static int              ImageObjCmd(ClientData dummy,
  *
  * TkOldTestInit --
  *
- *	This function performs initialization for the Tk test suite
+ *	This function performs intialization for the Tk test suite
  *	extensions for testing support for legacy interfaces.
  *
  * Results:
@@ -149,7 +142,7 @@ ImageCreate(
 				 * will be returned in later callbacks. */
 {
     TImageMaster *timPtr;
-    const char *varName;
+    char *varName;
     int i;
 
     varName = "log";
@@ -167,17 +160,17 @@ ImageCreate(
 	varName = argv[i+1];
     }
 
-    timPtr = ckalloc(sizeof(TImageMaster));
+    timPtr = (TImageMaster *) ckalloc(sizeof(TImageMaster));
     timPtr->master = master;
     timPtr->interp = interp;
     timPtr->width = 30;
     timPtr->height = 15;
-    timPtr->imageName = ckalloc(strlen(name) + 1);
+    timPtr->imageName = (char *) ckalloc((unsigned) (strlen(name) + 1));
     strcpy(timPtr->imageName, name);
-    timPtr->varName = ckalloc(strlen(varName) + 1);
+    timPtr->varName = (char *) ckalloc((unsigned) (strlen(varName) + 1));
     strcpy(timPtr->varName, varName);
-    Tcl_CreateObjCommand(interp, name, ImageObjCmd, timPtr, NULL);
-    *clientDataPtr = timPtr;
+    Tcl_CreateCommand(interp, name, ImageCmd, (ClientData) timPtr, NULL);
+    *clientDataPtr = (ClientData) timPtr;
     Tk_ImageChanged(master, 0, 0, 30, 15, 30, 15);
     return TCL_OK;
 }
@@ -185,7 +178,7 @@ ImageCreate(
 /*
  *----------------------------------------------------------------------
  *
- * ImageObjCmd --
+ * ImageCmd --
  *
  *	This function implements the commands corresponding to individual
  *	images.
@@ -201,37 +194,38 @@ ImageCreate(
 
 	/* ARGSUSED */
 static int
-ImageObjCmd(
+ImageCmd(
     ClientData clientData,	/* Main window for application. */
     Tcl_Interp *interp,		/* Current interpreter. */
-    int objc,			/* Number of arguments. */
-    Tcl_Obj *const objv[])		/* Argument strings. */
+    int argc,			/* Number of arguments. */
+    CONST char **argv)		/* Argument strings. */
 {
-    TImageMaster *timPtr = clientData;
+    TImageMaster *timPtr = (TImageMaster *) clientData;
     int x, y, width, height;
 
-    if (objc < 2) {
-	Tcl_WrongNumArgs(interp, 1, objv, "option ?arg ...?");
+    if (argc < 2) {
+	Tcl_AppendResult(interp, "wrong # args: should be \"",
+		argv[0], "option ?arg arg ...?", NULL);
 	return TCL_ERROR;
     }
-    if (strcmp(Tcl_GetString(objv[1]), "changed") == 0) {
-	if (objc != 8) {
-	    Tcl_WrongNumArgs(interp, 1, objv, "changed x y width height"
-		    " imageWidth imageHeight");
+    if (strcmp(argv[1], "changed") == 0) {
+	if (argc != 8) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"", argv[0],
+		    " changed x y width height imageWidth imageHeight", NULL);
 	    return TCL_ERROR;
 	}
-	if ((Tcl_GetIntFromObj(interp, objv[2], &x) != TCL_OK)
-		|| (Tcl_GetIntFromObj(interp, objv[3], &y) != TCL_OK)
-		|| (Tcl_GetIntFromObj(interp, objv[4], &width) != TCL_OK)
-		|| (Tcl_GetIntFromObj(interp, objv[5], &height) != TCL_OK)
-		|| (Tcl_GetIntFromObj(interp, objv[6], &timPtr->width) != TCL_OK)
-		|| (Tcl_GetIntFromObj(interp, objv[7], &timPtr->height) != TCL_OK)) {
+	if ((Tcl_GetInt(interp, argv[2], &x) != TCL_OK)
+		|| (Tcl_GetInt(interp, argv[3], &y) != TCL_OK)
+		|| (Tcl_GetInt(interp, argv[4], &width) != TCL_OK)
+		|| (Tcl_GetInt(interp, argv[5], &height) != TCL_OK)
+		|| (Tcl_GetInt(interp, argv[6], &timPtr->width) != TCL_OK)
+		|| (Tcl_GetInt(interp, argv[7], &timPtr->height) != TCL_OK)) {
 	    return TCL_ERROR;
 	}
 	Tk_ImageChanged(timPtr->master, x, y, width, height, timPtr->width,
 		timPtr->height);
     } else {
-	Tcl_AppendResult(interp, "bad option \"", Tcl_GetString(objv[1]),
+	Tcl_AppendResult(interp, "bad option \"", argv[1],
 		"\": must be changed", NULL);
 	return TCL_ERROR;
     }
@@ -262,21 +256,21 @@ ImageGet(
 				 * used. */
     ClientData clientData)	/* Pointer to TImageMaster for image. */
 {
-    TImageMaster *timPtr = clientData;
+    TImageMaster *timPtr = (TImageMaster *) clientData;
     TImageInstance *instPtr;
     char buffer[100];
     XGCValues gcValues;
 
     sprintf(buffer, "%s get", timPtr->imageName);
-    Tcl_SetVar2(timPtr->interp, timPtr->varName, NULL, buffer,
+    Tcl_SetVar(timPtr->interp, timPtr->varName, buffer,
 	    TCL_GLOBAL_ONLY|TCL_APPEND_VALUE|TCL_LIST_ELEMENT);
 
-    instPtr = ckalloc(sizeof(TImageInstance));
+    instPtr = (TImageInstance *) ckalloc(sizeof(TImageInstance));
     instPtr->masterPtr = timPtr;
     instPtr->fg = Tk_GetColor(timPtr->interp, tkwin, "#ff0000");
     gcValues.foreground = instPtr->fg->pixel;
     instPtr->gc = Tk_GetGC(tkwin, GCForeground, &gcValues);
-    return instPtr;
+    return (ClientData) instPtr;
 }
 
 /*
@@ -309,14 +303,14 @@ ImageDisplay(
 				/* Coordinates in drawable corresponding to
 				 * imageX and imageY. */
 {
-    TImageInstance *instPtr = clientData;
+    TImageInstance *instPtr = (TImageInstance *) clientData;
     char buffer[200 + TCL_INTEGER_SPACE * 6];
 
     sprintf(buffer, "%s display %d %d %d %d %d %d",
 	    instPtr->masterPtr->imageName, imageX, imageY, width, height,
 	    drawableX, drawableY);
-    Tcl_SetVar2(instPtr->masterPtr->interp, instPtr->masterPtr->varName, NULL,
-	    buffer, TCL_GLOBAL_ONLY|TCL_APPEND_VALUE|TCL_LIST_ELEMENT);
+    Tcl_SetVar(instPtr->masterPtr->interp, instPtr->masterPtr->varName, buffer,
+	    TCL_GLOBAL_ONLY|TCL_APPEND_VALUE|TCL_LIST_ELEMENT);
     if (width > (instPtr->masterPtr->width - imageX)) {
 	width = instPtr->masterPtr->width - imageX;
     }
@@ -354,15 +348,15 @@ ImageFree(
     ClientData clientData,	/* Pointer to TImageInstance for instance. */
     Display *display)		/* Display where image was to be drawn. */
 {
-    TImageInstance *instPtr = clientData;
+    TImageInstance *instPtr = (TImageInstance *) clientData;
     char buffer[200];
 
     sprintf(buffer, "%s free", instPtr->masterPtr->imageName);
-    Tcl_SetVar2(instPtr->masterPtr->interp, instPtr->masterPtr->varName, NULL,
-	    buffer, TCL_GLOBAL_ONLY|TCL_APPEND_VALUE|TCL_LIST_ELEMENT);
+    Tcl_SetVar(instPtr->masterPtr->interp, instPtr->masterPtr->varName, buffer,
+	    TCL_GLOBAL_ONLY|TCL_APPEND_VALUE|TCL_LIST_ELEMENT);
     Tk_FreeColor(instPtr->fg);
     Tk_FreeGC(display, instPtr->gc);
-    ckfree(instPtr);
+    ckfree((char *) instPtr);
 }
 
 /*
@@ -388,17 +382,17 @@ ImageDelete(
 				 * this function is called, no more instances
 				 * exist. */
 {
-    TImageMaster *timPtr = clientData;
+    TImageMaster *timPtr = (TImageMaster *) clientData;
     char buffer[100];
 
     sprintf(buffer, "%s delete", timPtr->imageName);
-    Tcl_SetVar2(timPtr->interp, timPtr->varName, NULL, buffer,
+    Tcl_SetVar(timPtr->interp, timPtr->varName, buffer,
 	    TCL_GLOBAL_ONLY|TCL_APPEND_VALUE|TCL_LIST_ELEMENT);
 
     Tcl_DeleteCommand(timPtr->interp, timPtr->imageName);
     ckfree(timPtr->imageName);
     ckfree(timPtr->varName);
-    ckfree(timPtr);
+    ckfree((char *) timPtr);
 }
 
 /*

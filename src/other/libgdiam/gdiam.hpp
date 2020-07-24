@@ -32,21 +32,13 @@
 #  pragma clang diagnostic ignored "-Wfloat-equal"
 #endif
 
-#if defined(_WIN32)
-# define COMPILER_DLLEXPORT __declspec(dllexport)
-# define COMPILER_DLLIMPORT __declspec(dllimport)
-#else
-# define COMPILER_DLLEXPORT __attribute__ ((visibility ("default")))
-# define COMPILER_DLLIMPORT __attribute__ ((visibility ("default")))
-#endif
-
 #ifndef GDIAM_EXPORT
 #  if defined(GDIAM_DLL_EXPORTS) && defined(GDIAM_DLL_IMPORTS)
 #    error "Only GDIAM_DLL_EXPORTS or GDIAM_DLL_IMPORTS can be defined, not both."
 #  elif defined(GDIAM_DLL_EXPORTS)
-#    define GDIAM_EXPORT COMPILER_DLLEXPORT
+#    define GDIAM_EXPORT __declspec(dllexport)
 #  elif defined(GDIAM_DLL_IMPORTS)
-#    define GDIAM_EXPORT COMPILER_DLLIMPORT
+#    define GDIAM_EXPORT __declspec(dllimport)
 #  else
 #    define GDIAM_EXPORT
 #  endif

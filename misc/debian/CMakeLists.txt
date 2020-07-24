@@ -1,6 +1,7 @@
 set(debian_ignore_files
   archer.desktop
   brlcad-db.desktop
+  brlcad-doc-animation.desktop
   brlcad-doc-mged.desktop
   brlcad-doc.desktop
   brlcad-doc.directory

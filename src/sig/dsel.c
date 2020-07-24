@@ -29,7 +29,6 @@
 #include <math.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/str.h"
 #include "bu/exit.h"
 #include "bu/malloc.h"
@@ -76,8 +75,6 @@ main(int argc, char *argv[])
 
     int nskip;	/* number to skip */
     int nkeep;	/* number to keep */
-
-    bu_setprogname(argv[0]);
 
     if (isatty(fileno(stdin)) || isatty(fileno(stdout)))
 	bu_exit(1, "%s", usage);

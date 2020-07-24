@@ -12,10 +12,6 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
-#undef USE_TCL_STUBS
-#define USE_TCL_STUBS
-#undef USE_TK_STUBS
-#define USE_TK_STUBS
 #include "tkWinInt.h"
 
 HWND tkWinCurrentDialog;
@@ -27,9 +23,8 @@ HWND tkWinCurrentDialog;
 static int		TestclipboardObjCmd(ClientData clientData,
 			    Tcl_Interp *interp, int objc,
 			    Tcl_Obj *const objv[]);
-static int		TestwineventObjCmd(ClientData clientData,
-			    Tcl_Interp *interp, int objc,
-			    Tcl_Obj *const objv[]);
+static int		TestwineventCmd(ClientData clientData,
+			    Tcl_Interp *interp, int argc, const char **argv);
 static int		TestfindwindowObjCmd(ClientData clientData,
 			    Tcl_Interp *interp, int objc,
 			    Tcl_Obj *const objv[]);
@@ -39,7 +34,7 @@ static int		TestgetwindowinfoObjCmd(ClientData clientData,
 static int		TestwinlocaleObjCmd(ClientData clientData,
 			    Tcl_Interp *interp, int objc,
 			    Tcl_Obj *const objv[]);
-static Tk_GetSelProc		SetSelectionResult;
+MODULE_SCOPE int	TkplatformtestInit(Tcl_Interp *interp);
 
 /*
  *----------------------------------------------------------------------
@@ -68,7 +63,7 @@ TkplatformtestInit(
 
     Tcl_CreateObjCommand(interp, "testclipboard", TestclipboardObjCmd,
 	    (ClientData) Tk_MainWindow(interp), NULL);
-    Tcl_CreateObjCommand(interp, "testwinevent", TestwineventObjCmd,
+    Tcl_CreateCommand(interp, "testwinevent", TestwineventCmd,
 	    (ClientData) Tk_MainWindow(interp), NULL);
     Tcl_CreateObjCommand(interp, "testfindwindow", TestfindwindowObjCmd,
 	    (ClientData) Tk_MainWindow(interp), NULL);
@@ -78,42 +73,6 @@ TkplatformtestInit(
 	    (ClientData) Tk_MainWindow(interp), NULL);
     return TCL_OK;
 }
-
-struct TestFindControlState {
-    int  id;
-    HWND control;
-};
-
-/* Callback for window enumeration - used for TestFindControl */
-BOOL CALLBACK TestFindControlCallback(
-    HWND hwnd,
-    LPARAM lParam
-)
-{
-    struct TestFindControlState *fcsPtr = (struct TestFindControlState *)lParam;
-    fcsPtr->control = GetDlgItem(hwnd, fcsPtr->id);
-    /* If we have found the control, return FALSE to stop the enumeration */
-    return fcsPtr->control == NULL ? TRUE : FALSE;
-}
-
-/*
- * Finds the descendent control window with the specified ID and returns
- * its HWND.
- */
-HWND TestFindControl(HWND root, int id)
-{
-    struct TestFindControlState fcs;
-
-    fcs.control = GetDlgItem(root, id);
-    if (fcs.control == NULL) {
-        /* Control is not a direct child. Look in descendents */
-        fcs.id = id;
-        fcs.control = NULL;
-        EnumChildWindows(root, TestFindControlCallback, (LPARAM) &fcs);
-    }
-    return fcs.control;
-}
-
 
 /*
  *----------------------------------------------------------------------
@@ -148,7 +107,6 @@ AppendSystemError(
 	resultPtr = Tcl_DuplicateObj(resultPtr);
     }
     length = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM
-	    | FORMAT_MESSAGE_IGNORE_INSERTS
 	    | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, error,
 	    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (WCHAR *) wMsgPtrPtr,
 	    0, NULL);
@@ -156,7 +114,6 @@ AppendSystemError(
 	char *msgPtr;
 
 	length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM
-		| FORMAT_MESSAGE_IGNORE_INSERTS
 		| FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, error,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char *) &msgPtr,
 		0, NULL);
@@ -175,9 +132,12 @@ AppendSystemError(
 	}
 	msg = msgBuf;
     } else {
+	Tcl_Encoding encoding;
 	char *msgPtr;
 
-	Tcl_WinTCharToUtf((LPCTSTR)wMsgPtr, -1, &ds);
+	encoding = Tcl_GetEncoding(NULL, "unicode");
+	Tcl_ExternalToUtfDString(encoding, (char *) wMsgPtr, -1, &ds);
+	Tcl_FreeEncoding(encoding);
 	LocalFree(wMsgPtr);
 
 	msgPtr = Tcl_DStringValue(&ds);
@@ -225,36 +185,50 @@ AppendSystemError(
  */
 
 static int
-SetSelectionResult(
-    ClientData dummy,
-    Tcl_Interp *interp,
-    const char *selection)
-{
-    Tcl_AppendResult(interp, selection, NULL);
-    return TCL_OK;
-}
-
-static int
 TestclipboardObjCmd(
     ClientData clientData,	/* Main window for application. */
     Tcl_Interp *interp,		/* Current interpreter. */
     int objc,			/* Number of arguments. */
     Tcl_Obj *const objv[])	/* Argument values. */
 {
-    Tk_Window tkwin = (Tk_Window) clientData;
+    HGLOBAL handle;
+    char *data;
+    int code = TCL_OK;
 
     if (objc != 1) {
 	Tcl_WrongNumArgs(interp, 1, objv, NULL);
 	return TCL_ERROR;
     }
-    return TkSelGetSelection(interp, tkwin, Tk_InternAtom(tkwin, "CLIPBOARD"),
-	    XA_STRING, SetSelectionResult, NULL);
+    if (OpenClipboard(NULL)) {
+	/*
+	 * We could consider using CF_UNICODETEXT on NT, but then we
+	 * would have to convert it from External.  Instead we'll just
+	 * take this and do "bytestring" at the Tcl level for Unicode
+	 * inclusive text
+	 */
+	handle = GetClipboardData(CF_TEXT);
+	if (handle != NULL) {
+	    data = GlobalLock(handle);
+	    Tcl_AppendResult(interp, data, NULL);
+	    GlobalUnlock(handle);
+	} else {
+	    Tcl_AppendResult(interp, "null clipboard handle", NULL);
+	    code = TCL_ERROR;
+	}
+	CloseClipboard();
+	return code;
+    } else {
+	Tcl_AppendResult(interp, "couldn't open clipboard: ", NULL);
+	AppendSystemError(interp, GetLastError());
+	return TCL_ERROR;
+    }
+    return TCL_OK;
 }
 
 /*
  *----------------------------------------------------------------------
  *
- * TestwineventObjCmd --
+ * TestwineventCmd --
  *
  *	This function implements the testwinevent command. It provides a way
  *	to send messages to windows dialogs.
@@ -269,21 +243,19 @@ TestclipboardObjCmd(
  */
 
 static int
-TestwineventObjCmd(
+TestwineventCmd(
     ClientData clientData,	/* Main window for application. */
     Tcl_Interp *interp,		/* Current interpreter. */
-    int objc,			/* Number of arguments. */
-    Tcl_Obj *const objv[])		/* Argument strings. */
+    int argc,			/* Number of arguments. */
+    const char **argv)		/* Argument strings. */
 {
     HWND hwnd = 0;
     HWND child = 0;
-    HWND control;
     int id;
     char *rest;
     UINT message;
     WPARAM wParam;
     LPARAM lParam;
-    LRESULT result;
     static const TkStateMap messageMap[] = {
 	{WM_LBUTTONDOWN,	"WM_LBUTTONDOWN"},
 	{WM_LBUTTONUP,		"WM_LBUTTONUP"},
@@ -294,38 +266,38 @@ TestwineventObjCmd(
 	{-1,			NULL}
     };
 
-    if ((objc == 3) && (strcmp(Tcl_GetString(objv[1]), "debug") == 0)) {
+    if ((argc == 3) && (strcmp(argv[1], "debug") == 0)) {
 	int b;
 
-	if (Tcl_GetBoolean(interp, Tcl_GetString(objv[2]), &b) != TCL_OK) {
+	if (Tcl_GetBoolean(interp, argv[2], &b) != TCL_OK) {
 	    return TCL_ERROR;
 	}
 	TkWinDialogDebug(b);
 	return TCL_OK;
     }
 
-    if (objc < 4) {
+    if (argc < 4) {
 	return TCL_ERROR;
     }
 
-    hwnd = INT2PTR(strtol(Tcl_GetString(objv[1]), &rest, 0));
-    if (rest == Tcl_GetString(objv[1])) {
-	hwnd = FindWindowA(NULL, Tcl_GetString(objv[1]));
+    hwnd = INT2PTR(strtol(argv[1], &rest, 0));
+    if (rest == argv[1]) {
+	hwnd = FindWindow(NULL, argv[1]);
 	if (hwnd == NULL) {
-	    Tcl_SetObjResult(interp, Tcl_NewStringObj("no such window", -1));
+	    Tcl_SetResult(interp, "no such window", TCL_STATIC);
 	    return TCL_ERROR;
 	}
     }
     UpdateWindow(hwnd);
 
-    id = strtol(Tcl_GetString(objv[2]), &rest, 0);
-    if (rest == Tcl_GetString(objv[2])) {
+    id = strtol(argv[2], &rest, 0);
+    if (rest == argv[2]) {
 	char buf[256];
 
 	child = GetWindow(hwnd, GW_CHILD);
 	while (child != NULL) {
-	    SendMessageA(child, WM_GETTEXT, (WPARAM) sizeof(buf), (LPARAM) buf);
-	    if (strcasecmp(buf, Tcl_GetString(objv[2])) == 0) {
+	    SendMessage(child, WM_GETTEXT, (WPARAM) sizeof(buf), (LPARAM) buf);
+	    if (strcasecmp(buf, argv[2]) == 0) {
 		id = GetDlgCtrlID(child);
 		break;
 	    }
@@ -333,20 +305,19 @@ TestwineventObjCmd(
 	}
 	if (child == NULL) {
 	    Tcl_AppendResult(interp, "could not find a control matching \"",
-		Tcl_GetString(objv[2]), "\"", NULL);
+		argv[2], "\"", NULL);
 	    return TCL_ERROR;
 	}
     }
-
-    message = TkFindStateNum(NULL, NULL, messageMap, Tcl_GetString(objv[3]));
+    message = TkFindStateNum(NULL, NULL, messageMap, argv[3]);
     wParam = 0;
     lParam = 0;
 
-    if (objc > 4) {
-	wParam = strtol(Tcl_GetString(objv[4]), NULL, 0);
+    if (argc > 4) {
+	wParam = strtol(argv[4], NULL, 0);
     }
-    if (objc > 5) {
-	lParam = strtol(Tcl_GetString(objv[5]), NULL, 0);
+    if (argc > 5) {
+	lParam = strtol(argv[5], NULL, 0);
     }
 
     switch (message) {
@@ -354,19 +325,7 @@ TestwineventObjCmd(
 	Tcl_DString ds;
 	char buf[256];
 
-#if 0
-	GetDlgItemTextA(hwnd, id, buf, 256);
-#else
-        control = TestFindControl(hwnd, id);
-        if (control == NULL) {
-            Tcl_SetObjResult(interp,
-                             Tcl_ObjPrintf("Could not find control with id %d", id));
-            return TCL_ERROR;
-        }
-        buf[0] = 0;
-        SendMessageA(control, WM_GETTEXT, (WPARAM)sizeof(buf),
-                     (LPARAM) buf);
-#endif
+	GetDlgItemText(hwnd, id, buf, 256);
 	Tcl_ExternalToUtfDString(NULL, buf, -1, &ds);
 	Tcl_AppendResult(interp, Tcl_DStringValue(&ds), NULL);
 	Tcl_DStringFree(&ds);
@@ -374,40 +333,34 @@ TestwineventObjCmd(
     }
     case WM_SETTEXT: {
 	Tcl_DString ds;
+	BOOL result;
 
-        control = TestFindControl(hwnd, id);
-        if (control == NULL) {
-            Tcl_SetObjResult(interp,
-                             Tcl_ObjPrintf("Could not find control with id %d", id));
-            return TCL_ERROR;
-        }
-	Tcl_UtfToExternalDString(NULL, Tcl_GetString(objv[4]), -1, &ds);
-        result = SendMessageA(control, WM_SETTEXT, 0,
-                                  (LPARAM) Tcl_DStringValue(&ds));
+	Tcl_UtfToExternalDString(NULL, argv[4], -1, &ds);
+	result = SetDlgItemText(hwnd, id, Tcl_DStringValue(&ds));
 	Tcl_DStringFree(&ds);
 	if (result == 0) {
-            Tcl_SetObjResult(interp, Tcl_NewStringObj("failed to send text to dialog: ", -1));
-            AppendSystemError(interp, GetLastError());
-            return TCL_ERROR;
+    	Tcl_SetResult(interp, "failed to send text to dialog: ", TCL_STATIC);
+    	AppendSystemError(interp, GetLastError());
+		return TCL_ERROR;
 	}
 	break;
     }
     case WM_COMMAND: {
 	char buf[TCL_INTEGER_SPACE];
-	if (objc < 5) {
+	if (argc < 5) {
 	    wParam = MAKEWPARAM(id, 0);
 	    lParam = (LPARAM)child;
 	}
-	sprintf(buf, "%d", (int) SendMessageA(hwnd, message, wParam, lParam));
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, -1));
+	sprintf(buf, "%d", (int) SendMessage(hwnd, message, wParam, lParam));
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
 	break;
     }
     default: {
 	char buf[TCL_INTEGER_SPACE];
 
 	sprintf(buf, "%d",
-		(int) SendDlgItemMessageA(hwnd, id, message, wParam, lParam));
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, -1));
+		(int) SendDlgItemMessage(hwnd, id, message, wParam, lParam));
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
 	break;
     }
     }
@@ -416,7 +369,7 @@ TestwineventObjCmd(
 
 /*
  *  testfindwindow title ?class?
- *	Find a Windows window using the FindWindowW API call. This takes the window
+ *	Find a Windows window using the FindWindow API call. This takes the window
  *	title and optionally the window class and if found returns the HWND and
  *	raises an error if the window is not found.
  *	eg: testfindwindow Console TkTopLevel
@@ -432,56 +385,27 @@ TestfindwindowObjCmd(
     int objc,			/* Number of arguments. */
     Tcl_Obj *const objv[])	/* Argument values. */
 {
-	LPCWSTR title = NULL, windowClass = NULL;
-    Tcl_DString titleString, classString;
+    const char *title = NULL, *class = NULL;
     HWND hwnd = NULL;
     int r = TCL_OK;
-    DWORD myPid;
-
-    Tcl_DStringInit(&classString);
-    Tcl_DStringInit(&titleString);
 
     if (objc < 2 || objc > 3) {
         Tcl_WrongNumArgs(interp, 1, objv, "title ?class?");
         return TCL_ERROR;
     }
-
-    title = (LPCWSTR)Tcl_WinUtfToTChar(Tcl_GetString(objv[1]), -1, &titleString);
-    if (objc == 3) {
-        windowClass = (LPCWSTR)Tcl_WinUtfToTChar(Tcl_GetString(objv[2]), -1, &classString);
-    }
-    if (title[0] == 0)
-        title = NULL;
-    /* We want find a window the belongs to us and not some other process */
-    hwnd = NULL;
-    myPid = GetCurrentProcessId();
-    while (1) {
-        DWORD pid, tid;
-        hwnd = FindWindowExW(NULL, hwnd, windowClass, title);
-        if (hwnd == NULL)
-            break;
-        tid = GetWindowThreadProcessId(hwnd, &pid);
-        if (tid == 0) {
-            /* Window has gone */
-            hwnd = NULL;
-            break;
-        }
-        if (pid == myPid)
-            break;              /* Found it */
-    }
+    title = Tcl_GetString(objv[1]);
+    if (objc == 3)
+        class = Tcl_GetString(objv[2]);
+    hwnd = FindWindowA(class, title);
 
     if (hwnd == NULL) {
 	Tcl_SetObjResult(interp, Tcl_NewStringObj("failed to find window: ", -1));
 	AppendSystemError(interp, GetLastError());
 	r = TCL_ERROR;
     } else {
-        Tcl_SetObjResult(interp, Tcl_NewWideIntObj((Tcl_WideInt)(((size_t)hwnd) + 1) - 1));
+        Tcl_SetObjResult(interp, Tcl_NewLongObj(PTR2INT(hwnd)));
     }
-
-    Tcl_DStringFree(&titleString);
-    Tcl_DStringFree(&classString);
     return r;
-
 }
 
 static BOOL CALLBACK
@@ -491,7 +415,7 @@ EnumChildrenProc(
 {
     Tcl_Obj *listObj = (Tcl_Obj *) lParam;
 
-    Tcl_ListObjAppendElement(NULL, listObj, Tcl_NewWideIntObj((Tcl_WideInt)(((size_t)hwnd) + 1) - 1));
+    Tcl_ListObjAppendElement(NULL, listObj, Tcl_NewLongObj(PTR2INT(hwnd)));
     return TRUE;
 }
 
@@ -502,52 +426,60 @@ TestgetwindowinfoObjCmd(
     int objc,
     Tcl_Obj *const objv[])
 {
-    Tcl_WideInt hwnd;
-    Tcl_Obj *dictObj = NULL, *classObj = NULL, *textObj = NULL;
+    long hwnd;
+    Tcl_Obj *resObj = NULL, *classObj = NULL, *textObj = NULL;
     Tcl_Obj *childrenObj = NULL;
-    WCHAR buf[512];
-    int cch, cchBuf = 256;
-    Tcl_DString ds;
+    char buf[512];
+    int cch, cchBuf = tkWinProcs->useWide ? 256 : 512;
 
     if (objc != 2) {
 	Tcl_WrongNumArgs(interp, 1, objv, "hwnd");
 	return TCL_ERROR;
     }
 
-    if (Tcl_GetWideIntFromObj(interp, objv[1], &hwnd) != TCL_OK)
+    if (Tcl_GetLongFromObj(interp, objv[1], &hwnd) != TCL_OK)
 	return TCL_ERROR;
 
-    cch = GetClassNameW(INT2PTR(hwnd), buf, cchBuf);
+    if (tkWinProcs->useWide) {
+	cch = GetClassNameW(INT2PTR(hwnd), (LPWSTR)buf, sizeof(buf)/sizeof(WCHAR));
+	classObj = Tcl_NewUnicodeObj((LPWSTR)buf, cch);
+    } else {
+	cch = GetClassNameA(INT2PTR(hwnd), (LPSTR)buf, sizeof(buf));
+	classObj = Tcl_NewStringObj((LPSTR)buf, cch);
+    }
     if (cch == 0) {
-    	Tcl_SetObjResult(interp, Tcl_NewStringObj("failed to get class name: ", -1));
+    	Tcl_SetResult(interp, "failed to get class name: ", TCL_STATIC);
     	AppendSystemError(interp, GetLastError());
     	return TCL_ERROR;
-    } else {
-	Tcl_DString ds;
-	Tcl_WinTCharToUtf((LPCTSTR)buf, -1, &ds);
-	classObj = Tcl_NewStringObj(Tcl_DStringValue(&ds), Tcl_DStringLength(&ds));
-	Tcl_DStringFree(&ds);
     }
 
-    dictObj = Tcl_NewDictObj();
-    Tcl_DictObjPut(interp, dictObj, Tcl_NewStringObj("class", 5), classObj);
-    Tcl_DictObjPut(interp, dictObj, Tcl_NewStringObj("id", 2),
-	    Tcl_NewWideIntObj(GetWindowLongPtrW(INT2PTR(hwnd), GWL_ID)));
+    resObj = Tcl_NewListObj(0, NULL);
+    Tcl_ListObjAppendElement(interp, resObj, Tcl_NewStringObj("class", -1));
+    Tcl_ListObjAppendElement(interp, resObj, classObj);
 
-    cch = GetWindowTextW(INT2PTR(hwnd), buf, cchBuf);
-    Tcl_WinTCharToUtf((LPCTSTR)buf, cch * sizeof (WCHAR), &ds);
-    textObj = Tcl_NewStringObj(Tcl_DStringValue(&ds), Tcl_DStringLength(&ds));
-    Tcl_DStringFree(&ds);
+    Tcl_ListObjAppendElement(interp, resObj, Tcl_NewStringObj("id", -1));
+    Tcl_ListObjAppendElement(interp, resObj,
+	Tcl_NewLongObj(GetWindowLong(INT2PTR(hwnd), GWL_ID)));
 
-    Tcl_DictObjPut(interp, dictObj, Tcl_NewStringObj("text", 4), textObj);
-    Tcl_DictObjPut(interp, dictObj, Tcl_NewStringObj("parent", 6),
-	    Tcl_NewWideIntObj((Tcl_WideInt)(((size_t)GetParent((INT2PTR(hwnd)))) + 1) - 1));
+    cch = tkWinProcs->getWindowText(INT2PTR(hwnd), (LPTSTR)buf, cchBuf);
+    if (tkWinProcs->useWide) {
+	textObj = Tcl_NewUnicodeObj((LPCWSTR)buf, cch);
+    } else {
+	textObj = Tcl_NewStringObj((LPCSTR)buf, cch);
+    }
+
+    Tcl_ListObjAppendElement(interp, resObj, Tcl_NewStringObj("text", -1));
+    Tcl_ListObjAppendElement(interp, resObj, textObj);
+    Tcl_ListObjAppendElement(interp, resObj, Tcl_NewStringObj("parent", -1));
+    Tcl_ListObjAppendElement(interp, resObj,
+	Tcl_NewLongObj(PTR2INT(GetParent(INT2PTR(hwnd)))));
 
     childrenObj = Tcl_NewListObj(0, NULL);
     EnumChildWindows(INT2PTR(hwnd), EnumChildrenProc, (LPARAM)childrenObj);
-    Tcl_DictObjPut(interp, dictObj, Tcl_NewStringObj("children", -1), childrenObj);
+    Tcl_ListObjAppendElement(interp, resObj, Tcl_NewStringObj("children", -1));
+    Tcl_ListObjAppendElement(interp, resObj, childrenObj);
 
-    Tcl_SetObjResult(interp, dictObj);
+    Tcl_SetObjResult(interp, resObj);
     return TCL_OK;
 }
 
@@ -562,7 +494,7 @@ TestwinlocaleObjCmd(
 	Tcl_WrongNumArgs(interp, 1, objv, NULL);
 	return TCL_ERROR;
     }
-    Tcl_SetObjResult(interp, Tcl_NewIntObj((int)GetThreadLocale()));
+    Tcl_SetObjResult(interp, Tcl_NewIntObj((int)GetSystemDefaultLCID()));
     return TCL_OK;
 }
 

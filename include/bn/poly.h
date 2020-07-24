@@ -31,9 +31,6 @@
 #define BN_POLY_H
 
 #include "common.h"
-
-#include "vmath.h"
-
 #include "bu/magic.h"
 #include "bn/defines.h"
 #include "bn/complex.h"

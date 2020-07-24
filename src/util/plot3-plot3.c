@@ -31,7 +31,6 @@
 #include <string.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/str.h"
 #include "bu/cv.h"
 #include "bu/exit.h"
@@ -144,8 +143,6 @@ main(int argc, char **argv)
 {
     int c;
     struct uplot *up;
-
-    bu_setprogname(argv[0]);
 
     while (argc > 1) {
 	if (BU_STR_EQUAL(argv[1], "-v")) {

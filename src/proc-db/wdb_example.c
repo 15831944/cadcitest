@@ -35,7 +35,6 @@
 #include <math.h>
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bn.h"
 #include "raytrace.h"
 #include "rt/geom.h"
@@ -50,8 +49,6 @@ main(int ac, char *av[])
     int is_region;
     unsigned char rgb[3];
     struct wmember wm_hd; /* defined in wdb.h */
-
-    bu_setprogname(av[0]);
 
     if (ac != 2) {
 	bu_exit(1, "Usage: %s db_file.g\n", av[0]);

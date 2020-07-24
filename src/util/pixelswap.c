@@ -30,10 +30,9 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/exit.h"
-#include "dm.h"
+#include "fb.h"
 
 
 char options[] = "d:h?";
@@ -96,8 +95,6 @@ int main(int ac, char **av)
     int i, pixels;
     unsigned char r, g, b, R, G, B;
     size_t ret;
-
-    bu_setprogname(av[0]);
 
     i=parse_args(ac, av);
 /* if ac == 1, there is only 1 argument; i.e., run-with-no-arguments

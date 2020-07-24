@@ -45,11 +45,8 @@ class OSGVIEWER_EXPORT Scene : public osg::Referenced
         osgDB::ImagePager* getImagePager() { return _imagePager.get(); }
         const osgDB::ImagePager* getImagePager() const { return _imagePager.get(); }
 
-        virtual bool requiresUpdateSceneGraph() const;
+        void updateSceneGraph(osg::NodeVisitor& updateVisitor);
 
-        virtual void updateSceneGraph(osg::NodeVisitor& updateVisitor);
-
-        virtual bool requiresRedraw() const;
 
         /** Get the Scene object that has the specified node assigned to it.
           * return 0 if no Scene has yet been assigned the specified node.*/

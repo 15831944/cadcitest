@@ -13,7 +13,6 @@ set(brep_headers
   util.h
   )
 BRLCAD_MANAGE_FILES(brep_headers ${INCLUDE_DIR}/brlcad/brep)
-
 CMAKEFILES(CMakeLists.txt)
 CMAKEFILES(cdt2.h)
 

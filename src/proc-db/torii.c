@@ -31,7 +31,6 @@
 #include "bio.h"
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bn.h"
 #include "raytrace.h"
 #include "rt/geom.h"
@@ -177,8 +176,6 @@ main(int ac, char *av[])
 	{1, 1, 1, 1, 0, 0},
 	{1, 1, 1, 1, 0, 0}
     };
-
-    bu_setprogname(av[0]);
 
     progname = *av;
 

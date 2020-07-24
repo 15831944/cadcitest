@@ -40,7 +40,6 @@
 #include "bio.h"
 
 /* interface headers */
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/units.h"
 #include "bu/snooze.h"
@@ -501,8 +500,6 @@ main(int argc, char *argv[]) {
     const char ** geometry = NULL;
     int ngeometry = 0;
     struct db_i *dbip = NULL;
-
-    bu_setprogname(argv[0]);
 
     if (argc < 2) {
 	usage(NULL, argv[0]);

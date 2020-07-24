@@ -1,13 +1,13 @@
 /* -*-c++-*- OpenThreads library, Copyright (C) 2002 - 2007  The Open Thread Group
  *
- * This library is open source and may be redistributed and/or modified under
- * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or
+ * This library is open source and may be redistributed and/or modified under  
+ * the terms of the OpenSceneGraph Public License (OSGPL) version 0.0 or 
  * (at your option) any later version.  The full license is in LICENSE file
  * included with this distribution, and on the openscenegraph.org website.
- *
+ * 
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
  * OpenSceneGraph Public License for more details.
 */
 
@@ -89,7 +89,7 @@ namespace OpenThreads {
         static unsigned int __stdcall StartThread(void *data) {
 
             Thread *thread = static_cast<Thread *>(data);
-
+        
             Win32ThreadPrivateData *pd =
                 static_cast<Win32ThreadPrivateData *>(thread->_prvData);
 
@@ -102,13 +102,12 @@ namespace OpenThreads {
             SetThreadSchedulingParams(thread);
 
             pd->isRunning = true;
-
-            pd->uniqueId = Thread::CurrentThreadId();
-
+            
             // release the thread that created this thread.
             pd->threadStartedBlock.release();
 
-            thread->setProcessorAffinity(pd->affinity);
+            if (0 <= pd->cpunum)
+                thread->setProcessorAffinity(pd->cpunum);
 
             try{
                 thread->run();
@@ -162,7 +161,7 @@ namespace OpenThreads {
 
         //--------------------------------------------------------------------------
         // Set thread scheduling parameters.
-        // Note that time-critical priority is omitted :
+        // Note that time-critical priority is ommited :
         // 1) It's not sensible thing to do
         // 2) there's no enum for that in Thread interface
         // Also, on Windows, effective thread priority is :
@@ -212,11 +211,6 @@ Thread* Thread::CurrentThread()
     return (Thread* )TlsGetValue(ID);
 }
 
-size_t Thread::CurrentThreadId()
-{
-    return (size_t)::GetCurrentThreadId();
-}
-
 //----------------------------------------------------------------------------
 //
 // Description: Set the concurrency level (no-op)
@@ -247,6 +241,7 @@ Win32ThreadPrivateData::Win32ThreadPrivateData()
     threadPolicy = Thread::THREAD_SCHEDULE_DEFAULT;
     detached = false;
     cancelEvent.set(CreateEvent(NULL,TRUE,FALSE,NULL));
+    cpunum = -1;
 }
 
 //----------------------------------------------------------------------------
@@ -281,12 +276,10 @@ Thread::~Thread()
         std::cout<<"Error: Thread "<<this<<" still running in destructor"<<std::endl;
         pd->cancelMode = 0;
         cancel();
-
-        join();
     }
 
     delete pd;
-
+    
     _prvData = 0;
 }
 //-----------------------------------------------------------------------------
@@ -307,7 +300,7 @@ void Thread::Init() {
 //
 // Use: public
 //
-size_t Thread::getThreadId() {
+int Thread::getThreadId() {
     Win32ThreadPrivateData *pd = static_cast<Win32ThreadPrivateData *> (_prvData);
     return pd->uniqueId;
 }
@@ -341,25 +334,19 @@ bool Thread::isRunning() {
 int Thread::start() {
 
     Win32ThreadPrivateData *pd = static_cast<Win32ThreadPrivateData *> (_prvData);
-    if (pd->isRunning)
-    {
-        return 0;
-    }
-
     //-------------------------------------------------------------------------
     // Prohibit the stack size from being changed.
     // (bb 5/13/2005) it actually doesn't matter.
-    // 1) usually setStackSize()/start() sequence is serialized.
-    // 2) if not than we're in trouble anyway - nothing is protected
+    // 1) usually setStackSize()/start() sequence is serialized. 
+    // 2) if not than we're in trouble anyway - nothing is protected 
     // pd->stackSizeLocked = true;
     unsigned int ID;
-
+    
     pd->threadStartedBlock.reset();
 
-    pd->tid.set( (void*)_beginthreadex(NULL,static_cast<unsigned>(pd->stackSize),ThreadPrivateActions::StartThread,static_cast<void *>(this),CREATE_SUSPENDED,&ID));
-    ResumeThread(pd->tid.get());
+    pd->tid.set( (void*)_beginthreadex(NULL,static_cast<unsigned>(pd->stackSize),ThreadPrivateActions::StartThread,static_cast<void *>(this),0,&ID));
 
-    pd->uniqueId = (size_t)ID;
+    pd->uniqueId = (int)ID;
 
     if(!pd->tid) {
         return -1;
@@ -374,7 +361,7 @@ int Thread::start() {
 
 int Thread::startThread()
 {
-    if (_prvData) return start();
+    if (_prvData) return start(); 
     else return 0;
 }
 
@@ -449,9 +436,9 @@ int Thread::testCancel()
     if(pd->cancelMode == 2)
         return 0;
 
-    size_t curr = Thread::CurrentThreadId();
+    DWORD curr = GetCurrentThreadId();
 
-    if( pd->uniqueId != curr )
+    if( pd->uniqueId != (int)curr )
         return -1;
 
 //    pd->isRunning = false;
@@ -579,62 +566,44 @@ size_t Thread::getStackSize() {
     return pd->stackSize;
 }
 
-static int SetThreadAffinity(HANDLE tid, const Affinity& affinity)
-{
-	unsigned int numprocessors = OpenThreads::GetNumberOfProcessors();
-	//std::cout << "SetThreadAffinity() : affinity.activeCPUs.size()=" << affinity.activeCPUs.size() << ", numprocessors=" << numprocessors << std::endl;
-
-    DWORD_PTR affinityMask = 0x0;
-    DWORD_PTR maskBit = 0x1;
-	if (affinity)
-	{
-		for (Affinity::ActiveCPUs::const_iterator itr = affinity.activeCPUs.begin();
-			itr != affinity.activeCPUs.end();
-			++itr)
-		{
-			unsigned int cpunum = *itr;
-			if (cpunum<numprocessors)
-			{
-				affinityMask |= (maskBit << cpunum);
-			}
-		}
-        //std::cout << "   Setting affinityMask : 0x" << std::hex << affinityMask << std::dec << std::endl;
-	}
-	else
-	{
-		for (unsigned int cpunum = 0; cpunum < numprocessors; ++cpunum)
-		{
-
-			affinityMask |= (maskBit << cpunum);
-		}
-		//std::cout << "   Fallback setting affinityMask : 0x" << std::hex << affinityMask << std::dec << std::endl;
-	}
-
-	DWORD_PTR res = SetThreadAffinityMask ( tid, affinityMask );
-
-	// return value 1 means call is ignored ( 9x/ME/SE )
-	if (res == 1) return -1;
-	// return value 0 is failure
-	return (res == 0) ? GetLastError() : 0;
-}
-
 //-----------------------------------------------------------------------------
 //
 // Description:  set processor affinity for the thread
 //
 // Use: public
 //
-int Thread::setProcessorAffinity( const Affinity& affinity )
+int Thread::setProcessorAffinity( unsigned int cpunum )
 {
-	Win32ThreadPrivateData *pd = static_cast<Win32ThreadPrivateData *> (_prvData);
-    pd->affinity = affinity;
+    Win32ThreadPrivateData *pd = static_cast<Win32ThreadPrivateData *> (_prvData);
+    pd->cpunum = cpunum;
     if (!pd->isRunning)
        return 0;
 
     if (pd->tid.get() == INVALID_HANDLE_VALUE)
        return -1;
 
-	return SetThreadAffinity(pd->tid.get(), affinity);
+
+    DWORD affinityMask  = 0x1 << cpunum ; // thread affinity mask
+    DWORD_PTR res =
+        SetThreadAffinityMask
+        (
+            pd->tid.get(),                  // handle to thread
+            affinityMask                    // thread affinity mask
+        );
+/*
+    This one is funny.
+    This is "non-mandatory" affinity , windows will try to use dwIdealProcessor
+    whenever possible ( when Bill's account is over 50B, maybe :-) ).
+
+    DWORD SetThreadIdealProcessor(
+      HANDLE hThread,         // handle to the thread
+       DWORD dwIdealProcessor  // ideal processor number
+    );
+*/
+    // return value 1 means call is ignored ( 9x/ME/SE )
+    if( res == 1 ) return -1;
+    // return value 0 is failure
+    return (res == 0) ? GetLastError() : 0 ;
 }
 
 //-----------------------------------------------------------------------------
@@ -710,17 +679,18 @@ int OpenThreads::GetNumberOfProcessors()
     return sysInfo.dwNumberOfProcessors;
 }
 
-int OpenThreads::SetProcessorAffinityOfCurrentThread(const Affinity& affinity)
+int OpenThreads::SetProcessorAffinityOfCurrentThread(unsigned int cpunum)
 {
     Thread::Init();
 
     Thread* thread = Thread::CurrentThread();
-    if (thread)
+    if (thread) 
     {
-        return thread->setProcessorAffinity(affinity);
+        return thread->setProcessorAffinity(cpunum);
     }
     else
     {
-		return SetThreadAffinity(GetCurrentThread(), affinity);
+        // non op right now, needs implementation.
+        return -1;
     }
 }

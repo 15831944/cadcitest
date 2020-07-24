@@ -29,7 +29,6 @@ TrackballManipulator::TrackballManipulator( int flags )
 /// Constructor.
 TrackballManipulator::TrackballManipulator( const TrackballManipulator& tm, const CopyOp& copyOp )
     : osg::Object(tm, copyOp),
-      osg::Callback(tm, copyOp),
       inherited( tm, copyOp )
 {
 }

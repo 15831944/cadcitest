@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bu/app.h"
 #include "bu/log.h"
 #include "bu/malloc.h"
 #include "bu/str.h"
@@ -51,8 +50,6 @@ main (int argc, char **argv)
     int nm_threshs;	/* How many thresholds? */
     int i;
     unsigned char *bin_color = (unsigned char *)0;/* resultant pixel values */
-
-    bu_setprogname(argv[0]);
 
     if ((BU_STR_EQUAL(argv[1],"-h") || BU_STR_EQUAL(argv[1],"-?")) && argc == 2)
 	bu_exit(1, "%s", USAGE);

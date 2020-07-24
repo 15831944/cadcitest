@@ -12,7 +12,6 @@
 */
 #include <osg/Notify>
 #include <osg/ApplicationUsage>
-#include <osg/os_utils>
 #include <osg/ref_ptr>
 #include <string>
 #include <stdlib.h>
@@ -41,9 +40,7 @@ struct NullStream : public std::ostream
 public:
     NullStream():
         std::ostream(new NullStreamBuffer)
-    {
-        _buffer = static_cast<NullStreamBuffer *>(rdbuf());
-    }
+    { _buffer = dynamic_cast<NullStreamBuffer *>(rdbuf()); }
 
     ~NullStream()
     {
@@ -62,9 +59,6 @@ struct NotifyStreamBuffer : public std::stringbuf
 {
     NotifyStreamBuffer() : _severity(osg::NOTICE)
     {
-        /* reduce the need to reallocate the std::ostream buffer behind osg::Notify (causing multitreading issues) by pre-allocating 4095 bytes */
-        str(std::string(4095, 0));
-        pubseekpos(0, std::ios_base::out);
     }
 
     void setNotifyHandler(osg::NotifyHandler *handler) { _handler = handler; }
@@ -102,9 +96,7 @@ struct NotifyStream : public std::ostream
 public:
     NotifyStream():
         std::ostream(new NotifyStreamBuffer)
-    {
-        _buffer = static_cast<NotifyStreamBuffer *>(rdbuf());
-    }
+    { _buffer = dynamic_cast<NotifyStreamBuffer *>(rdbuf()); }
 
     void setCurrentSeverity(osg::NotifySeverity severity)
     {
@@ -141,8 +133,9 @@ struct NotifySingleton
 
         _notifyLevel = osg::NOTICE; // Default value
 
-        std::string OSGNOTIFYLEVEL;
-        if(getEnvVar("OSG_NOTIFY_LEVEL", OSGNOTIFYLEVEL) || getEnvVar("OSGNOTIFYLEVEL", OSGNOTIFYLEVEL))
+        char* OSGNOTIFYLEVEL=getenv("OSG_NOTIFY_LEVEL");
+        if (!OSGNOTIFYLEVEL) OSGNOTIFYLEVEL=getenv("OSGNOTIFYLEVEL");
+        if(OSGNOTIFYLEVEL)
         {
 
             std::string stringOSGNOTIFYLEVEL(OSGNOTIFYLEVEL);
@@ -190,7 +183,7 @@ bool osg::initNotifyLevel()
     return true;
 }
 
-// Use a proxy to force the initialization of the NotifySingleton during static initialization
+// Use a proxy to force the initialization of the the NotifySingleton during static initialization
 OSG_INIT_SINGLETON_PROXY(NotifySingletonProxy, osg::initNotifyLevel())
 
 void osg::setNotifyLevel(osg::NotifySeverity severity)
@@ -250,8 +243,6 @@ void osg::StandardNotifyHandler::notify(osg::NotifySeverity severity, const char
 
 void osg::WinDebugNotifyHandler::notify(osg::NotifySeverity severity, const char *message)
 {
-    OSG_UNUSED(severity);
-
     OutputDebugStringA(message);
 }
 

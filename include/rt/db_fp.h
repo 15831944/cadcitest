@@ -22,9 +22,6 @@
 #define RT_DB_FP_H
 
 #include "common.h"
-
-#include "vmath.h"
-
 #include "bu/vls.h"
 #include "rt/defines.h"
 #include "rt/op.h"

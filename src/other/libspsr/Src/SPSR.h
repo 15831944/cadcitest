@@ -31,21 +31,13 @@ DAMAGE.
 
 #include "cvertex.h"
 
-#if defined(_WIN32)
-# define COMPILER_DLLEXPORT __declspec(dllexport)
-# define COMPILER_DLLIMPORT __declspec(dllimport)
-#else
-# define COMPILER_DLLEXPORT __attribute__ ((visibility ("default")))
-# define COMPILER_DLLIMPORT __attribute__ ((visibility ("default")))
-#endif
-
 #ifndef SPSR_EXPORT
 #  if defined(SPSR_DLL_EXPORTS) && defined(SPSR_DLL_IMPORTS)
 #    error "Only SPSR_DLL_EXPORTS or SPSR_DLL_IMPORTS can be defined, not both."
 #  elif defined(SPSR_DLL_EXPORTS)
-#    define SPSR_EXPORT COMPILER_DLLEXPORT
+#    define SPSR_EXPORT __declspec(dllexport)
 #  elif defined(SPSR_DLL_IMPORTS)
-#    define SPSR_EXPORT COMPILER_DLLIMPORT
+#    define SPSR_EXPORT __declspec(dllimport)
 #  else
 #    define SPSR_EXPORT
 #  endif

@@ -34,7 +34,6 @@
 #include <string.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "vmath.h"
 #include "raytrace.h"
@@ -618,8 +617,6 @@ main(int argc, char **argv)
     int done = 0;
     char units[16], fname[80];
     int optc;
-
-    bu_setprogname(argv[0]);
 
     while ((optc = bu_getopt(argc, argv, "tsmnch?")) != -1) {
 	/* Set joint type and cable option */

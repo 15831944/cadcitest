@@ -73,7 +73,7 @@ class OSGUTIL_EXPORT Optimizer
             COMBINE_ADJACENT_LODS =     (1 << 3),
             SHARE_DUPLICATE_STATE =     (1 << 4),
             MERGE_GEOMETRY =            (1 << 5),
-            CHECK_GEOMETRY =            (1 << 6), // deprecated, currently no-op
+            CHECK_GEOMETRY =            (1 << 6),
             MAKE_FAST_GEOMETRY =        (1 << 7),
             SPATIALIZE_GROUPS =         (1 << 8),
             COPY_SHARED_NODES =         (1 << 9),
@@ -88,7 +88,6 @@ class OSGUTIL_EXPORT Optimizer
             INDEX_MESH =                (1 << 18),
             VERTEX_POSTTRANSFORM =      (1 << 19),
             VERTEX_PRETRANSFORM =       (1 << 20),
-            BUFFER_OBJECT_SETTINGS =    (1 << 21),
             DEFAULT_OPTIMIZATIONS = FLATTEN_STATIC_TRANSFORMS |
                                 REMOVE_REDUNDANT_NODES |
                                 REMOVE_LOADED_PROXY_NODES |
@@ -113,8 +112,7 @@ class OSGUTIL_EXPORT Optimizer
                                 TRISTRIP_GEOMETRY |
                                 OPTIMIZE_TEXTURE_SETTINGS |
                                 TEXTURE_ATLAS_BUILDER |
-                                STATIC_OBJECT_DETECTION |
-                                BUFFER_OBJECT_SETTINGS
+                                STATIC_OBJECT_DETECTION
         };
 
         /** Reset internal data to initial state - the getPermissibleOptionsMap is cleared.*/
@@ -124,13 +122,9 @@ class OSGUTIL_EXPORT Optimizer
           * visitors, specified by the OptimizationOptions.*/
         void optimize(osg::Node* node);
 
-        template<class T> void optimize(const osg::ref_ptr<T>& node) { optimize(node.get()); }
-
         /** Traverse the node and its subgraph with a series of optimization
           * visitors, specified by the OptimizationOptions.*/
         virtual void optimize(osg::Node* node, unsigned int options);
-
-        template<class T> void optimize(const osg::ref_ptr<T>& node, unsigned int options) { optimize(node.get(), options); }
 
 
         /** Callback for customizing what operations are permitted on objects in the scene graph.*/
@@ -275,7 +269,7 @@ class OSGUTIL_EXPORT Optimizer
                     BaseOptimizerVisitor(optimizer, FLATTEN_STATIC_TRANSFORMS) {}
 
                 virtual void apply(osg::Node& geode);
-                virtual void apply(osg::Drawable& drawable);
+                virtual void apply(osg::Geode& geode);
                 virtual void apply(osg::Billboard& geode);
                 virtual void apply(osg::ProxyNode& node);
                 virtual void apply(osg::PagedLOD& node);
@@ -360,6 +354,7 @@ class OSGUTIL_EXPORT Optimizer
                 RemoveEmptyNodesVisitor(Optimizer* optimizer=0):
                     BaseOptimizerVisitor(optimizer, REMOVE_REDUNDANT_NODES) {}
 
+                virtual void apply(osg::Geode& geode);
                 virtual void apply(osg::Group& group);
 
                 void removeEmptyNodes();
@@ -403,7 +398,7 @@ class OSGUTIL_EXPORT Optimizer
 
         };
 
-        /** Tessellate all Geometries, to remove POLYGONS.*/
+        /** Tessellate all geodes, to remove POLYGONS.*/
         class OSGUTIL_EXPORT TessellateVisitor : public BaseOptimizerVisitor
         {
             public:
@@ -414,7 +409,7 @@ class OSGUTIL_EXPORT Optimizer
                 TessellateVisitor(Optimizer* optimizer=0):
                     BaseOptimizerVisitor(optimizer, TESSELLATE_GEOMETRY) {}
 
-                virtual void apply(osg::Geometry& geom);
+                virtual void apply(osg::Geode& geode);
 
         };
 
@@ -460,19 +455,21 @@ class OSGUTIL_EXPORT Optimizer
 
                 virtual void apply(osg::Node& node);
 
+                virtual void apply(osg::Geode& geode);
+
                 void optimize();
 
             protected:
 
-                void addStateSet(osg::StateSet* stateset, osg::Node* node);
+                void addStateSet(osg::StateSet* stateset,osg::Object* obj);
 
                 inline bool optimize(osg::Object::DataVariance variance)
                 {
                     return _optimize[variance];
                 }
 
-                typedef std::set<osg::Node*>               NodeSet;
-                typedef std::map<osg::StateSet*, NodeSet>  StateSetMap;
+                typedef std::set<osg::Object*>              ObjectSet;
+                typedef std::map<osg::StateSet*,ObjectSet>  StateSetMap;
 
                 // note, one element for DYNAMIC, STATIC and UNSPECIFIED
                 bool _optimize[3];
@@ -501,6 +498,20 @@ class OSGUTIL_EXPORT Optimizer
 
         };
 
+        class OSGUTIL_EXPORT CheckGeometryVisitor : public BaseOptimizerVisitor
+        {
+            public:
+
+                /// default to traversing all children.
+                CheckGeometryVisitor(Optimizer* optimizer=0):
+                    BaseOptimizerVisitor(optimizer, CHECK_GEOMETRY) {}
+
+                virtual void apply(osg::Geode& geode) { checkGeode(geode); }
+
+                void checkGeode(osg::Geode& geode);
+
+        };
+
         class OSGUTIL_EXPORT MakeFastGeometryVisitor : public BaseOptimizerVisitor
         {
             public:
@@ -509,7 +520,9 @@ class OSGUTIL_EXPORT Optimizer
                 MakeFastGeometryVisitor(Optimizer* optimizer=0):
                     BaseOptimizerVisitor(optimizer, MAKE_FAST_GEOMETRY) {}
 
-                virtual void apply(osg::Geometry& geom);
+                virtual void apply(osg::Geode& geode) { checkGeode(geode); }
+
+                void checkGeode(osg::Geode& geode);
 
         };
 
@@ -532,10 +545,10 @@ class OSGUTIL_EXPORT Optimizer
                     return _targetMaximumNumberOfVertices;
                 }
 
-                virtual void apply(osg::Group& group) { mergeGroup(group); traverse(group); }
+                virtual void apply(osg::Geode& geode) { mergeGeode(geode); }
                 virtual void apply(osg::Billboard&) { /* don't do anything*/ }
 
-                bool mergeGroup(osg::Group& group);
+                bool mergeGeode(osg::Geode& geode);
 
                 static bool geometryContainsSharedArrays(osg::Geometry& geom);
 
@@ -608,6 +621,7 @@ class OSGUTIL_EXPORT Optimizer
                         _changeClientImageStorage(changeClientImageStorage), _valueClientImageStorage(valueClientImageStorage),
                         _changeAnisotropy(changeAnisotropy), _valueAnisotropy(valueAnisotropy) {}
 
+                virtual void apply(osg::Geode& node);
                 virtual void apply(osg::Node& node);
 
                 void apply(osg::StateSet& stateset);
@@ -779,7 +793,7 @@ class OSGUTIL_EXPORT Optimizer
 
 
         /** Optimize texture usage in the scene graph by combining textures into texture atlas
-          * Use of texture atlas cuts down on the number of separate states in the scene, reducing
+          * Use of texture atlas cuts down on the number of seperate states in the scene, reducing
           * state changes and improving the chances of using larger batches of geometry.*/
         class OSGUTIL_EXPORT TextureAtlasVisitor : public BaseOptimizerVisitor
         {
@@ -796,7 +810,8 @@ class OSGUTIL_EXPORT Optimizer
                 virtual void reset();
 
                 virtual void apply(osg::Node& node);
-                virtual void apply(osg::Drawable& node);
+
+                virtual void apply(osg::Geode& geode);
 
                 void optimize();
 
@@ -829,33 +844,14 @@ class OSGUTIL_EXPORT Optimizer
                     BaseOptimizerVisitor(optimizer, STATIC_OBJECT_DETECTION) {}
 
                 virtual void apply(osg::Node& node);
-                virtual void apply(osg::Drawable& drawable);
+
+                virtual void apply(osg::Geode& geode);
 
             protected:
 
                 void applyStateSet(osg::StateSet& stateset);
 
-        };
-
-        /** For all geometry apply settings.*/
-        class OSGUTIL_EXPORT BufferObjectVisitor : public BaseOptimizerVisitor
-        {
-            public:
-
-                BufferObjectVisitor(bool changeVBO, bool valueVBO,
-                                    bool changeVertexArrayObject, bool valueVertexArrayObject,
-                                    bool changeDisplayList, bool valueDisplayList,
-                                    Optimizer* optimizer=0):
-                        BaseOptimizerVisitor(optimizer, BUFFER_OBJECT_SETTINGS),
-                        _changeVertexBufferObject(changeVBO), _valueVertexBufferObject(valueVBO),
-                        _changeVertexArrayObject(changeVertexArrayObject), _valueVertexArrayObject(valueVertexArrayObject),
-                        _changeDisplayList(changeDisplayList), _valueDisplayList(valueDisplayList) {}
-
-                virtual void apply(osg::Geometry& geometry);
-
-                bool _changeVertexBufferObject, _valueVertexBufferObject;
-                bool _changeVertexArrayObject, _valueVertexArrayObject;
-                bool _changeDisplayList, _valueDisplayList;
+                void applyDrawable(osg::Drawable& drawable);
 
         };
 };

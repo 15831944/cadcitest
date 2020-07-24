@@ -30,7 +30,6 @@ TerrainManipulator::TerrainManipulator( int flags )
 /// Constructor.
 TerrainManipulator::TerrainManipulator( const TerrainManipulator& tm, const CopyOp& copyOp )
     : osg::Object(tm, copyOp),
-      osg::Callback(tm, copyOp),
       inherited( tm, copyOp ),
       _previousUp( tm._previousUp )
 {

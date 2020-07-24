@@ -34,8 +34,6 @@
 #include <math.h>
 #include <time.h>
 
-#include "bu/app.h"
-
 #define POOL_SIZE 1024
 
 
@@ -463,9 +461,6 @@ int main(int argc, char **argv)
     } else {
 	MAX_TREE_DEPTH = atoi(argv[1]);
     }
-
-    bu_setprogname(argv[0]);
-
     t0 = time(NULL);
     t1 = time(NULL);
     matsize = pow(2, MAX_TREE_DEPTH + 1) + 1;

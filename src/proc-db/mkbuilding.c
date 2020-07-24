@@ -24,7 +24,6 @@
  */
 
 #include "mkbuilding.h"
-#include "bu/app.h"
 
 void mkbdlg_usage(void)
 {
@@ -38,8 +37,6 @@ main(int ac, char *av[])
 {
     struct rt_wdb *db_filepointer;
     point_t p1, p2;
-
-    bu_setprogname(av[0]);
 
     if (ac < 2) {
 	mkbdlg_usage();

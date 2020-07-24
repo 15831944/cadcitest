@@ -34,7 +34,6 @@
 #include <math.h>
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/units.h"
 #include "raytrace.h"
@@ -975,8 +974,6 @@ int main(int ac, char **av)
 {
     struct opening *op;
     struct rt_wdb *db_fd;
-
-    bu_setprogname(av[0]);
 
     ol_hd.ex = ol_hd.ez = 0.0;
 

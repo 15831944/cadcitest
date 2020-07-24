@@ -32,10 +32,9 @@
 #include <stdlib.h>
 
 #include "vmath.h"
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bn.h"
-#include "dm.h"
+#include "fb.h"
 
 
 static int bytes_per_sample = 3;
@@ -83,7 +82,6 @@ main(int argc, char **argv)
     int ret = 0;
     int nsamp;
 
-    bu_setprogname(argv[0]);
     if (!get_args(argc, argv) || bytes_per_sample <= 0) {
 	(void)fputs(usage, stderr);
 	return 1;

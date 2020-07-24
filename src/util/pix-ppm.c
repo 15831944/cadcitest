@@ -37,7 +37,7 @@
 #include "bu/log.h"
 #include "bu/malloc.h"
 #include "bn.h"
-#include "dm.h"
+#include "fb.h"
 
 
 static int autosize = 0;		/* !0 to autosize input */

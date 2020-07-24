@@ -1,9 +1,9 @@
 # build DLL
 add_subdirectory(Dll)
 
-if(MSVC)
+if(CPP_DLL_DEFINES)
   add_library(bs SHARED bootstrap.cpp)
-endif(MSVC)
+endif(CPP_DLL_DEFINES)
 
 CMAKEFILES(CMakeLists.txt)
 

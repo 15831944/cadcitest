@@ -24,7 +24,6 @@
 #ifndef ADRT_LIBRENDER_RENDER_INTERNAL_H
 #define ADRT_LIBRENDER_RENDER_INTERNAL_H
 
-#include "common.h"
 #include "rt/tie.h"
 
 #ifndef RENDER_EXPORT
@@ -33,9 +32,9 @@
 #  elif defined(STATIC_BUILD)
 #    define RENDER_EXPORT
 #  elif defined(RENDER_DLL_EXPORTS)
-#    define RENDER_EXPORT COMPILER_DLLEXPORT
+#    define RENDER_EXPORT __declspec(dllexport)
 #  elif defined(RENDER_DLL_IMPORTS)
-#    define RENDER_EXPORT COMPILER_DLLIMPORT
+#    define RENDER_EXPORT __declspec(dllimport)
 #  else
 #    define RENDER_EXPORT
 #  endif

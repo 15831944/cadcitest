@@ -23,7 +23,9 @@ osg::ref_ptr<GUIEventAdapter>& GUIEventAdapter::getAccumulatedEventState()
 }
 
 GUIEventAdapter::GUIEventAdapter():
+    _handled(false),
     _eventType(NONE),
+    _time(0.0),
     _windowX(0),
     _windowY(0),
     _windowWidth(1280),
@@ -46,8 +48,10 @@ GUIEventAdapter::GUIEventAdapter():
 {}
 
 GUIEventAdapter::GUIEventAdapter(const GUIEventAdapter& rhs,const osg::CopyOp& copyop):
-    osgGA::Event(rhs,copyop),
+    osg::Object(rhs,copyop),
+    _handled(rhs._handled),
     _eventType(rhs._eventType),
+    _time(rhs._time),
     _context(rhs._context),
     _windowX(rhs._windowX),
     _windowY(rhs._windowY),
@@ -67,11 +71,8 @@ GUIEventAdapter::GUIEventAdapter(const GUIEventAdapter& rhs,const osg::CopyOp& c
     _mouseYOrientation(rhs._mouseYOrientation),
     _scrolling(rhs._scrolling),
     _tabletPen(rhs._tabletPen),
-    _touchData(NULL)
-{
-    if(TouchData* td = rhs.getTouchData())
-        setTouchData(osg::clone(td, copyop));
-}
+    _touchData(rhs._touchData)
+{}
 
 GUIEventAdapter::~GUIEventAdapter()
 {
@@ -86,7 +87,7 @@ void GUIEventAdapter::setWindowRectangle(int x, int y, int width, int height, bo
 
     if (updateMouseRange)
     {
-        setInputRange(0, 0, width - 1, height - 1);
+        setInputRange(0, 0, width, height);
     }
 
 }
@@ -131,21 +132,4 @@ void GUIEventAdapter::copyPointerDataFrom(const osgGA::GUIEventAdapter& sourceEv
     setButtonMask(sourceEvent.getButtonMask());
     setMouseYOrientation(sourceEvent.getMouseYOrientation());
     setPointerDataList(sourceEvent.getPointerDataList());
-}
-
-
-
-void GUIEventAdapter::setMouseYOrientationAndUpdateCoords(osgGA::GUIEventAdapter::MouseYOrientation myo)
-{
-    if ( myo==_mouseYOrientation )
-    return;
-
-    setMouseYOrientation( myo );
-
-    _my = _Ymax - _my + _Ymin;
-    if( isMultiTouchEvent() )
-    {
-        for( TouchData::iterator itr =  getTouchData()->begin(); itr != getTouchData()->end(); itr++ ) 
-            itr->y = _Ymax - itr->y + _Ymin;
-    }
 }

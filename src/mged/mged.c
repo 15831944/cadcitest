@@ -69,7 +69,6 @@
 #include "raytrace.h"
 #include "libtermio.h"
 #include "rt/db4.h"
-#include "dm/bview_util.h"
 #include "ged.h"
 #include "tclcad.h"
 
@@ -110,7 +109,7 @@ extern struct _mged_variables default_mged_variables;
 extern struct _color_scheme default_color_scheme;
 
 /* defined in grid.c */
-extern struct bview_grid_state default_grid_state;
+extern struct _grid_state default_grid_state;
 
 /* defined in axes.c */
 extern struct _axes_state default_axes_state;
@@ -359,13 +358,13 @@ new_edit_mats(void)
 	if (!p->dml_owner)
 	    continue;
 
-	set_curr_dm(p);
+	curr_dm_list = p;
 	bn_mat_mul(view_state->vs_model2objview, view_state->vs_gvp->gv_model2view, modelchanges);
 	bn_mat_inv(view_state->vs_objview2model, view_state->vs_model2objview);
 	view_state->vs_flag = 1;
     }
 
-    set_curr_dm(save_dm_list);
+    curr_dm_list = save_dm_list;
 }
 
 
@@ -393,7 +392,7 @@ mged_view_callback(struct bview *gvp,
 void
 new_mats(void)
 {
-    bview_update(view_state->vs_gvp);
+    ged_view_update(view_state->vs_gvp);
 }
 
 
@@ -640,7 +639,7 @@ mged_process_char(char ch)
 	    if (Tcl_CommandComplete(bu_vls_addr(&input_str_prefix))) {
 		curr_cmd_list = &head_cmd_list;
 		if (curr_cmd_list->cl_tie)
-		    set_curr_dm(curr_cmd_list->cl_tie);
+		    curr_dm_list = curr_cmd_list->cl_tie;
 
 		reset_Tty(fileno(stdin)); /* Backwards compatibility */
 		(void)signal(SIGINT, SIG_IGN);
@@ -1292,7 +1291,7 @@ main(int argc, char *argv[])
     BU_ALLOC(color_scheme, struct _color_scheme);
     *color_scheme = default_color_scheme;	/* struct copy */
 
-    BU_ALLOC(grid_state, struct bview_grid_state);
+    BU_ALLOC(grid_state, struct _grid_state);
     *grid_state = default_grid_state;		/* struct copy */
 
     BU_ALLOC(axes_state, struct _axes_state);
@@ -1780,7 +1779,7 @@ stdin_input(ClientData clientData, int UNUSED(mask))
 	if (Tcl_CommandComplete(bu_vls_addr(&input_str_prefix))) {
 	    curr_cmd_list = &head_cmd_list;
 	    if (curr_cmd_list->cl_tie)
-		set_curr_dm(curr_cmd_list->cl_tie);
+		curr_dm_list = curr_cmd_list->cl_tie;
 
 	    if (cmdline(&input_str_prefix, TRUE) == CMD_MORE) {
 		/* Remove newline */
@@ -1984,7 +1983,7 @@ event_check(int non_blocking)
 	struct bu_vls vls = BU_VLS_INIT_ZERO;
 	char save_coords;
 
-	set_curr_dm(edit_rate_mr_dm_list);
+	curr_dm_list = edit_rate_mr_dm_list;
 	save_coords = mged_variables->mv_coords;
 	mged_variables->mv_coords = 'm';
 
@@ -2018,7 +2017,7 @@ event_check(int non_blocking)
 	struct bu_vls vls = BU_VLS_INIT_ZERO;
 	char save_coords;
 
-	set_curr_dm(edit_rate_or_dm_list);
+	curr_dm_list = edit_rate_or_dm_list;
 	save_coords = mged_variables->mv_coords;
 	mged_variables->mv_coords = 'o';
 
@@ -2052,7 +2051,7 @@ event_check(int non_blocking)
 	struct bu_vls vls = BU_VLS_INIT_ZERO;
 	char save_coords;
 
-	set_curr_dm(edit_rate_vr_dm_list);
+	curr_dm_list = edit_rate_vr_dm_list;
 	save_coords = mged_variables->mv_coords;
 	mged_variables->mv_coords = 'v';
 
@@ -2086,7 +2085,7 @@ event_check(int non_blocking)
 	char save_coords;
 	struct bu_vls vls = BU_VLS_INIT_ZERO;
 
-	set_curr_dm(edit_rate_mt_dm_list);
+	curr_dm_list = edit_rate_mt_dm_list;
 	save_coords = mged_variables->mv_coords;
 	mged_variables->mv_coords = 'm';
 
@@ -2119,7 +2118,7 @@ event_check(int non_blocking)
 	char save_coords;
 	struct bu_vls vls = BU_VLS_INIT_ZERO;
 
-	set_curr_dm(edit_rate_vt_dm_list);
+	curr_dm_list = edit_rate_vt_dm_list;
 	save_coords = mged_variables->mv_coords;
 	mged_variables->mv_coords = 'v';
 
@@ -2177,7 +2176,7 @@ event_check(int non_blocking)
 	if (!p->dml_owner)
 	    continue;
 
-	set_curr_dm(p);
+	curr_dm_list = p;
 
 	if (view_state->vs_rateflag_model_rotate) {
 	    struct bu_vls vls = BU_VLS_INIT_ZERO;
@@ -2239,7 +2238,7 @@ event_check(int non_blocking)
 	    bu_vls_free(&vls);
 	}
 
-	set_curr_dm(save_dm_list);
+	curr_dm_list = save_dm_list;
     }
 
     return non_blocking;
@@ -2294,7 +2293,7 @@ refresh(void)
 	 * if something has changed, then go update the display.
 	 * Otherwise, we are happy with the view we have
 	 */
-	set_curr_dm(p);
+	curr_dm_list = p;
 	if (mapped && dirty) {
 	    int restore_zbuffer = 0;
 
@@ -2379,7 +2378,7 @@ refresh(void)
 		    if (rubber_band->rb_active || rubber_band->rb_draw)
 			draw_rect();
 
-		    if (grid_state->draw)
+		    if (grid_state->gr_draw)
 			draw_grid();
 
 		    /* Compute and display angle/distance cursor */
@@ -2428,7 +2427,7 @@ refresh(void)
 	}
     }
 
-    set_curr_dm(save_dm_list);
+    curr_dm_list = save_dm_list;
 
     bu_vls_free(&overlay_vls);
     bu_vls_free(&tmp_vls);
@@ -2464,7 +2463,7 @@ mged_finish(int exitcode)
 	    bu_free(p, "release: curr_dm_list");
 	}
 
-	set_curr_dm(DM_LIST_NULL);
+	curr_dm_list = DM_LIST_NULL;
     }
 
     for (BU_LIST_FOR (c, cmd_list, &head_cmd_list.l)) {

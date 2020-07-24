@@ -31,7 +31,6 @@
 
 #include "vmath.h"
 #include "nmg.h"
-#include "bu/app.h"
 #include "raytrace.h"
 #include "rt/geom.h"
 #include "wdb.h"
@@ -105,8 +104,6 @@ main(int argc, char *argv[])
     struct rt_nurb_internal *si;
     char *filename = "spltest.g";
     int helpflag;
-
-    bu_setprogname(argv[0]);
 
     if (argc < 1 || argc > 2) {
     	printusage(argv);

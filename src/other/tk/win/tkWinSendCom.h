@@ -45,11 +45,11 @@ typedef struct {
  * TkWinSendCom public functions
  */
 
-MODULE_SCOPE HRESULT    TkWinSendCom_CreateInstance(Tcl_Interp *interp,
+HRESULT                 TkWinSendCom_CreateInstance(Tcl_Interp *interp,
                             REFIID riid, void **ppv);
-MODULE_SCOPE int        TkWinSend_QueueCommand(Tcl_Interp *interp,
+int                     TkWinSend_QueueCommand(Tcl_Interp *interp,
                             Tcl_Obj *cmdPtr);
-MODULE_SCOPE void       TkWinSend_SetExcepInfo(Tcl_Interp *interp,
+void                    SetExcepInfo(Tcl_Interp *interp,
                             EXCEPINFO *pExcepInfo);
 
 #endif /* _tkWinSendCom_h_INCLUDE */

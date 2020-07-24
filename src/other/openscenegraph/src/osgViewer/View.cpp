@@ -177,7 +177,7 @@ View::View():
 
 
 View::View(const osgViewer::View& view, const osg::CopyOp& copyop):
-    osg::Object(view, copyop),
+    osg::Object(true),
     osg::View(view,copyop),
     osgGA::GUIActionAdapter(),
     _startTick(0),
@@ -270,7 +270,7 @@ void View::init()
 void View::setStartTick(osg::Timer_t tick)
 {
     _startTick = tick;
-
+    
     for(Devices::iterator eitr = _eventSources.begin();
         eitr != _eventSources.end();
         ++eitr)
@@ -300,7 +300,7 @@ void View::setSceneData(osg::Node* node)
         }
         else
         {
-            OSG_INFO<<"View::setSceneData() Reusing existing scene"<<_scene.get()<<std::endl;
+            OSG_INFO<<"View::setSceneData() Reusing exisitng scene"<<_scene.get()<<std::endl;
         }
 
         _scene->setSceneData(node);
@@ -395,7 +395,7 @@ void View::home()
 }
 
 
-void View::addEventHandler(osgGA::EventHandler* eventHandler)
+void View::addEventHandler(osgGA::GUIEventHandler* eventHandler)
 {
     EventHandlers::iterator itr = std::find(_eventHandlers.begin(), _eventHandlers.end(), eventHandler);
     if (itr == _eventHandlers.end())
@@ -404,7 +404,7 @@ void View::addEventHandler(osgGA::EventHandler* eventHandler)
     }
 }
 
-void View::removeEventHandler(osgGA::EventHandler* eventHandler)
+void View::removeEventHandler(osgGA::GUIEventHandler* eventHandler)
 {
     EventHandlers::iterator itr = std::find(_eventHandlers.begin(), _eventHandlers.end(), eventHandler);
     if (itr != _eventHandlers.end())
@@ -656,7 +656,7 @@ Cameras getActiveCameras(osg::View& view)
 
 }
 
-bool View::setUpDepthPartitionForCamera(osg::Camera* cameraToPartition, DepthPartitionSettings* incoming_dps)
+bool View::setUpDepthPartitionForCamera(osg::Camera* cameraToPartition, DepthPartitionSettings* incomming_dps)
 {
     osg::ref_ptr<osg::GraphicsContext> context = cameraToPartition->getGraphicsContext();
     if (!context) return false;
@@ -664,7 +664,7 @@ bool View::setUpDepthPartitionForCamera(osg::Camera* cameraToPartition, DepthPar
     osg::ref_ptr<osg::Viewport> viewport = cameraToPartition->getViewport();
     if (!viewport) return false;
 
-    osg::ref_ptr<DepthPartitionSettings> dps = incoming_dps;
+    osg::ref_ptr<DepthPartitionSettings> dps = incomming_dps;
     if (!dps) dps = new DepthPartitionSettings;
 
     bool useMastersSceneData = true;
@@ -846,7 +846,7 @@ void View::requestContinuousUpdate(bool flag)
 void View::requestWarpPointer(float x,float y)
 {
     OSG_INFO<<"View::requestWarpPointer("<<x<<","<<y<<")"<<std::endl;
-
+    
     float local_x, local_y;
     const osg::Camera* camera = getCameraContainingPosition(x, y, local_x, local_y);
     if (camera)
@@ -857,7 +857,7 @@ void View::requestWarpPointer(float x,float y)
             getEventQueue()->mouseWarped(x,y);
             if (gw->getEventQueue()->getCurrentEventState()->getMouseYOrientation()==osgGA::GUIEventAdapter::Y_INCREASING_DOWNWARDS)
             {
-                local_y = gw->getTraits()->height - 1 - local_y;
+                local_y = gw->getTraits()->height - local_y;
             }
             const_cast<osgViewer::GraphicsWindow*>(gw)->getEventQueue()->mouseWarped(local_x,local_y);
             const_cast<osgViewer::GraphicsWindow*>(gw)->requestWarpPointer(local_x, local_y);
@@ -885,37 +885,37 @@ bool View::containsCamera(const osg::Camera* camera) const
 const osg::Camera* View::getCameraContainingPosition(float x, float y, float& local_x, float& local_y) const
 {
     const osgGA::GUIEventAdapter* eventState = getEventQueue()->getCurrentEventState();
-    const osg::GraphicsContext* gc = eventState->getGraphicsContext();
+    const osgViewer::GraphicsWindow* gw = dynamic_cast<const osgViewer::GraphicsWindow*>(eventState->getGraphicsContext());
     bool view_invert_y = eventState->getMouseYOrientation()==osgGA::GUIEventAdapter::Y_INCREASING_DOWNWARDS;
-
+    
     // OSG_NOTICE<<"getCameraContainingPosition("<<x<<", "<<y<<") view_invert_y = "<<view_invert_y<<", Xmin() = "<<eventState->getXmin()<<", Xmax() = "<<eventState->getXmax()<<", Ymin() = "<<eventState->getYmin()<<", Ymax() = "<<eventState->getYmax()<<std::endl;
 
     double epsilon = 0.5;
-
-
+    
+       
     // if master camera has graphics context and eventState context matches then assume coordinates refer
     // to master camera
     bool masterActive = (_camera->getGraphicsContext()!=0 && _camera->getViewport());
-    bool eventStateMatchesMaster = (gc!=0) ? _camera->getGraphicsContext()==gc : false;
-
+    bool eventStateMatchesMaster = (gw!=0) ? _camera->getGraphicsContext()==gw : false; 
+    
     if (masterActive && eventStateMatchesMaster)
     {
         // OSG_NOTICE<<"Event state matches master"<<std::endl;
         const osg::Viewport* viewport = _camera->getViewport();
-
+        
         // rescale mouse x,y first to 0 to 1 range
         double new_x = (x-eventState->getXmin())/(eventState->getXmax()-eventState->getXmin());
         double new_y = (y-eventState->getYmin())/(eventState->getYmax()-eventState->getYmin());
-
+        
         // flip y if required
         if (view_invert_y) new_y = 1.0f-new_y;
-
+        
         // rescale mouse x, y to window dimensions so we can check against master Camera's viewport
         new_x *= static_cast<double>(_camera->getGraphicsContext()->getTraits()->width);
         new_y *= static_cast<double>(_camera->getGraphicsContext()->getTraits()->height);
-
+        
         if (new_x >= (viewport->x()-epsilon) && new_y >= (viewport->y()-epsilon) &&
-            new_x < (viewport->x()+viewport->width()+epsilon) && new_y < (viewport->y()+viewport->height()+epsilon) )
+            new_x < (viewport->x()+viewport->width()-1.0+epsilon) && new_y <= (viewport->y()+viewport->height()-1.0+epsilon) )
         {
             local_x = new_x;
             local_y = new_y;
@@ -929,7 +929,7 @@ const osg::Camera* View::getCameraContainingPosition(float x, float y, float& lo
             // OSG_NOTICE<<"master camera viewport not matched."<<std::endl;
         }
     }
-
+    
     osg::Matrix masterCameraVPW = getCamera()->getViewMatrix() * getCamera()->getProjectionMatrix();
 
     // convert to non dimensional
@@ -963,7 +963,7 @@ const osg::Camera* View::getCameraContainingPosition(float x, float y, float& lo
 
             if (viewport &&
                 new_coord.x() >= (viewport->x()-epsilon) && new_coord.y() >= (viewport->y()-epsilon) &&
-                new_coord.x() < (viewport->x()+viewport->width()+epsilon) && new_coord.y() < (viewport->y()+viewport->height()+epsilon) )
+                new_coord.x() < (viewport->x()+viewport->width()-1.0+epsilon) && new_coord.y() <= (viewport->y()+viewport->height()-1.0+epsilon) )
             {
                 // OSG_NOTICE<<"  in viewport "<<std::endl;;
 
@@ -990,9 +990,9 @@ bool View::computeIntersections(float x,float y, osgUtil::LineSegmentIntersector
 {
     float local_x, local_y;
     const osg::Camera* camera = getCameraContainingPosition(x, y, local_x, local_y);
-
+    
     OSG_INFO<<"computeIntersections("<<x<<", "<<y<<") local_x="<<local_x<<", local_y="<<local_y<<std::endl;
-
+    
     if (camera) return computeIntersections(camera, (camera->getViewport()==0)?osgUtil::Intersector::PROJECTION : osgUtil::Intersector::WINDOW, local_x, local_y, intersections, traversalMask);
     else return false;
 }
@@ -1001,7 +1001,7 @@ bool View::computeIntersections(float x,float y, const osg::NodePath& nodePath, 
 {
     float local_x, local_y;
     const osg::Camera* camera = getCameraContainingPosition(x, y, local_x, local_y);
-
+    
     OSG_INFO<<"computeIntersections("<<x<<", "<<y<<") local_x="<<local_x<<", local_y="<<local_y<<std::endl;
 
     if (camera) return computeIntersections(camera, (camera->getViewport()==0)?osgUtil::Intersector::PROJECTION : osgUtil::Intersector::WINDOW, local_x, local_y, nodePath, intersections, traversalMask);
@@ -1014,8 +1014,8 @@ bool View::computeIntersections(const osgGA::GUIEventAdapter& ea, osgUtil::LineS
     if (ea.getNumPointerData()>=1)
     {
         const osgGA::PointerData* pd = ea.getPointerData(ea.getNumPointerData()-1);
-        const osg::Camera* camera = pd->object.valid() ? pd->object->asCamera() : 0;
-        if (camera)
+        const osg::Camera* camera = dynamic_cast<const osg::Camera*>(pd->object.get());
+        if (camera) 
         {
             return computeIntersections(camera, osgUtil::Intersector::PROJECTION, pd->getXnormalized(), pd->getYnormalized(), intersections, traversalMask);
         }
@@ -1030,8 +1030,8 @@ bool View::computeIntersections(const osgGA::GUIEventAdapter& ea, const osg::Nod
     if (ea.getNumPointerData()>=1)
     {
         const osgGA::PointerData* pd = ea.getPointerData(ea.getNumPointerData()-1);
-        const osg::Camera* camera = pd->object.valid() ? pd->object->asCamera() : 0;
-        if (camera)
+        const osg::Camera* camera = dynamic_cast<const osg::Camera*>(pd->object.get());
+        if (camera) 
         {
             return computeIntersections(camera, osgUtil::Intersector::PROJECTION, pd->getXnormalized(), pd->getYnormalized(), nodePath, intersections, traversalMask);
         }
@@ -1116,7 +1116,7 @@ void View::addDevice(osgGA::Device* eventSource)
     {
         _eventSources.push_back(eventSource);
     }
-
+    
     if (eventSource)
         eventSource->getEventQueue()->setStartTick(getStartTick());
 }
@@ -1129,26 +1129,6 @@ void View::removeDevice(osgGA::Device* eventSource)
         _eventSources.erase(itr);
     }
 }
-
-bool View::requiresUpdateSceneGraph() const
-{
-    // check if there are camera update callbacks
-    if (_camera->getUpdateCallback()) return true;
-
-    // check if the scene requires an update traversal
-    if (_scene.valid() && _scene->requiresUpdateSceneGraph()) return true;
-
-
-    return false;
-}
-
-bool View::requiresRedraw() const
-{
-    // check if the scene requires a redraw
-    if (_scene.valid() && _scene->requiresRedraw()) return true;
-    return false;
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -1246,7 +1226,7 @@ void View::StereoSlaveCallback::updateSlave(osg::View& view, osg::View::Slave& s
     {
         // inherit any settings applied to the master Camera.
         camera->inheritCullSettings(*(view.getCamera()), camera->getInheritanceMask());
-
+        
         if (_eyeScale<0.0)
         {
             camera->setCullMask(camera->getCullMaskLeft());
@@ -1255,7 +1235,7 @@ void View::StereoSlaveCallback::updateSlave(osg::View& view, osg::View::Slave& s
         {
             camera->setCullMask(camera->getCullMaskRight());
         }
-
+            
         // set projection matrix
         if (_eyeScale<0.0)
         {
@@ -1331,6 +1311,23 @@ static const GLubyte patternVertEven[] = {
     0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
     0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55};
 
+static const GLubyte patternVertOdd[] = {
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+    0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
 
 static const GLubyte patternHorzEven[] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,
@@ -1392,7 +1389,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
 {
     if (!camera || camera->getGraphicsContext()==0) return;
     if (!ds->getStereo() && !ds->getKeystoneHint()) return;
-
+    
     ds->setUseSceneViewForStereoHint(false);
 
     typedef std::vector< osg::ref_ptr<Keystone> > Keystones;
@@ -1407,13 +1404,13 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
             if (keystone) keystones.push_back(keystone);
         }
     }
-
+    
     if (ds->getKeystoneHint())
     {
         while(keystones.size()<2) keystones.push_back(new Keystone);
     }
 
-
+   
     // set up view's main camera
     {
         double height = ds->getScreenHeight();
@@ -1423,10 +1420,10 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
 
         camera->setProjectionMatrixAsPerspective( vfov, width/height, 1.0f,10000.0f);
     }
-
+    
 
     osg::ref_ptr<osg::GraphicsContext> gc = camera->getGraphicsContext();
-
+    
     osg::ref_ptr<osg::GraphicsContext::Traits> traits = const_cast<osg::GraphicsContext::Traits*>(camera->getGraphicsContext()->getTraits());
 
     if (!ds->getStereo())
@@ -1435,7 +1432,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
         osg::ref_ptr<osgViewer::Keystone> keystone = 0;
         if (!(ds->getKeystones().empty())) keystone = dynamic_cast<osgViewer::Keystone*>(ds->getKeystones().front().get());
         if (!keystone) keystone = new osgViewer::Keystone;
-
+        
         // create distortion texture
         osg::ref_ptr<osg::Texture> texture = createDistortionTexture(traits->width, traits->height);
 
@@ -1449,12 +1446,12 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                                                                         texture.get(), keystone.get());
         // attach Keystone editing event handler.
         distortion_camera->addEventCallback(new KeystoneHandler(keystone.get()));
-
+        
         camera->setGraphicsContext(0);
-
+        
         return;
     }
-
+    
     switch(ds->getStereoMode())
     {
         case(osg::DisplaySettings::QUAD_BUFFER):
@@ -1478,7 +1475,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
             // left keystone camera to render to left buffer
             // left keystone camera to render to right buffer
             // one keystone and editing for the one window
-
+            
             if (!keystones.empty())
             {
                 // for keystone:
@@ -1487,7 +1484,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                 // left keystone camera to render to left viewport/window
                 // right keystone camera to render to right viewport/window
                 // two keystone, one for each of the left and right viewports/windows
-
+                
                 osg::ref_ptr<Keystone> keystone = keystones.front();
 
                 // create distortion texture
@@ -1516,7 +1513,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
 
                 // attach the texture and use it as the color buffer.
                 right_camera->attach(osg::Camera::COLOR_BUFFER, right_texture.get());
-
+                
 
                 // create Keystone left distortion camera
                 keystone->setGridColor(osg::Vec4(1.0f,0.0f,0.0,1.0));
@@ -1530,7 +1527,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                 // attach Keystone editing event handler.
                 left_keystone_camera->addEventCallback(new KeystoneHandler(keystone.get()));
 
-
+                
                 // create Keystone right distortion camera
                 osg::ref_ptr<osg::Camera> right_keystone_camera = assignKeystoneDistortionCamera(ds, gc.get(),
                                                                                 0, 0, traits->width, traits->height,
@@ -1539,7 +1536,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
 
                 right_keystone_camera->setRenderOrder(osg::Camera::NESTED_RENDER, 3);
                 right_keystone_camera->setAllowEventFocus(false);
-
+                
             }
 
             break;
@@ -1570,12 +1567,12 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                 // one keystone and editing for the one window
 
                 osg::ref_ptr<Keystone> keystone = keystones.front();
-
+                
                 bool useTwoTexture = true;
-
+                
                 if (useTwoTexture)
                 {
-
+                    
                     // create left distortion texture
                     osg::ref_ptr<osg::Texture> left_texture = createDistortionTexture(traits->width, traits->height);
 
@@ -1631,10 +1628,10 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                     left_keystone_camera->addEventCallback(new KeystoneHandler(keystone.get()));
 
                     camera->setAllowEventFocus(false);
-
+                    
                 }
                 else
-                {
+                {                    
                     // create distortion texture
                     osg::ref_ptr<osg::Texture> texture = createDistortionTexture(traits->width, traits->height);
 
@@ -1667,7 +1664,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                                                                                     texture.get(), keystone.get());
 
                     distortion_camera->setRenderOrder(osg::Camera::NESTED_RENDER, 2);
-
+                    
                     // attach Keystone editing event handler.
                     distortion_camera->addEventCallback(new KeystoneHandler(keystone.get()));
 
@@ -1704,7 +1701,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                 // left keystone camera to render to left viewport/window
                 // right keystone camera to render to right viewport/window
                 // two keystone, one for each of the left and right viewports/windows
-
+                
                 osg::ref_ptr<Keystone> left_keystone = keystones[0];
                 osg::ref_ptr<Keystone> right_keystone = keystones[1];
 
@@ -1736,7 +1733,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
 
                 // attach the texture and use it as the color buffer.
                 right_camera->attach(osg::Camera::COLOR_BUFFER, right_texture.get());
-
+                
 
                 // create Keystone left distortion camera
                 left_keystone->setGridColor(osg::Vec4(1.0f,0.0f,0.0,1.0));
@@ -1764,9 +1761,9 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                 right_keystone_camera->addEventCallback(new KeystoneHandler(right_keystone.get()));
 
                 camera->setAllowEventFocus(false);
-
+                
             }
-
+            
             break;
         }
         case(osg::DisplaySettings::VERTICAL_SPLIT):
@@ -1777,7 +1774,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
             bool left_eye_bottom_viewport = ds->getSplitStereoVerticalEyeMapping()==osg::DisplaySettings::LEFT_EYE_BOTTOM_VIEWPORT;
             int left_start = (left_eye_bottom_viewport) ? 0 : traits->height/2;
             int right_start = (left_eye_bottom_viewport) ? traits->height/2 : 0;
-
+            
             // bottom viewport Camera
             osg::ref_ptr<osg::Camera> left_camera = assignStereoCamera(ds, gc.get(),
                                0, left_start, traits->width, traits->height/2, traits->doubleBuffer ? GL_BACK : GL_FRONT,
@@ -1835,7 +1832,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
 
                 // attach the texture and use it as the color buffer.
                 right_camera->attach(osg::Camera::COLOR_BUFFER, right_texture.get());
-
+                
 
                 // create Keystone left distortion camera
                 left_keystone->setGridColor(osg::Vec4(1.0f,0.0f,0.0,1.0));
@@ -1863,7 +1860,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                 right_keystone_camera->addEventCallback(new KeystoneHandler(right_keystone.get()));
 
                 camera->setAllowEventFocus(false);
-
+                
             }
 
             break;
@@ -1913,7 +1910,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                                                                                 texture.get(), keystone.get());
 
                 distortion_camera->setRenderOrder(osg::Camera::NESTED_RENDER, 2);
-
+                
                 // attach Keystone editing event handler.
                 distortion_camera->addEventCallback(new KeystoneHandler(keystone.get()));
             }
@@ -1963,7 +1960,7 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
                                                                                              texture.get(), keystone.get());
 
                 distortion_camera->setRenderOrder(osg::Camera::NESTED_RENDER, 1);
-
+                
                 // attach Keystone editing event handler.
                 distortion_camera->addEventCallback(new KeystoneHandler(keystone.get()));
             }
@@ -1978,24 +1975,24 @@ void View::assignStereoOrKeystoneToCamera(osg::Camera* camera, osg::DisplaySetti
 
             // set up the stencil buffer
             {
-                osg::ref_ptr<osg::Camera> stencil_camera = new osg::Camera;
-                stencil_camera->setGraphicsContext(gc.get());
-                stencil_camera->setViewport(0, 0, traits->width, traits->height);
-                stencil_camera->setDrawBuffer(traits->doubleBuffer ? GL_BACK : GL_FRONT);
-                stencil_camera->setReadBuffer(stencil_camera->getDrawBuffer());
-                stencil_camera->setReferenceFrame(osg::Camera::ABSOLUTE_RF);
-                stencil_camera->setClearMask(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-                stencil_camera->setClearStencil(0);
-                stencil_camera->setRenderOrder(osg::Camera::NESTED_RENDER, 0);
-                addSlave(stencil_camera.get(), false);
+                osg::ref_ptr<osg::Camera> camera = new osg::Camera;
+                camera->setGraphicsContext(gc.get());
+                camera->setViewport(0, 0, traits->width, traits->height);
+                camera->setDrawBuffer(traits->doubleBuffer ? GL_BACK : GL_FRONT);
+                camera->setReadBuffer(camera->getDrawBuffer());
+                camera->setReferenceFrame(osg::Camera::ABSOLUTE_RF);
+                camera->setClearMask(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+                camera->setClearStencil(0);
+                camera->setRenderOrder(osg::Camera::NESTED_RENDER, 0);
+                addSlave(camera.get(), false);
 
                 osg::ref_ptr<osg::Geometry> geometry = osg::createTexturedQuadGeometry(osg::Vec3(-1.0f,-1.0f,0.0f), osg::Vec3(2.0f,0.0f,0.0f), osg::Vec3(0.0f,2.0f,0.0f), 0.0f, 0.0f, 1.0f, 1.0f);
                 osg::ref_ptr<osg::Geode> geode = new osg::Geode;
                 geode->addDrawable(geometry.get());
-                stencil_camera->addChild(geode.get());
+                camera->addChild(geode.get());
 
                 geode->setCullingActive(false);
-
+                
                 osg::ref_ptr<osg::StateSet> stateset = geode->getOrCreateStateSet();
 
                 // set up stencil

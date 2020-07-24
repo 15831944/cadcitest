@@ -25,7 +25,6 @@
  * centered at (0, 0, 0) and the height of the handle will extend in
  * the positive z-direction.
  *
- * Introduced in BRL-CAD release 4.4.
  */
 
 #include "common.h"
@@ -37,7 +36,6 @@
 
 #include "rt/db4.h"
 #include "vmath.h"
-#include "bu/app.h"
 #include "raytrace.h"
 #include "wdb.h"
 
@@ -93,8 +91,6 @@ main(int argc, char **argv)
 
     int i, j, k;		/* Loop counters. */
     int ret;
-
-    bu_setprogname(argv[0]);
 
     /* Set up solid, region, and group names. */
     solnam[0] = 's';

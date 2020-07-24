@@ -14,7 +14,6 @@
 #include "tkMacOSXPrivate.h"
 #include "tkMacOSXEvent.h"
 #include "tkMacOSXDebug.h"
-#include "tkMacOSXConstants.h"
 
 #pragma mark TKApplication(TKEvent)
 
@@ -24,8 +23,7 @@ enum {
 
 @implementation TKApplication(TKEvent)
 /* TODO: replace by +[addLocalMonitorForEventsMatchingMask ? */
-- (NSEvent *) tkProcessEvent: (NSEvent *) theEvent
-{
+- (NSEvent *)tkProcessEvent:(NSEvent *)theEvent {
 #ifdef TK_MAC_DEBUG_EVENTS
     TKLog(@"-[%@(%p) %s] %@", [self class], self, _cmd, theEvent);
 #endif
@@ -89,6 +87,7 @@ enum {
 	}
     case NSCursorUpdate:
         break;
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
     case NSEventTypeGesture:
     case NSEventTypeMagnify:
     case NSEventTypeRotate:
@@ -96,6 +95,7 @@ enum {
     case NSEventTypeBeginGesture:
     case NSEventTypeEndGesture:
         break;
+#endif
 #endif
 
     default:
@@ -112,34 +112,28 @@ enum {
  *
  * TkMacOSXFlushWindows --
  *
- *	This routine is a stub called by XSync, which is called during the Tk
- *      update command.  The language specification does not require that the
- *      update command be synchronous but many of the tests implicitly assume
- *      that it is.  It is definitely asynchronous on macOS since many idle
- *      tasks are run inside of the drawRect method of a window's contentView,
- *      which will not be called until after this function returns.
+ *	This routine flushes all the visible windows of the application. It is
+ *	called by XSync().
  *
  * Results:
  *	None.
  *
- * Side effects: Processes all pending idle events then calls the display
- *	method of each visible window.
+ * Side effects:
+ *	Flushes all visible Cocoa windows
  *
  *----------------------------------------------------------------------
  */
-
 MODULE_SCOPE void
 TkMacOSXFlushWindows(void)
 {
-    if (Tk_GetNumMainWindows() == 0) {
-	return;
-    }
-    while (Tcl_DoOneEvent(TCL_IDLE_EVENTS)){}
-    for (NSWindow *w in [NSApp orderedWindows]) {
-	[w display];
+    NSArray *macWindows = [NSApp orderedWindows];
+
+    for (NSWindow *w in macWindows) {
+	if (TkMacOSXGetXWindow(w)) {
+	    [w flushWindow];
+	}
     }
 }
-
 
 /*
  * Local Variables:

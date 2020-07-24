@@ -1,12 +1,8 @@
 set(embedded_licenses
-  alphanum.txt
-  apple.txt
-  appleseed.txt
-  art.txt
-  ayam.txt
-  b64.txt
+  ayam_icons.txt
   bullet.txt
   chull2d.txt
+  chull3d.txt
   clipper.txt
   db_faa-info.txt
   db_nist-info.txt
@@ -18,60 +14,40 @@ set(embedded_licenses
   fnmatch.txt
   fontstash.txt
   gct.txt
-  gecode.txt
-  gdal_gcv_plugin1.txt
-  gdal_gcv_plugin2.txt
-  glm.txt
-  halfedge.txt
+  gdal_gcv_plugin.txt
   humanize.txt
   hv3.txt
   hv3_combobox.txt
   hv3_snit.txt
-  Inconsolata.txt
-  libtermlib.txt
-  lseg_lseg.txt
-  lseg_pt.txt
-  lz4.txt
-  marching_cubes.txt
   msinttypes.txt
-  mt19937ar.txt
-  naca.txt
-  normalize.txt
   nurbs_fit.txt
   obr.txt
+  openimageio.txt
   OpenNURBS.txt
   osg.txt
   osl.txt
-  ParaView.txt
   pbrt.txt
   point_in_polygon.txt
   point_in_polyhedron.txt
   polygonizer.txt
   pstdint.txt
   qsort.txt
-  QFlowLayout.txt
-  QtADS.txt
-  QuickHull.txt
+  randmt.txt
   realpath.txt
-  rply.txt
   RTree.txt
+  scriptsort.txt
   search.txt
-  sha1.txt
-  shapelib.txt
   sh_wood.txt
   sobolseq.txt
   SPSR.txt
   sscanf.txt
-  stb_truetype.txt
   STIX_Font_License_2010.txt
   tcl.txt
-  tcllib.txt
   tinythread.txt
   tkcon.txt
   tri_pt.txt
   uce_dirent.txt
   whereami.txt
-  winmmap.txt
   x24.txt
   y2038.txt
   )

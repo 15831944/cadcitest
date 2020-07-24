@@ -29,7 +29,7 @@
 #include <stdio.h>
 
 #include "bu/color.h"
-#include "dm.h"
+#include "fb.h"
 
 void
 cmap_crunch(RGBpixel (*scan_buf), int pixel_ct, ColorMap *cmap)

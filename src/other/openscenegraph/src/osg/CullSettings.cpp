@@ -16,7 +16,6 @@
 #include <osg/CullSettings>
 #include <osg/ArgumentParser>
 #include <osg/ApplicationUsage>
-#include <osg/os_utils>
 
 #include <osg/Notify>
 
@@ -98,38 +97,35 @@ void CullSettings::readEnvironmentalVariables()
 {
     OSG_INFO<<"CullSettings::readEnvironmentalVariables()"<<std::endl;
 
-    std::string value;
-    if (getEnvVar("OSG_COMPUTE_NEAR_FAR_MODE", value))
+    char *ptr;
+
+    if ((ptr = getenv("OSG_COMPUTE_NEAR_FAR_MODE")) != 0)
     {
-        if (value=="DO_NOT_COMPUTE_NEAR_FAR") _computeNearFar = DO_NOT_COMPUTE_NEAR_FAR;
-        else if (value=="COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES") _computeNearFar = COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES;
-        else if (value=="COMPUTE_NEAR_FAR_USING_PRIMITIVES") _computeNearFar = COMPUTE_NEAR_FAR_USING_PRIMITIVES;
+        if (strcmp(ptr,"DO_NOT_COMPUTE_NEAR_FAR")==0) _computeNearFar = DO_NOT_COMPUTE_NEAR_FAR;
+        else if (strcmp(ptr,"COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES")==0) _computeNearFar = COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES;
+        else if (strcmp(ptr,"COMPUTE_NEAR_FAR_USING_PRIMITIVES")==0) _computeNearFar = COMPUTE_NEAR_FAR_USING_PRIMITIVES;
 
         OSG_INFO<<"Set compute near far mode to "<<_computeNearFar<<std::endl;
 
     }
 
-    if (getEnvVar("OSG_NEAR_FAR_RATIO", _nearFarRatio))
+    if ((ptr = getenv("OSG_NEAR_FAR_RATIO")) != 0)
     {
+        _nearFarRatio = osg::asciiToDouble(ptr);
+
         OSG_INFO<<"Set near/far ratio to "<<_nearFarRatio<<std::endl;
     }
+
 }
 
 void CullSettings::readCommandLine(ArgumentParser& arguments)
 {
-    OSG_INFO<<"CullSettings::readCommandLine(ArgumentParser& arguments)"<<std::endl;
-
     // report the usage options.
     if (arguments.getApplicationUsage())
     {
         arguments.getApplicationUsage()->addCommandLineOption("--COMPUTE_NEAR_FAR_MODE <mode>","DO_NOT_COMPUTE_NEAR_FAR | COMPUTE_NEAR_FAR_USING_BOUNDING_VOLUMES | COMPUTE_NEAR_FAR_USING_PRIMITIVES");
         arguments.getApplicationUsage()->addCommandLineOption("--NEAR_FAR_RATIO <float>","Set the ratio between near and far planes - must greater than 0.0 but less than 1.0.");
     }
-
-    while(arguments.read("--NO_CULLING")) setCullingMode(NO_CULLING);
-    while(arguments.read("--VIEW_FRUSTUM")) setCullingMode(VIEW_FRUSTUM_CULLING);
-    while(arguments.read("--VIEW_FRUSTUM_SIDES") || arguments.read("--vfs") ) setCullingMode(VIEW_FRUSTUM_SIDES_CULLING);
-
 
     std::string str;
     while(arguments.read("--COMPUTE_NEAR_FAR_MODE",str))

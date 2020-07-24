@@ -447,7 +447,7 @@ edit_com(int argc,
     FOR_ALL_DISPLAYS(dmlp, &head_dm_list.l) {
 	int non_empty = 0; /* start out empty */
 
-	set_curr_dm(dmlp);
+	curr_dm_list = dmlp;
 
 	if (curr_dm_list->dml_tie) {
 	    curr_cmd_list = curr_dm_list->dml_tie;
@@ -487,7 +487,7 @@ edit_com(int argc,
 	}
     }
 
-    set_curr_dm(save_dmlp);
+    curr_dm_list = save_dmlp;
     curr_cmd_list = save_cmd_list;
     GEDP->ged_gvp = view_state->vs_gvp;
 
@@ -594,7 +594,7 @@ cmd_autoview(ClientData UNUSED(clientData), Tcl_Interp *interp, int argc, const 
     FOR_ALL_DISPLAYS(dmlp, &head_dm_list.l) {
 	struct view_ring *vrp;
 
-	set_curr_dm(dmlp);
+	curr_dm_list = dmlp;
 
 	if (curr_dm_list->dml_tie) {
 	    curr_cmd_list = curr_dm_list->dml_tie;
@@ -626,7 +626,7 @@ cmd_autoview(ClientData UNUSED(clientData), Tcl_Interp *interp, int argc, const 
 	    vrp->vr_scale = view_state->vs_gvp->gv_scale;
 	}
     }
-    set_curr_dm(save_dmlp);
+    curr_dm_list = save_dmlp;
     curr_cmd_list = save_cmd_list;
     GEDP->ged_gvp = view_state->vs_gvp;
 

@@ -38,7 +38,6 @@
 #include <stdlib.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
 #include "bu/log.h"
@@ -417,8 +416,6 @@ int
 main(int argc, char **argv)
 {
     int i;
-
-    bu_setprogname(argv[0]);
 
     if (argc == 1 && isatty(fileno(stdin)) && isatty(fileno(stdout)))
 	bu_exit(1, "%s", usage);

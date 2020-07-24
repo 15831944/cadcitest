@@ -15,21 +15,71 @@
 #include <osg/FragmentProgram>
 #include <osg/State>
 #include <osg/Timer>
-#include <osg/ContextData>
+
+#include <list>
+
+#include <OpenThreads/ScopedLock>
+#include <OpenThreads/Mutex>
 
 using namespace osg;
 
-class GLFragmentProgramManager : public GLObjectManager
-{
-public:
-    GLFragmentProgramManager(unsigned int contextID) : GLObjectManager("GLFragmentProgramManager",contextID) {}
+// static cache of deleted fragment programs which can only
+// by completely deleted once the appropriate OpenGL context
+// is set.
+typedef std::list<GLuint> FragmentProgramObjectList;
+typedef osg::buffered_object<FragmentProgramObjectList> DeletedFragmentProgramObjectCache;
 
-    virtual void deleteGLObject(GLuint globj)
+static OpenThreads::Mutex                s_mutex_deletedFragmentProgramObjectCache;
+static DeletedFragmentProgramObjectCache s_deletedFragmentProgramObjectCache;
+
+void FragmentProgram::deleteFragmentProgramObject(unsigned int contextID,GLuint handle)
+{
+    if (handle!=0)
     {
-        const GLExtensions* extensions = GLExtensions::Get(_contextID,true);
-        if (extensions->isGlslSupported) extensions->glDeletePrograms(1, &globj );
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(s_mutex_deletedFragmentProgramObjectCache);
+
+        // insert the handle into the cache for the appropriate context.
+        s_deletedFragmentProgramObjectCache[contextID].push_back(handle);
     }
-};
+}
+
+
+void FragmentProgram::flushDeletedFragmentProgramObjects(unsigned int contextID,double /*currentTime*/, double& availableTime)
+{
+    // if no time available don't try to flush objects.
+    if (availableTime<=0.0) return;
+
+    const osg::Timer& timer = *osg::Timer::instance();
+    osg::Timer_t start_tick = timer.tick();
+    double elapsedTime = 0.0;
+
+    {
+        OpenThreads::ScopedLock<OpenThreads::Mutex> lock(s_mutex_deletedFragmentProgramObjectCache);
+
+        const Extensions* extensions = getExtensions(contextID,true);
+
+        FragmentProgramObjectList& vpol = s_deletedFragmentProgramObjectCache[contextID];
+
+        for(FragmentProgramObjectList::iterator titr=vpol.begin();
+            titr!=vpol.end() && elapsedTime<availableTime;
+            )
+        {
+            extensions->glDeletePrograms( 1L, &(*titr ) );
+            titr = vpol.erase(titr);
+            elapsedTime = timer.delta_s(start_tick,timer.tick());
+        }
+    }
+
+    availableTime -= elapsedTime;
+}
+
+void FragmentProgram::discardDeletedFragmentProgramObjects(unsigned int contextID)
+{
+    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(s_mutex_deletedFragmentProgramObjectCache);
+    FragmentProgramObjectList& vpol = s_deletedFragmentProgramObjectCache[contextID];
+    vpol.clear();
+}
+
 
 FragmentProgram::FragmentProgram()
 {
@@ -67,7 +117,7 @@ void FragmentProgram::dirtyFragmentProgramObject()
     {
         if (_fragmentProgramIDList[i] != 0)
         {
-            osg::get<GLFragmentProgramManager>(i)->scheduleGLObjectForDeletion(_fragmentProgramIDList[i]);
+            FragmentProgram::deleteFragmentProgramObject(i,_fragmentProgramIDList[i]);
             _fragmentProgramIDList[i] = 0;
         }
     }
@@ -77,9 +127,10 @@ void FragmentProgram::apply(State& state) const
 {
 #ifdef OSG_GL_FIXED_FUNCTION_AVAILABLE
 
-    const GLExtensions* extensions = state.get<GLExtensions>();
+    const unsigned int contextID = state.getContextID();
+    const Extensions* extensions = getExtensions(contextID,true);
 
-    if (!extensions->isFragmentProgramSupported)
+    if (!extensions->isFragmentProgramSupported())
         return;
 
 
@@ -157,8 +208,123 @@ void FragmentProgram::releaseGLObjects(State* state) const
         unsigned int contextID = state->getContextID();
         if (_fragmentProgramIDList[contextID] != 0)
         {
-            osg::get<GLFragmentProgramManager>(contextID)->scheduleGLObjectForDeletion(_fragmentProgramIDList[contextID]);
+            FragmentProgram::deleteFragmentProgramObject(contextID,_fragmentProgramIDList[contextID]);
             _fragmentProgramIDList[contextID] = 0;
         }
+    }
+}
+
+
+typedef buffered_value< ref_ptr<FragmentProgram::Extensions> > BufferedExtensions;
+static BufferedExtensions s_extensions;
+
+FragmentProgram::Extensions* FragmentProgram::getExtensions(unsigned int contextID,bool createIfNotInitalized)
+{
+    if (!s_extensions[contextID] && createIfNotInitalized) s_extensions[contextID] = new Extensions(contextID);
+    return s_extensions[contextID].get();
+}
+
+void FragmentProgram::setExtensions(unsigned int contextID,Extensions* extensions)
+{
+    s_extensions[contextID] = extensions;
+}
+
+FragmentProgram::Extensions::Extensions(unsigned int contextID)
+{
+    setupGLExtensions(contextID);
+}
+
+FragmentProgram::Extensions::Extensions(const Extensions& rhs):
+    Referenced()
+{
+    _isFragmentProgramSupported = rhs._isFragmentProgramSupported;
+    _glBindProgram = rhs._glBindProgram;
+    _glGenPrograms = rhs._glGenPrograms;
+    _glDeletePrograms = rhs._glDeletePrograms;
+    _glProgramString = rhs._glProgramString;
+    _glProgramLocalParameter4fv = rhs._glProgramLocalParameter4fv;
+}
+
+
+void FragmentProgram::Extensions::lowestCommonDenominator(const Extensions& rhs)
+{
+    if (!rhs._isFragmentProgramSupported) _isFragmentProgramSupported = false;
+
+    if (!rhs._glBindProgram) _glBindProgram = 0;
+    if (!rhs._glGenPrograms) _glGenPrograms = 0;
+    if (!rhs._glDeletePrograms) _glDeletePrograms = 0;
+    if (!rhs._glProgramString) _glProgramString = 0;
+    if (!rhs._glProgramLocalParameter4fv) _glProgramLocalParameter4fv = 0;
+
+}
+
+void FragmentProgram::Extensions::setupGLExtensions(unsigned int contextID)
+{
+    _isFragmentProgramSupported = isGLExtensionSupported(contextID,"GL_ARB_fragment_program");
+
+    setGLExtensionFuncPtr(_glBindProgram, "glBindProgramARB");
+    setGLExtensionFuncPtr(_glGenPrograms, "glGenProgramsARB");
+    setGLExtensionFuncPtr(_glDeletePrograms, "glDeleteProgramsARB");
+    setGLExtensionFuncPtr(_glProgramString, "glProgramStringARB");
+    setGLExtensionFuncPtr(_glProgramLocalParameter4fv, "glProgramLocalParameter4fvARB");
+}
+
+void FragmentProgram::Extensions::glBindProgram(GLenum target, GLuint id) const
+{
+    if (_glBindProgram)
+    {
+        _glBindProgram(target,id);
+    }
+    else
+    {
+        OSG_WARN<<"Error: glBindProgram not supported by OpenGL driver"<<std::endl;
+    }
+}
+
+void FragmentProgram::Extensions::glGenPrograms(GLsizei n, GLuint *programs) const
+{
+    if (_glGenPrograms)
+    {
+        _glGenPrograms(n,programs);
+    }
+    else
+    {
+        OSG_WARN<<"Error: glGenPrograms not supported by OpenGL driver"<<std::endl;
+    }
+}
+
+void FragmentProgram::Extensions::glDeletePrograms(GLsizei n, GLuint *programs) const
+{
+    if (_glDeletePrograms)
+    {
+        _glDeletePrograms(n,programs);
+    }
+    else
+    {
+        OSG_WARN<<"Error: glDeletePrograms not supported by OpenGL driver"<<std::endl;
+    }
+}
+
+void FragmentProgram::Extensions::glProgramString(GLenum target, GLenum format, GLsizei len, const void *string) const
+{
+    if (_glProgramString)
+    {
+        _glProgramString(target,format, len, string);
+    }
+    else
+    {
+        OSG_WARN<<"Error: glProgramString not supported by OpenGL driver"<<std::endl;
+    }
+}
+
+void FragmentProgram::Extensions::glProgramLocalParameter4fv(GLenum target, GLuint index, const GLfloat *params) const
+{
+    if (_glProgramLocalParameter4fv)
+    {
+        _glProgramLocalParameter4fv(target, index, params);
+    }
+    else
+    {
+        OSG_WARN<<"Error: glProgramLocalParameter4fv not supported by OpenGL driver"<<std::endl;
     }
 }

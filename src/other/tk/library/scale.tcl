@@ -71,34 +71,34 @@ if {[tk windowingsystem] eq "win32"} {
 bind Scale <Control-1> {
     tk::ScaleControlPress %W %x %y
 }
-bind Scale <<PrevLine>> {
+bind Scale <Up> {
     tk::ScaleIncrement %W up little noRepeat
 }
-bind Scale <<NextLine>> {
+bind Scale <Down> {
     tk::ScaleIncrement %W down little noRepeat
 }
-bind Scale <<PrevChar>> {
+bind Scale <Left> {
     tk::ScaleIncrement %W up little noRepeat
 }
-bind Scale <<NextChar>> {
+bind Scale <Right> {
     tk::ScaleIncrement %W down little noRepeat
 }
-bind Scale <<PrevPara>> {
+bind Scale <Control-Up> {
     tk::ScaleIncrement %W up big noRepeat
 }
-bind Scale <<NextPara>> {
+bind Scale <Control-Down> {
     tk::ScaleIncrement %W down big noRepeat
 }
-bind Scale <<PrevWord>> {
+bind Scale <Control-Left> {
     tk::ScaleIncrement %W up big noRepeat
 }
-bind Scale <<NextWord>> {
+bind Scale <Control-Right> {
     tk::ScaleIncrement %W down big noRepeat
 }
-bind Scale <<LineStart>> {
+bind Scale <Home> {
     %W set [%W cget -from]
 }
-bind Scale <<LineEnd>> {
+bind Scale <End> {
     %W set [%W cget -to]
 }
 

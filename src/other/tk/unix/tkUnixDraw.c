@@ -11,7 +11,7 @@
 
 #include "tkInt.h"
 
-#ifndef _WIN32
+#if !defined(__WIN32__)
 #include "tkUnixInt.h"
 #endif
 
@@ -32,7 +32,7 @@ typedef struct ScrollInfo {
  * Forward declarations for functions declared later in this file:
  */
 
-static Tk_RestrictProc ScrollRestrictProc;
+static Tk_RestrictAction ScrollRestrictProc(ClientData arg, XEvent *eventPtr);
 
 /*
  *----------------------------------------------------------------------
@@ -63,8 +63,8 @@ TkScrollWindow(
     int dx, int dy,		/* Distance rectangle should be moved. */
     TkRegion damageRgn)		/* Region to accumulate damage in. */
 {
-    Tk_RestrictProc *prevProc;
-    ClientData prevArg;
+    Tk_RestrictProc *oldProc;
+    ClientData oldArg, dummy;
     ScrollInfo info;
 
     XCopyArea(Tk_Display(tkwin), Tk_WindowId(tkwin), Tk_WindowId(tkwin), gc,
@@ -84,11 +84,12 @@ TkScrollWindow(
      */
 
     TkpSync(info.display);
-    prevProc = Tk_RestrictEvents(ScrollRestrictProc, &info, &prevArg);
+    oldProc = Tk_RestrictEvents(ScrollRestrictProc, (ClientData) &info,
+	    &oldArg);
     while (!info.done) {
 	Tcl_ServiceEvent(TCL_WINDOW_EVENTS);
     }
-    Tk_RestrictEvents(prevProc, prevArg, &prevArg);
+    Tk_RestrictEvents(oldProc, oldArg, &dummy);
 
     if (XEmptyRegion((Region) damageRgn)) {
 	return 0;

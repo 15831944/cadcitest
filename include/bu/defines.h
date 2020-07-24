@@ -38,9 +38,9 @@
 #  if defined(BU_DLL_EXPORTS) && defined(BU_DLL_IMPORTS)
 #    error "Only BU_DLL_EXPORTS or BU_DLL_IMPORTS can be defined, not both."
 #  elif defined(BU_DLL_EXPORTS)
-#    define BU_EXPORT COMPILER_DLLEXPORT
+#    define BU_EXPORT __declspec(dllexport)
 #  elif defined(BU_DLL_IMPORTS)
-#    define BU_EXPORT COMPILER_DLLIMPORT
+#    define BU_EXPORT __declspec(dllimport)
 #  else
 #    define BU_EXPORT
 #  endif

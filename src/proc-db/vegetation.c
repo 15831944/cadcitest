@@ -33,7 +33,6 @@
  */
 
 #include "./vegetation.h"
-#include "bu/app.h"
 
 static void
 ageStructure(structure_t *structure)
@@ -896,8 +895,6 @@ main(int argc, char *argv[])
     double height = 30000.0;  /* about how tall is it */
     double branchingRate = 0.1;  /* 0->1 probability to branch per iteration */
     long seed;
-
-    bu_setprogname(argv[0]);
 
     printf("Vegetation generator\n");
     printf("====================\n");

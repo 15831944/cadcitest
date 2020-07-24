@@ -29,10 +29,9 @@
 
 #include <stdlib.h>
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/log.h"
-#include "dm.h"
+#include "fb.h"
 
 
 static int verbose;
@@ -88,7 +87,7 @@ int
 main(int argc, char **argv)
 {
     int y;
-    struct fb *in_fbp, *out_fbp;
+    fb *in_fbp, *out_fbp;
     int n, m;
     int height;
 
@@ -96,8 +95,6 @@ main(int argc, char **argv)
     int scanbytes;              /* # of bytes of scanline */
     int scanpix;                /* # of pixels of scanline */
     int streamline;             /* # scanlines to do at once */
-
-    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

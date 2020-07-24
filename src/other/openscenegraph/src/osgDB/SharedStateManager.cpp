@@ -93,6 +93,20 @@ void SharedStateManager::apply(osg::Node& node)
     if(ss) process(ss, &node);
     traverse(node);
 }
+void SharedStateManager::apply(osg::Geode& geode)
+{
+    osg::StateSet* ss = geode.getStateSet();
+    if(ss) process(ss, &geode);
+    for(unsigned int i=0;i<geode.getNumDrawables();++i)
+    {
+        osg::Drawable* drawable = geode.getDrawable(i);
+        if(drawable)
+        {
+            ss = drawable->getStateSet();
+            if(ss) process(ss, drawable);
+        }
+    }
+}
 
 bool SharedStateManager::isShared(osg::StateSet* ss)
 {
@@ -148,8 +162,19 @@ osg::StateAttribute *SharedStateManager::find(osg::StateAttribute *sa)
 //----------------------------------------------------------------
 void SharedStateManager::setStateSet(osg::StateSet* ss, osg::Object* object)
 {
-    osg::Node* node = dynamic_cast<osg::Node*>(object);
-    if (node) node->setStateSet(ss);
+    osg::Drawable* drawable = dynamic_cast<osg::Drawable*>(object);
+    if (drawable)
+    {
+        drawable->setStateSet(ss);
+    }
+    else
+    {
+        osg::Node* node = dynamic_cast<osg::Node*>(object);
+        if (node)
+        {
+            node->setStateSet(ss);
+        }
+    }
 }
 
 
@@ -161,10 +186,7 @@ void SharedStateManager::shareTextures(osg::StateSet* ss)
     const osg::StateSet::TextureAttributeList& texAttributes = ss->getTextureAttributeList();
     for(unsigned int unit=0;unit<texAttributes.size();++unit)
     {
-        osg::StateSet::RefAttributePair* pair = ss->getTextureAttributePair(unit, osg::StateAttribute::TEXTURE);
-        if (!pair) continue;
-
-        osg::StateAttribute* texture = pair->first.get();
+        osg::StateAttribute *texture = ss->getTextureAttribute(unit, osg::StateAttribute::TEXTURE);
 
         // Valid Texture to be shared
         if(texture && shareTexture(texture->getDataVariance()))
@@ -174,13 +196,13 @@ void SharedStateManager::shareTextures(osg::StateSet* ss)
             {
                 // Texture is not in tmp list:
                 // First time it appears in this file, search Texture in sharedAttributeList
-                osg::StateAttribute* textureFromSharedList = find(texture);
+                osg::StateAttribute *textureFromSharedList = find(texture);
                 if(textureFromSharedList)
                 {
                     // Texture is in sharedAttributeList:
                     // Share now. Required to be shared all next times
                     if(_mutex) _mutex->lock();
-                    pair->first = textureFromSharedList;
+                    ss->setTextureAttributeAndModes(unit, textureFromSharedList, osg::StateAttribute::ON);
                     if(_mutex) _mutex->unlock();
                     tmpSharedTextureList[texture] = TextureSharePair(textureFromSharedList, true);
                 }
@@ -199,7 +221,7 @@ void SharedStateManager::shareTextures(osg::StateSet* ss)
                 // Texture is in tmpSharedAttributeList and share flag is on:
                 // It should be shared
                 if(_mutex) _mutex->lock();
-                pair->first = titr->second.first;
+                ss->setTextureAttributeAndModes(unit, titr->second.first, osg::StateAttribute::ON);
                 if(_mutex) _mutex->unlock();
             }
         }

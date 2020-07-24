@@ -1,6 +1,0 @@
-https://cgit.uclibc-ng.org/cgi/cgit/uclibc-ng.git/tree/utils/mmap-windows.c
-mmap() replacement for Windows
-Author: Mike Frysinger <vapier@gentoo.org>
-Placed into the public domain
-
-file:/src/libbu/mappedfile.c

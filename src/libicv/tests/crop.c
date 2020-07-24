@@ -28,7 +28,6 @@
 #include <stdlib.h>
 
 #include "bio.h"
-#include "bu/app.h"
 #include "bu/log.h"
 #include "bu/mime.h"
 #include "bu/getopt.h"
@@ -59,13 +58,10 @@ int main(int argc, char* argv[])
     int urx, ury, ulx, uly, llx, lly, lrx, lry;
     int ret;
 
-    bu_setprogname(argv[0]);
-
     if (argc<2) {
 	    usage();
 	    return 1;
     }
-
 
     while ((c = bu_getopt(argc, argv, "s:W:w:N:n:s:S:o:bpdmh?")) != -1) {
 	    switch (c) {

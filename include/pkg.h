@@ -38,9 +38,9 @@
 #  if defined(PKG_DLL_EXPORTS) && defined(PKG_DLL_IMPORTS)
 #    error "Only PKG_DLL_EXPORTS or PKG_DLL_IMPORTS can be defined, not both."
 #  elif defined(PKG_DLL_EXPORTS)
-#    define PKG_EXPORT COMPILER_DLLEXPORT
+#    define PKG_EXPORT __declspec(dllexport)
 #  elif defined(PKG_DLL_IMPORTS)
-#    define PKG_EXPORT COMPILER_DLLIMPORT
+#    define PKG_EXPORT __declspec(dllimport)
 #  else
 #    define PKG_EXPORT
 #  endif
@@ -50,9 +50,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* ?? used in remrt */
-PKG_EXPORT extern int pkg_permport;
 
 struct pkg_conn;
 

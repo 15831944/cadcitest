@@ -38,7 +38,6 @@
 #endif
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/str.h"
 #include "bu/exit.h"
 
@@ -69,8 +68,6 @@ main(int argc, char *argv[])
 
     FILE *f1, *f2;
     struct stat sf1, sf2;
-
-    bu_setprogname(argv[0]);
 
     if (argc != 3 || isatty(fileno(stdout))) {
 	bu_exit(1, "Usage: pixdiff f1.pix f2.pix >file.pix\n");

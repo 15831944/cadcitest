@@ -17,7 +17,6 @@
 #-------------------------------------------------------------------------
 
 if {[tk windowingsystem] eq "aqua"} {
-
     bind Radiobutton <Enter> {
 	tk::ButtonEnter %W
     }
@@ -144,7 +143,7 @@ bind Radiobutton <Leave> {
 if {"win32" eq [tk windowingsystem]} {
 
 #########################
-# Windows implementation
+# Windows implementation 
 #########################
 
 # ::tk::ButtonEnter --
@@ -597,25 +596,12 @@ proc ::tk::ButtonUp w {
 # w -		The name of the widget.
 
 proc ::tk::ButtonInvoke w {
-    if {[winfo exists $w] && [$w cget -state] ne "disabled"} {
+    if {[$w cget -state] ne "disabled"} {
 	set oldRelief [$w cget -relief]
 	set oldState [$w cget -state]
 	$w configure -state active -relief sunken
-	after 100 [list ::tk::ButtonInvokeEnd $w $oldState $oldRelief]
-    }
-}
-
-# ::tk::ButtonInvokeEnd --
-# The procedure below is called after a button is invoked through
-# the keyboard.  It simulate a release of the button via the mouse.
-#
-# Arguments:
-# w -         The name of the widget.
-# oldState -  Old state to be set back.
-# oldRelief - Old relief to be set back.
-
-proc ::tk::ButtonInvokeEnd {w oldState oldRelief} {
-    if {[winfo exists $w]} {
+	update idletasks
+	after 100
 	$w configure -state $oldState -relief $oldRelief
 	uplevel #0 [list $w invoke]
     }
@@ -748,15 +734,11 @@ proc ::tk::CheckLeave {w} {
 	$w configure -state normal
     }
 
-    # Restore the original button "selected" color; but only if the user
-    # has not changed it in the meantime.
+    # Restore the original button "selected" color; assume that the user
+    # wasn't monkeying around with things too much.
 
     if {![$w cget -indicatoron] && [info exist Priv($w,selectcolor)]} {
-        if {[$w cget -selectcolor] eq $Priv($w,selectcolor)
-                || ([info exist Priv($w,aselectcolor)] &&
-                    [$w cget -selectcolor] eq $Priv($w,aselectcolor))} {
-	    $w configure -selectcolor $Priv($w,selectcolor)
-	}
+	$w configure -selectcolor $Priv($w,selectcolor)
     }
     unset -nocomplain Priv($w,selectcolor) Priv($w,aselectcolor)
 
@@ -773,10 +755,3 @@ proc ::tk::CheckLeave {w} {
 
     set Priv(window) ""
 }
-
-return
-
-# Local Variables:
-# mode: tcl
-# fill-column: 78
-# End:

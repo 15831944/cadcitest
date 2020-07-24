@@ -46,6 +46,7 @@ bind Entry <<Copy>> {
     }
 }
 bind Entry <<Paste>> {
+    global tcl_platform
     catch {
 	if {[tk windowingsystem] ne "x11"} {
 	    catch {
@@ -68,8 +69,8 @@ bind Entry <<PasteSelection>> {
 }
 
 bind Entry <<TraverseIn>> {
-    %W selection range 0 end
-    %W icursor end
+    %W selection range 0 end 
+    %W icursor end 
 }
 
 # Standard Motif bindings:
@@ -118,45 +119,45 @@ bind Entry <Control-1> {
     %W icursor @%x
 }
 
-bind Entry <<PrevChar>> {
+bind Entry <Left> {
     tk::EntrySetCursor %W [expr {[%W index insert] - 1}]
 }
-bind Entry <<NextChar>> {
+bind Entry <Right> {
     tk::EntrySetCursor %W [expr {[%W index insert] + 1}]
 }
-bind Entry <<SelectPrevChar>> {
+bind Entry <Shift-Left> {
     tk::EntryKeySelect %W [expr {[%W index insert] - 1}]
     tk::EntrySeeInsert %W
 }
-bind Entry <<SelectNextChar>> {
+bind Entry <Shift-Right> {
     tk::EntryKeySelect %W [expr {[%W index insert] + 1}]
     tk::EntrySeeInsert %W
 }
-bind Entry <<PrevWord>> {
+bind Entry <Control-Left> {
     tk::EntrySetCursor %W [tk::EntryPreviousWord %W insert]
 }
-bind Entry <<NextWord>> {
+bind Entry <Control-Right> {
     tk::EntrySetCursor %W [tk::EntryNextWord %W insert]
 }
-bind Entry <<SelectPrevWord>> {
+bind Entry <Shift-Control-Left> {
     tk::EntryKeySelect %W [tk::EntryPreviousWord %W insert]
     tk::EntrySeeInsert %W
 }
-bind Entry <<SelectNextWord>> {
+bind Entry <Shift-Control-Right> {
     tk::EntryKeySelect %W [tk::EntryNextWord %W insert]
     tk::EntrySeeInsert %W
 }
-bind Entry <<LineStart>> {
+bind Entry <Home> {
     tk::EntrySetCursor %W 0
 }
-bind Entry <<SelectLineStart>> {
+bind Entry <Shift-Home> {
     tk::EntryKeySelect %W 0
     tk::EntrySeeInsert %W
 }
-bind Entry <<LineEnd>> {
+bind Entry <End> {
     tk::EntrySetCursor %W end
 }
-bind Entry <<SelectLineEnd>> {
+bind Entry <Shift-End> {
     tk::EntryKeySelect %W end
     tk::EntrySeeInsert %W
 }
@@ -184,10 +185,10 @@ bind Entry <Control-Shift-space> {
 bind Entry <Shift-Select> {
     %W selection adjust insert
 }
-bind Entry <<SelectAll>> {
+bind Entry <Control-slash> {
     %W selection range 0 end
 }
-bind Entry <<SelectNone>> {
+bind Entry <Control-backslash> {
     %W selection clear
 }
 bind Entry <KeyPress> {
@@ -207,14 +208,9 @@ bind Entry <Escape> {# nothing}
 bind Entry <Return> {# nothing}
 bind Entry <KP_Enter> {# nothing}
 bind Entry <Tab> {# nothing}
-bind Entry <Prior> {# nothing}
-bind Entry <Next> {# nothing}
 if {[tk windowingsystem] eq "aqua"} {
     bind Entry <Command-KeyPress> {# nothing}
 }
-# Tk-on-Cocoa generates characters for these two keys. [Bug 2971663]
-bind Entry <<NextLine>> {# nothing}
-bind Entry <<PrevLine>> {# nothing}
 
 # On Windows, paste is done using Shift-Insert.  Shift-Insert already
 # generates the <<Paste>> event, so we don't need to do anything here.
@@ -226,9 +222,29 @@ if {[tk windowingsystem] ne "win32"} {
 
 # Additional emacs-like bindings:
 
+bind Entry <Control-a> {
+    if {!$tk_strictMotif} {
+	tk::EntrySetCursor %W 0
+    }
+}
+bind Entry <Control-b> {
+    if {!$tk_strictMotif} {
+	tk::EntrySetCursor %W [expr {[%W index insert] - 1}]
+    }
+}
 bind Entry <Control-d> {
     if {!$tk_strictMotif} {
 	%W delete insert
+    }
+}
+bind Entry <Control-e> {
+    if {!$tk_strictMotif} {
+	tk::EntrySetCursor %W end
+    }
+}
+bind Entry <Control-f> {
+    if {!$tk_strictMotif} {
+	tk::EntrySetCursor %W [expr {[%W index insert] + 1}]
     }
 }
 bind Entry <Control-h> {
@@ -270,25 +286,6 @@ bind Entry <Meta-Delete> {
     if {!$tk_strictMotif} {
 	%W delete [tk::EntryPreviousWord %W insert] insert
     }
-}
-
-# Bindings for IME text input and accents.
-
-bind Entry <<TkStartIMEMarkedText>> {
-    dict set ::tk::Priv(IMETextMark) "%W" [%W index insert]
-}
-bind Entry <<TkEndIMEMarkedText>> {
-    if { [catch {dict get $::tk::Priv(IMETextMark) "%W"} mark] } {
-	bell
-    } else {
-	%W selection range $mark insert
-    }
-}
-bind Entry <<TkClearIMEMarkedText>> {
-    %W delete [dict get $::tk::Priv(IMETextMark) "%W"] [%W index insert]
-}
-bind Entry <<TkAccentBackspace>> {
-    tk::EntryBackspace %W
 }
 
 # A few additional bindings of my own.
@@ -671,12 +668,3 @@ proc ::tk::EntryGetSelection {w} {
     }
     return $entryString
 }
-
-
-
-
-
-
-
-
-

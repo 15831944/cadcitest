@@ -31,7 +31,7 @@ typedef struct {
  * The structure below is used to allocate thread-local data.
  */
 
-typedef struct {
+typedef struct ThreadSpecificData {
     char rgbString[20];		/* */
 } ThreadSpecificData;
 static Tcl_ThreadDataKey dataKey;
@@ -42,7 +42,6 @@ static Tcl_ThreadDataKey dataKey;
 
 static void		ColorInit(TkDisplay *dispPtr);
 static void		DupColorObjProc(Tcl_Obj *srcObjPtr,Tcl_Obj *dupObjPtr);
-static void		FreeColorObj(Tcl_Obj *objPtr);
 static void		FreeColorObjProc(Tcl_Obj *objPtr);
 static void		InitColorObj(Tcl_Obj *objPtr);
 
@@ -52,7 +51,7 @@ static void		InitColorObj(Tcl_Obj *objPtr);
  * of the Tcl_Obj points to a TkColor object.
  */
 
-const Tcl_ObjType tkColorObjType = {
+Tcl_ObjType tkColorObjType = {
     "color",			/* name */
     FreeColorObjProc,		/* freeIntRepProc */
     DupColorObjProc,		/* dupIntRepProc */
@@ -112,7 +111,7 @@ Tk_AllocColorFromObj(
 	     * longer in use. Clear the reference.
 	     */
 
-	    FreeColorObj(objPtr);
+	    FreeColorObjProc(objPtr);
 	    tkColPtr = NULL;
 	} else if ((Tk_Screen(tkwin) == tkColPtr->screen)
 		&& (Tk_Colormap(tkwin) == tkColPtr->colormap)) {
@@ -130,14 +129,14 @@ Tk_AllocColorFromObj(
     if (tkColPtr != NULL) {
 	TkColor *firstColorPtr = Tcl_GetHashValue(tkColPtr->hashPtr);
 
-	FreeColorObj(objPtr);
+	FreeColorObjProc(objPtr);
 	for (tkColPtr = firstColorPtr; tkColPtr != NULL;
 		tkColPtr = tkColPtr->nextPtr) {
 	    if ((Tk_Screen(tkwin) == tkColPtr->screen)
 		    && (Tk_Colormap(tkwin) == tkColPtr->colormap)) {
 		tkColPtr->resourceRefCount++;
 		tkColPtr->objRefCount++;
-		objPtr->internalRep.twoPtrValue.ptr1 = tkColPtr;
+		objPtr->internalRep.twoPtrValue.ptr1 = (void *) tkColPtr;
 		return (XColor *) tkColPtr;
 	    }
 	}
@@ -148,7 +147,7 @@ Tk_AllocColorFromObj(
      */
 
     tkColPtr = (TkColor *) Tk_GetColor(interp, tkwin, Tcl_GetString(objPtr));
-    objPtr->internalRep.twoPtrValue.ptr1 = tkColPtr;
+    objPtr->internalRep.twoPtrValue.ptr1 = (void *) tkColPtr;
     if (tkColPtr != NULL) {
 	tkColPtr->objRefCount++;
     }
@@ -224,13 +223,11 @@ Tk_GetColor(
     if (tkColPtr == NULL) {
 	if (interp != NULL) {
 	    if (*name == '#') {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"invalid color name \"%s\"", name));
-		Tcl_SetErrorCode(interp, "TK", "VALUE", "COLOR", NULL);
+		Tcl_AppendResult(interp, "invalid color name \"", name,
+			"\"", NULL);
 	    } else {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"unknown color name \"%s\"", name));
-		Tcl_SetErrorCode(interp, "TK", "LOOKUP", "COLOR", name, NULL);
+		Tcl_AppendResult(interp, "unknown color name \"", name,
+			"\"", NULL);
 	    }
 	}
 	if (isNew) {
@@ -245,7 +242,7 @@ Tk_GetColor(
      */
 
     tkColPtr->magic = COLOR_MAGIC;
-    tkColPtr->gc = NULL;
+    tkColPtr->gc = TkNone;
     tkColPtr->screen = Tk_Screen(tkwin);
     tkColPtr->colormap = Tk_Colormap(tkwin);
     tkColPtr->visual = Tk_Visual(tkwin);
@@ -326,7 +323,7 @@ Tk_GetColorByValue(
 
     tkColPtr = TkpGetColorByValue(tkwin, colorPtr);
     tkColPtr->magic = COLOR_MAGIC;
-    tkColPtr->gc = NULL;
+    tkColPtr->gc = TkNone;
     tkColPtr->screen = Tk_Screen(tkwin);
     tkColPtr->colormap = valueKey.colormap;
     tkColPtr->visual = Tk_Visual(tkwin);
@@ -359,7 +356,7 @@ Tk_GetColorByValue(
  *--------------------------------------------------------------
  */
 
-const char *
+CONST char *
 Tk_NameOfColor(
     XColor *colorPtr)		/* Color whose name is desired. */
 {
@@ -368,30 +365,11 @@ Tk_NameOfColor(
     if (tkColPtr->magic==COLOR_MAGIC && tkColPtr->type==TK_COLOR_BY_NAME) {
 	return tkColPtr->hashPtr->key.string;
     } else {
-	ThreadSpecificData *tsdPtr =
+	ThreadSpecificData *tsdPtr = (ThreadSpecificData *)
 		Tcl_GetThreadData(&dataKey, sizeof(ThreadSpecificData));
 
 	sprintf(tsdPtr->rgbString, "#%04x%04x%04x", colorPtr->red,
 		colorPtr->green, colorPtr->blue);
-
-	/*
-	 * If the string has the form #RSRSTUTUVWVW (where equal letters
-	 * denote equal hexdigits) then this is equivalent to #RSTUVW. Then
-	 * output the shorter form.
-	 */
-
-	if ((tsdPtr->rgbString[1] == tsdPtr->rgbString[3])
-		&& (tsdPtr->rgbString[2] == tsdPtr->rgbString[4])
-		&& (tsdPtr->rgbString[5] == tsdPtr->rgbString[7])
-		&& (tsdPtr->rgbString[6] == tsdPtr->rgbString[8])
-		&& (tsdPtr->rgbString[9] == tsdPtr->rgbString[11])
-		&& (tsdPtr->rgbString[10] == tsdPtr->rgbString[12])) {
-	    tsdPtr->rgbString[3] = tsdPtr->rgbString[5];
-	    tsdPtr->rgbString[4] = tsdPtr->rgbString[6];
-	    tsdPtr->rgbString[5] = tsdPtr->rgbString[9];
-	    tsdPtr->rgbString[6] = tsdPtr->rgbString[10];
-	    tsdPtr->rgbString[7] = '\0';
-	}
 	return tsdPtr->rgbString;
     }
 }
@@ -436,7 +414,7 @@ Tk_GCForColor(
 	Tcl_Panic("Tk_GCForColor called with bogus color");
     }
 
-    if (tkColPtr->gc == NULL) {
+    if (tkColPtr->gc == TkNone) {
 	gcValues.foreground = tkColPtr->color.pixel;
 	tkColPtr->gc = XCreateGC(DisplayOfScreen(tkColPtr->screen), drawable,
 		GCForeground, &gcValues);
@@ -491,9 +469,9 @@ Tk_FreeColor(
      * longer any objects referencing it.
      */
 
-    if (tkColPtr->gc != NULL) {
+    if (tkColPtr->gc != TkNone) {
 	XFreeGC(DisplayOfScreen(screen), tkColPtr->gc);
-	tkColPtr->gc = NULL;
+	tkColPtr->gc = TkNone;
     }
     TkpFreeColor(tkColPtr);
 
@@ -518,7 +496,7 @@ Tk_FreeColor(
      */
 
     if (tkColPtr->objRefCount == 0) {
-	ckfree(tkColPtr);
+	ckfree((char *) tkColPtr);
     }
 }
 
@@ -550,13 +528,13 @@ Tk_FreeColorFromObj(
     Tcl_Obj *objPtr)		/* The Tcl_Obj * to be freed. */
 {
     Tk_FreeColor(Tk_GetColorFromObj(tkwin, objPtr));
-    FreeColorObj(objPtr);
+    FreeColorObjProc(objPtr);
 }
 
 /*
  *---------------------------------------------------------------------------
  *
- * FreeColorObjProc, FreeColorObj --
+ * FreeColorObjProc --
  *
  *	This proc is called to release an object reference to a color. Called
  *	when the object's internal rep is released or when the cached tkColPtr
@@ -576,21 +554,13 @@ static void
 FreeColorObjProc(
     Tcl_Obj *objPtr)		/* The object we are releasing. */
 {
-    FreeColorObj(objPtr);
-    objPtr->typePtr = NULL;
-}
-
-static void
-FreeColorObj(
-    Tcl_Obj *objPtr)		/* The object we are releasing. */
-{
-    TkColor *tkColPtr = objPtr->internalRep.twoPtrValue.ptr1;
+    TkColor *tkColPtr = (TkColor *) objPtr->internalRep.twoPtrValue.ptr1;
 
     if (tkColPtr != NULL) {
 	tkColPtr->objRefCount--;
 	if ((tkColPtr->objRefCount == 0)
 		&& (tkColPtr->resourceRefCount == 0)) {
-	    ckfree(tkColPtr);
+	    ckfree((char *) tkColPtr);
 	}
 	objPtr->internalRep.twoPtrValue.ptr1 = NULL;
     }
@@ -619,10 +589,10 @@ DupColorObjProc(
     Tcl_Obj *srcObjPtr,		/* The object we are copying from. */
     Tcl_Obj *dupObjPtr)		/* The object we are copying to. */
 {
-    TkColor *tkColPtr = srcObjPtr->internalRep.twoPtrValue.ptr1;
+    TkColor *tkColPtr = (TkColor *) srcObjPtr->internalRep.twoPtrValue.ptr1;
 
     dupObjPtr->typePtr = srcObjPtr->typePtr;
-    dupObjPtr->internalRep.twoPtrValue.ptr1 = tkColPtr;
+    dupObjPtr->internalRep.twoPtrValue.ptr1 = (void *) tkColPtr;
 
     if (tkColPtr != NULL) {
 	tkColPtr->objRefCount++;
@@ -669,7 +639,7 @@ Tk_GetColorFromObj(
      * map. If it is, we are done.
      */
 
-    tkColPtr = objPtr->internalRep.twoPtrValue.ptr1;
+    tkColPtr = (TkColor *) objPtr->internalRep.twoPtrValue.ptr1;
     if ((tkColPtr != NULL)
 	    && (tkColPtr->resourceRefCount > 0)
 	    && (Tk_Screen(tkwin) == tkColPtr->screen)
@@ -699,8 +669,8 @@ Tk_GetColorFromObj(
 	    (tkColPtr != NULL); tkColPtr = tkColPtr->nextPtr) {
 	if ((Tk_Screen(tkwin) == tkColPtr->screen)
 		&& (Tk_Colormap(tkwin) == tkColPtr->colormap)) {
-	    FreeColorObj(objPtr);
-	    objPtr->internalRep.twoPtrValue.ptr1 = tkColPtr;
+	    FreeColorObjProc(objPtr);
+	    objPtr->internalRep.twoPtrValue.ptr1 = (void *) tkColPtr;
 	    tkColPtr->objRefCount++;
 	    return (XColor *) tkColPtr;
 	}
@@ -745,7 +715,7 @@ InitColorObj(
     Tcl_GetString(objPtr);
     typePtr = objPtr->typePtr;
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
-	typePtr->freeIntRepProc(objPtr);
+	(*typePtr->freeIntRepProc)(objPtr);
     }
     objPtr->typePtr = &tkColorObjType;
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
@@ -802,7 +772,7 @@ Tcl_Obj *
 TkDebugColor(
     Tk_Window tkwin,		/* The window in which the color will be used
 				 * (not currently used). */
-    const char *name)		/* Name of the desired color. */
+    char *name)			/* Name of the desired color. */
 {
     Tcl_HashEntry *hashPtr;
     Tcl_Obj *resultPtr;
@@ -829,30 +799,30 @@ TkDebugColor(
     return resultPtr;
 }
 
-#ifndef _WIN32
+#ifndef __WIN32__
 
 /* This function is not necessary for Win32,
  * since XParseColor already does the right thing */
 
 #undef XParseColor
 
-const char *const tkWebColors[20] = {
+CONST char *CONST tkWebColors[20] = {
     /* 'a' */ "qua\0#0000ffffffff",
     /* 'b' */ NULL,
     /* 'c' */ "rimson\0#dcdc14143c3c",
     /* 'd' */ NULL,
     /* 'e' */ NULL,
     /* 'f' */ "uchsia\0#ffff0000ffff",
-    /* 'g' */ "reen\0#000080800000",
+    /* 'g' */ NULL,
     /* 'h' */ NULL,
     /* 'i' */ "ndigo\0#4b4b00008282",
     /* 'j' */ NULL,
     /* 'k' */ NULL,
     /* 'l' */ "ime\0#0000ffff0000",
-    /* 'm' */ "aroon\0#808000000000",
+    /* 'm' */ NULL,
     /* 'n' */ NULL,
     /* 'o' */ "live\0#808080800000",
-    /* 'p' */ "urple\0#808000008080",
+    /* 'p' */ NULL,
     /* 'q' */ NULL,
     /* 'r' */ NULL,
     /* 's' */ "ilver\0#c0c0c0c0c0c0",
@@ -913,31 +883,25 @@ TkParseColor(
 	}
 	goto done;
     } else if (((*name - 'A') & 0xdf) < sizeof(tkWebColors)/sizeof(tkWebColors[0])) {
-	if (!((name[0] - 'G') & 0xdf) && !((name[1] - 'R') & 0xdf)
-		&& !((name[2] - 'A') & 0xdb) && !((name[3] - 'Y') & 0xdf)
-		&& !name[4]) {
-	    name = "#808080808080";
-	    goto done;
-	} else {
-	    const char *p = tkWebColors[((*name - 'A') & 0x1f)];
-	    if (p) {
-		const char *q = name;
-		while (!((*p - *(++q)) & 0xdf)) {
-		    if (!*p++) {
-			name = p;
-			goto done;
-		    }
+	const char *p = tkWebColors[((*name - 'A') & 0x1f)];
+	if (p) {
+	    const char *q = name;
+	    while (!((*p - *(++q)) & 0xdf)) {
+		if (!*p++) {
+		    name = p;
+		    goto done;
 		}
 	    }
 	}
     }
     if (strlen(name) > 99) {
+	/* Don't bother to parse this. [Bug 2809525]*/
 	return 0;
     }
 done:
     return XParseColor(display, map, name, color);
 }
-#endif /* _WIN32 */
+#endif /* __WIN32__ */
 /*
  * Local Variables:
  * mode: c

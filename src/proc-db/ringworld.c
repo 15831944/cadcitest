@@ -44,9 +44,8 @@
 #  include <unistd.h>
 #endif
 
-#include "vmath.h"
-#include "bu/app.h"
 #include "bu/getopt.h"
+#include "vmath.h"
 #include "raytrace.h"
 #include "rt/geom.h"
 #include "wdb.h"
@@ -127,8 +126,6 @@ main(int argc, char *argv[])
     char outfile[MAXPATHLEN] = "ringworld.g";
     int optc;
     struct rt_wdb *fp;
-
-    bu_setprogname(argv[0]);
 
     while ((optc = bu_getopt(argc, argv, "o:h?")) != -1) {
     	if (bu_optopt == '?') optc='h';

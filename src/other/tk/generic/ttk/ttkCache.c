@@ -49,7 +49,7 @@ struct Ttk_ResourceCache_ {
  */
 Ttk_ResourceCache Ttk_CreateResourceCache(Tcl_Interp *interp)
 {
-    Ttk_ResourceCache cache = ckalloc(sizeof(*cache));
+    Ttk_ResourceCache cache = (Ttk_ResourceCache)ckalloc(sizeof(*cache));
 
     cache->tkwin = NULL;	/* initialized later */
     cache->interp = interp;
@@ -160,7 +160,7 @@ void Ttk_FreeResourceCache(Ttk_ResourceCache cache)
     }
     Tcl_DeleteHashTable(&cache->namedColors);
 
-    ckfree(cache);
+    ckfree((ClientData)cache);
 }
 
 /*
@@ -270,7 +270,7 @@ static Tcl_Obj *Ttk_Use(
     } else {
 	Tcl_DecrRefCount(cacheObj);
 	Tcl_SetHashValue(entryPtr, NULL);
-	Tcl_BackgroundException(interp, TCL_ERROR);
+	Tcl_BackgroundError(interp);
 	return NULL;
     }
 }
@@ -341,7 +341,7 @@ Tk_Image Ttk_UseImage(Ttk_ResourceCache cache, Tk_Window tkwin, Tcl_Obj *objPtr)
     Tcl_SetHashValue(entryPtr, image);
 
     if (!image) {
-	Tcl_BackgroundException(cache->interp, TCL_ERROR);
+	Tcl_BackgroundError(cache->interp);
     }
 
     return image;

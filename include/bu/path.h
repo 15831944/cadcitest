@@ -27,6 +27,10 @@
 #include <stdlib.h> /* for getenv */
 #include <limits.h> /* for NAME_MAX */
 
+#ifdef HAVE_DLFCN_H
+#  include <dlfcn.h>   /* for RTLD_* */
+#endif
+
 #include "bu/defines.h"
 #include "bu/magic.h"
 #include "bu/vls.h"

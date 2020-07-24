@@ -31,12 +31,11 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/log.h"
 #include "vmath.h"
 
-#include "dm.h"
+#include "fb.h"
 #include "libtermio.h"
 
 
@@ -64,7 +63,7 @@ static int scr_width = 512;		/* screen size */
 static int scr_height = 512;
 static int toggle_pan = 0;		/* Reverse sense of pan commands? */
 static char *framebuffer = NULL;
-static struct fb *fbp;
+static fb *fbp;
 
 static char usage[] = "\
 Usage: fbzoom [-T] [-F framebuffer]\n\
@@ -73,7 +72,6 @@ Usage: fbzoom [-T] [-F framebuffer]\n\
 int
 main(int argc, char **argv)
 {
-    bu_setprogname(argv[0]);
     if (! pars_Argv(argc, argv)) {
 	(void)fputs(usage, stderr);
 	bu_exit(1, NULL);

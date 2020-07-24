@@ -29,9 +29,8 @@
 
 #include <stdlib.h>
 
-#include "bu/app.h"
 #include "bu/getopt.h"
-#include "dm.h"
+#include "fb.h"
 
 
 static char *framebuffer = NULL;
@@ -43,9 +42,7 @@ int
 main(int argc, char **argv)
 {
     int c;
-    struct fb *fbp;
-
-    bu_setprogname(argv[0]);
+    fb *fbp;
 
     while ((c = bu_getopt(argc, argv, "F:h?")) != -1) {
 	switch (c) {

@@ -23,17 +23,16 @@
 	   <arg choice="plain" rep="norepeat"><replaceable>num</replaceable></arg>
 	 </group>
        </group>
-       <arg choice="req" rep="norepeat">comb</arg>
+       <arg choice="req" rep="norepeat">assembly</arg>
        <arg choice="req" rep="norepeat">regionID</arg>
   </cmdsynopsis>
 </refsynopsisdiv>
 
 <refsection xml:id="description"><title>DESCRIPTION</title>
- <para>The 'reid' command sequentially assigns the 'region_id'
- attribute value for all regions within a specified combination.
- Optionally, the increment between consecutive 'region_id' can be
- specified.  Once the command is complete, the highest 'region_id' set
- is reported.</para>
+ <para>The 'reid' command sequentially renumbers the 'region_id' attribute
+ of all regions within a group. Optionally the increment between consecutive
+ 'region_id' can be specified. Once the command is complete, the highest
+ 'region_id' set is reported.</para>
 </refsection>
 
   <refsection xml:id="options"><title>OPTIONS</title>
@@ -42,16 +41,15 @@
       <term><option>-n num</option></term>
       <listitem>
 	<para>
-	  Increment to use between consecutive region identifiers.
-	  The default is 1.
+	  Increment between consecutive 'region_id'. The default is one.
 	</para>
       </listitem>
     </varlistentry>
     <varlistentry>
-      <term><option>comb</option></term>
+      <term><option>assembly</option></term>
       <listitem>
 	<para>
-	  Name of the combination to search for regions.
+	  Group name
 	</para>
       </listitem>
     </varlistentry>
@@ -59,7 +57,7 @@
       <term><option>regionID</option></term>
       <listitem>
 	<para>
-	  Region ID to start re-numbering with.
+	  Renumber start number
 	</para>
       </listitem>
     </varlistentry>

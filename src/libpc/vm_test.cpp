@@ -30,7 +30,6 @@
 #include <iostream>
 #include <cmath>
 
-#include "bu/app.h"
 
 typedef boost::shared_ptr<MathFunction> ct;
 
@@ -135,9 +134,8 @@ void eval()
 }
 
 
-int main(int argc, const char *argv[])
+int main()
 {
-    bu_setprogname(argv[0]);
     eval();
     return 0;
 }

@@ -164,6 +164,7 @@ bool View::addSlave(osg::Camera* camera, const osg::Matrix& projectionOffset, co
 
     camera->setView(this);
 
+    unsigned int i = _slaves.size();
 
     if (useMastersSceneData)
     {
@@ -178,9 +179,8 @@ bool View::addSlave(osg::Camera* camera, const osg::Matrix& projectionOffset, co
         }
     }
 
-    unsigned int i = _slaves.size();
-
     _slaves.push_back(Slave(camera, projectionOffset, viewOffset, useMastersSceneData));
+
     _slaves[i].updateSlave(*this);
 
     camera->setRenderer(createRenderer(camera));
@@ -222,26 +222,3 @@ unsigned int View::findSlaveIndexForCamera(osg::Camera* camera) const
     return _slaves.size();
 }
 
-void View::resizeGLObjectBuffers(unsigned int maxSize)
-{
-    if (_camera) _camera->resizeGLObjectBuffers(maxSize);
-
-    for(Slaves::iterator itr = _slaves.begin();
-        itr != _slaves.end();
-        ++itr)
-    {
-        if (itr->_camera.valid()) itr->_camera->resizeGLObjectBuffers(maxSize);
-    }
-}
-
-void View::releaseGLObjects(osg::State* state) const
-{
-    if (_camera) _camera->releaseGLObjects(state);
-
-    for(Slaves::const_iterator itr = _slaves.begin();
-        itr != _slaves.end();
-        ++itr)
-    {
-        if (itr->_camera.valid()) itr->_camera->releaseGLObjects(state);
-    }
-}

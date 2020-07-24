@@ -81,7 +81,6 @@
 #include <stddef.h>
 
 #include "vmath.h"		/* vector math macros */
-#include "bu/app.h"
 #include "bu/list.h"
 #include "bu/parse.h"
 #include "bu/vls.h"
@@ -318,7 +317,6 @@ main(int argc, char **argv)
     struct bu_vls buf = BU_VLS_INIT_ZERO;
     struct shot sh;
 
-    bu_setprogname(argv[0]);
     progname = argv[0];
 
     if (argc < 3) {

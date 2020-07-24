@@ -59,12 +59,11 @@ TkCreateRegion(void)
  *----------------------------------------------------------------------
  */
 
-int
+void
 TkDestroyRegion(
     TkRegion r)
 {
     DeleteObject((HRGN) r);
-    return Success;
 }
 
 /*
@@ -83,7 +82,7 @@ TkDestroyRegion(
  *----------------------------------------------------------------------
  */
 
-int
+void
 TkClipBox(
     TkRegion r,
     XRectangle* rect_return)
@@ -95,7 +94,6 @@ TkClipBox(
     rect_return->y = (short) rect.top;
     rect_return->width = (short) (rect.right - rect.left);
     rect_return->height = (short) (rect.bottom - rect.top);
-    return Success;
 }
 
 /*
@@ -114,14 +112,13 @@ TkClipBox(
  *----------------------------------------------------------------------
  */
 
-int
+void
 TkIntersectRegion(
     TkRegion sra,
     TkRegion srb,
     TkRegion dr_return)
 {
     CombineRgn((HRGN) dr_return, (HRGN) sra, (HRGN) srb, RGN_AND);
-    return Success;
 }
 
 /*
@@ -140,7 +137,7 @@ TkIntersectRegion(
  *----------------------------------------------------------------------
  */
 
-int
+void
 TkUnionRectWithRegion(
     XRectangle *rectangle,
     TkRegion src_region,
@@ -152,7 +149,6 @@ TkUnionRectWithRegion(
     CombineRgn((HRGN) dest_region_return, (HRGN) src_region,
 	    (HRGN) rectRgn, RGN_OR);
     DeleteObject(rectRgn);
-    return Success;
 }
 
 /*
@@ -274,14 +270,13 @@ TkRectInRegion(
  *----------------------------------------------------------------------
  */
 
-int
+void
 TkSubtractRegion(
     TkRegion sra,
     TkRegion srb,
     TkRegion dr_return)
 {
     CombineRgn((HRGN) dr_return, (HRGN) sra, (HRGN) srb, RGN_DIFF);
-    return Success;
 }
 
 /*

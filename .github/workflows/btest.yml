@@ -13,7 +13,7 @@ jobs:
     - name: configure
       run: mkdir build && cd build && cmake --version && cmake .. && more CMakeCache.txt && ls -R
     - name: build
-      run: cd build && make && make check
+      run: cd build && make distcheck
       #- name: configure2
       #run: cd build && rm CMakeCache.txt && cmake .. && more CMakeCache.txt && ls -R
       #- name: build2

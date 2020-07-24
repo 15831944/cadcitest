@@ -15,8 +15,6 @@
 #include <osg/ApplicationUsage>
 #include <osg/Math>
 #include <osg/Notify>
-#include <osg/GL>
-#include <osg/os_utils>
 #include <osg/ref_ptr>
 
 #include <algorithm>
@@ -25,30 +23,11 @@
 using namespace osg;
 using namespace std;
 
-#if defined(WIN32) && !defined(__CYGWIN__)
-#include<windows.h>
-extern "C" { OSG_EXPORT DWORD NvOptimusEnablement=0x00000001; }
-#else
-extern "C" { int NvOptimusEnablement=0x00000001; }
-#endif
-
-void DisplaySettings::setNvOptimusEnablement(int value)
-{
-    NvOptimusEnablement = value;
-}
-
-int DisplaySettings::getNvOptimusEnablement() const
-{
-    return NvOptimusEnablement;
-}
-
 ref_ptr<DisplaySettings>& DisplaySettings::instance()
 {
     static ref_ptr<DisplaySettings> s_displaySettings = new DisplaySettings;
     return s_displaySettings;
 }
-
-OSG_INIT_SINGLETON_PROXY(ProxyInitDisplaySettings, DisplaySettings::instance())
 
 DisplaySettings::DisplaySettings(const DisplaySettings& vs):Referenced(true)
 {
@@ -118,17 +97,9 @@ void DisplaySettings::setDisplaySettings(const DisplaySettings& vs)
     _glContextProfileMask = vs._glContextProfileMask;
     _swapMethod = vs._swapMethod;
 
-    _vertexBufferHint = vs._vertexBufferHint;
-
-    setShaderHint(_shaderHint);
-
     _keystoneHint = vs._keystoneHint;
     _keystoneFileNames = vs._keystoneFileNames;
     _keystones = vs._keystones;
-
-    _OSXMenubarBehavior = vs._OSXMenubarBehavior;
-
-    _syncSwapBuffers = vs._syncSwapBuffers;
 }
 
 void DisplaySettings::merge(const DisplaySettings& vs)
@@ -186,9 +157,6 @@ void DisplaySettings::merge(const DisplaySettings& vs)
         Objects::iterator found_itr = std::find(_keystones.begin(), _keystones.end(), object);
         if (found_itr == _keystones.end()) _keystones.push_back(const_cast<osg::Object*>(object));
     }
-
-    if (vs._OSXMenubarBehavior > _OSXMenubarBehavior)
-        _OSXMenubarBehavior = vs._OSXMenubarBehavior;
 }
 
 void DisplaySettings::setDefaults()
@@ -240,32 +208,13 @@ void DisplaySettings::setDefaults()
 
     _implicitBufferAttachmentRenderMask = DEFAULT_IMPLICIT_BUFFER_ATTACHMENT;
     _implicitBufferAttachmentResolveMask = DEFAULT_IMPLICIT_BUFFER_ATTACHMENT;
-    _glContextVersion = OSG_GL_CONTEXT_VERSION;
+    _glContextVersion = "1.0";
     _glContextFlags = 0;
     _glContextProfileMask = 0;
 
     _swapMethod = SWAP_DEFAULT;
-    _syncSwapBuffers = 0;
-
-    _vertexBufferHint = NO_PREFERENCE;
-    // _vertexBufferHint = VERTEX_BUFFER_OBJECT;
-    // _vertexBufferHint = VERTEX_ARRAY_OBJECT;
-
-#if defined(OSG_GLES3_AVAILABLE)
-    setShaderHint(SHADER_GLES3);
-#elif defined(OSG_GLES2_AVAILABLE)
-    setShaderHint(SHADER_GLES2);
-#elif defined(OSG_GL3_AVAILABLE)
-    setShaderHint(SHADER_GL3);
-#elif defined(OSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE)
-    setShaderHint(SHADER_NONE);
-#else
-    setShaderHint(SHADER_GL2);
-#endif
 
     _keystoneHint = false;
-
-    _OSXMenubarBehavior = MENUBAR_AUTO_HIDE;
 }
 
 void DisplaySettings::setMaxNumberOfGraphicsContexts(unsigned int num)
@@ -377,197 +326,226 @@ static ApplicationUsageProxy DisplaySetting_e28(ApplicationUsage::ENVIRONMENTAL_
 static ApplicationUsageProxy DisplaySetting_e29(ApplicationUsage::ENVIRONMENTAL_VARIABLE,
         "OSG_KEYSTONE_FILES <filename>[:filename]..",
         "Specify filenames of keystone parameter files. Under Windows use ; to deliminate files, otherwise use :");
-static ApplicationUsageProxy DisplaySetting_e30(ApplicationUsage::ENVIRONMENTAL_VARIABLE,
-        "OSG_MENUBAR_BEHAVIOR <behavior>",
-        "OSX Only : Specify the behavior of the menubar (AUTO_HIDE, FORCE_HIDE, FORCE_SHOW)");
-static ApplicationUsageProxy DisplaySetting_e31(ApplicationUsage::ENVIRONMENTAL_VARIABLE,
-        "OSG_NvOptimusEnablement <value>",
-        "Set the hint to NvOptimus of whether to enable it or not, set 1 to enable, 0 to disable");
-static ApplicationUsageProxy DisplaySetting_e32(ApplicationUsage::ENVIRONMENTAL_VARIABLE,
-        "OSG_VERTEX_BUFFER_HINT <value>",
-        "Set the hint to what backend osg::Geometry implementation to use. NO_PREFERENCE | VERTEX_BUFFER_OBJECT | VERTEX_ARRAY_OBJECT");
-static ApplicationUsageProxy DisplaySetting_e33(ApplicationUsage::ENVIRONMENTAL_VARIABLE,
-        "OSG_TEXT_SHADER_TECHNIQUE <value>",
-        "Set the defafult osgText::ShaderTechnique. ALL_FEATURES | ALL | GREYSCALE | SIGNED_DISTANCE_FIELD | SDF | NO_TEXT_SHADER | NONE");
+
 
 void DisplaySettings::readEnvironmentalVariables()
 {
-    std::string value;
-    if (getEnvVar("OSG_DISPLAY_TYPE", value))
+    const char* ptr = 0;
+
+    if ((ptr = getenv("OSG_DISPLAY_TYPE")) != 0)
     {
-        if (value=="MONITOR")
+        if (strcmp(ptr,"MONITOR")==0)
         {
             _displayType = MONITOR;
         }
         else
-        if (value=="POWERWALL")
+        if (strcmp(ptr,"POWERWALL")==0)
         {
             _displayType = POWERWALL;
         }
         else
-        if (value=="REALITY_CENTER")
+        if (strcmp(ptr,"REALITY_CENTER")==0)
         {
             _displayType = REALITY_CENTER;
         }
         else
-        if (value=="HEAD_MOUNTED_DISPLAY")
+        if (strcmp(ptr,"HEAD_MOUNTED_DISPLAY")==0)
         {
             _displayType = HEAD_MOUNTED_DISPLAY;
         }
     }
 
-    if (getEnvVar("OSG_STEREO_MODE", value))
+    if( (ptr = getenv("OSG_STEREO_MODE")) != 0)
     {
-        if (value=="QUAD_BUFFER")
+        if (strcmp(ptr,"QUAD_BUFFER")==0)
         {
             _stereoMode = QUAD_BUFFER;
         }
-        else if (value=="ANAGLYPHIC")
+        else if (strcmp(ptr,"ANAGLYPHIC")==0)
         {
             _stereoMode = ANAGLYPHIC;
         }
-        else if (value=="HORIZONTAL_SPLIT")
+        else if (strcmp(ptr,"HORIZONTAL_SPLIT")==0)
         {
             _stereoMode = HORIZONTAL_SPLIT;
         }
-        else if (value=="VERTICAL_SPLIT")
+        else if (strcmp(ptr,"VERTICAL_SPLIT")==0)
         {
             _stereoMode = VERTICAL_SPLIT;
         }
-        else if (value=="LEFT_EYE")
+        else if (strcmp(ptr,"LEFT_EYE")==0)
         {
             _stereoMode = LEFT_EYE;
         }
-        else if (value=="RIGHT_EYE")
+        else if (strcmp(ptr,"RIGHT_EYE")==0)
         {
             _stereoMode = RIGHT_EYE;
         }
-        else if (value=="HORIZONTAL_INTERLACE")
+        else if (strcmp(ptr,"HORIZONTAL_INTERLACE")==0)
         {
             _stereoMode = HORIZONTAL_INTERLACE;
         }
-        else if (value=="VERTICAL_INTERLACE")
+        else if (strcmp(ptr,"VERTICAL_INTERLACE")==0)
         {
             _stereoMode = VERTICAL_INTERLACE;
         }
-        else if (value=="CHECKERBOARD")
+        else if (strcmp(ptr,"CHECKERBOARD")==0)
         {
             _stereoMode = CHECKERBOARD;
         }
     }
 
-    if (getEnvVar("OSG_STEREO", value))
+    if( (ptr = getenv("OSG_STEREO")) != 0)
     {
-        if (value=="OFF")
+        if (strcmp(ptr,"OFF")==0)
         {
             _stereo = false;
         }
         else
-        if (value=="ON")
+        if (strcmp(ptr,"ON")==0)
         {
             _stereo = true;
         }
     }
 
-    getEnvVar("OSG_EYE_SEPARATION", _eyeSeparation);
-    getEnvVar("OSG_SCREEN_WIDTH", _screenWidth);
-    getEnvVar("OSG_SCREEN_HEIGHT", _screenHeight);
-    getEnvVar("OSG_SCREEN_DISTANCE", _screenDistance);
-
-    if (getEnvVar("OSG_SPLIT_STEREO_HORIZONTAL_EYE_MAPPING", value))
+    if( (ptr = getenv("OSG_EYE_SEPARATION")) != 0)
     {
-        if (value=="LEFT_EYE_LEFT_VIEWPORT")
+        _eyeSeparation = osg::asciiToFloat(ptr);
+    }
+
+    if( (ptr = getenv("OSG_SCREEN_WIDTH")) != 0)
+    {
+        _screenWidth = osg::asciiToFloat(ptr);
+    }
+
+    if( (ptr = getenv("OSG_SCREEN_HEIGHT")) != 0)
+    {
+        _screenHeight = osg::asciiToFloat(ptr);
+    }
+
+    if( (ptr = getenv("OSG_SCREEN_DISTANCE")) != 0)
+    {
+        _screenDistance = osg::asciiToFloat(ptr);
+    }
+
+    if( (ptr = getenv("OSG_SPLIT_STEREO_HORIZONTAL_EYE_MAPPING")) != 0)
+    {
+        if (strcmp(ptr,"LEFT_EYE_LEFT_VIEWPORT")==0)
         {
             _splitStereoHorizontalEyeMapping = LEFT_EYE_LEFT_VIEWPORT;
         }
         else
-        if (value=="LEFT_EYE_RIGHT_VIEWPORT")
+        if (strcmp(ptr,"LEFT_EYE_RIGHT_VIEWPORT")==0)
         {
             _splitStereoHorizontalEyeMapping = LEFT_EYE_RIGHT_VIEWPORT;
         }
     }
 
-    getEnvVar("OSG_SPLIT_STEREO_HORIZONTAL_SEPARATION", _splitStereoHorizontalSeparation);
-
-
-    if (getEnvVar("OSG_SPLIT_STEREO_VERTICAL_EYE_MAPPING", value))
+    if( (ptr = getenv("OSG_SPLIT_STEREO_HORIZONTAL_SEPARATION")) != 0)
     {
-        if (value=="LEFT_EYE_TOP_VIEWPORT")
+        _splitStereoHorizontalSeparation = atoi(ptr);
+    }
+
+
+    if( (ptr = getenv("OSG_SPLIT_STEREO_VERTICAL_EYE_MAPPING")) != 0)
+    {
+        if (strcmp(ptr,"LEFT_EYE_TOP_VIEWPORT")==0)
         {
             _splitStereoVerticalEyeMapping = LEFT_EYE_TOP_VIEWPORT;
         }
         else
-        if (value=="LEFT_EYE_BOTTOM_VIEWPORT")
+        if (strcmp(ptr,"LEFT_EYE_BOTTOM_VIEWPORT")==0)
         {
             _splitStereoVerticalEyeMapping = LEFT_EYE_BOTTOM_VIEWPORT;
         }
     }
 
-    if (getEnvVar("OSG_SPLIT_STEREO_AUTO_ADJUST_ASPECT_RATIO", value))
+    if( (ptr = getenv("OSG_SPLIT_STEREO_AUTO_ADJUST_ASPECT_RATIO")) != 0)
     {
-        if (value=="OFF")
+        if (strcmp(ptr,"OFF")==0)
         {
             _splitStereoAutoAdjustAspectRatio = false;
         }
         else
-        if (value=="ON")
+        if (strcmp(ptr,"ON")==0)
         {
             _splitStereoAutoAdjustAspectRatio = true;
         }
     }
 
-    getEnvVar("OSG_SPLIT_STEREO_VERTICAL_SEPARATION", _splitStereoVerticalSeparation);
-
-    getEnvVar("OSG_MAX_NUMBER_OF_GRAPHICS_CONTEXTS", _maxNumOfGraphicsContexts);
-
-    if (getEnvVar("OSG_COMPILE_CONTEXTS", value))
+    if( (ptr = getenv("OSG_SPLIT_STEREO_VERTICAL_SEPARATION")) != 0)
     {
-        if (value=="OFF")
+        _splitStereoVerticalSeparation = atoi(ptr);
+    }
+
+    if( (ptr = getenv("OSG_MAX_NUMBER_OF_GRAPHICS_CONTEXTS")) != 0)
+    {
+        _maxNumOfGraphicsContexts = atoi(ptr);
+    }
+
+    if( (ptr = getenv("OSG_COMPIlE_CONTEXTS")) != 0)
+    {
+        if (strcmp(ptr,"OFF")==0)
         {
             _compileContextsHint = false;
         }
         else
-        if (value=="ON")
+        if (strcmp(ptr,"ON")==0)
         {
             _compileContextsHint = true;
         }
     }
 
-    if (getEnvVar("OSG_SERIALIZE_DRAW_DISPATCH", value))
+    if( (ptr = getenv("OSG_SERIALIZE_DRAW_DISPATCH")) != 0)
     {
-        if (value=="OFF")
+        if (strcmp(ptr,"OFF")==0)
         {
             _serializeDrawDispatch = false;
         }
         else
-        if (value=="ON")
+        if (strcmp(ptr,"ON")==0)
         {
             _serializeDrawDispatch = true;
         }
     }
 
-    if (getEnvVar("OSG_USE_SCENEVIEW_FOR_STEREO", value))
+    if( (ptr = getenv("OSG_USE_SCENEVIEW_FOR_STEREO")) != 0)
     {
-        if (value=="OFF")
+        if (strcmp(ptr,"OFF")==0)
         {
             _useSceneViewForStereoHint = false;
         }
         else
-        if (value=="ON")
+        if (strcmp(ptr,"ON")==0)
         {
             _useSceneViewForStereoHint = true;
         }
     }
 
-    getEnvVar("OSG_NUM_DATABASE_THREADS", _numDatabaseThreadsHint);
+    if( (ptr = getenv("OSG_NUM_DATABASE_THREADS")) != 0)
+    {
+        _numDatabaseThreadsHint = atoi(ptr);
+    }
 
-    getEnvVar("OSG_NUM_HTTP_DATABASE_THREADS", _numHttpDatabaseThreadsHint);
+    if( (ptr = getenv("OSG_NUM_HTTP_DATABASE_THREADS")) != 0)
+    {
+        _numHttpDatabaseThreadsHint = atoi(ptr);
+    }
 
-    getEnvVar("OSG_MULTI_SAMPLES", _numMultiSamples);
+    if( (ptr = getenv("OSG_MULTI_SAMPLES")) != 0)
+    {
+        _numMultiSamples = atoi(ptr);
+    }
 
-    getEnvVar("OSG_TEXTURE_POOL_SIZE", _maxTexturePoolSize);
+    if( (ptr = getenv("OSG_TEXTURE_POOL_SIZE")) != 0)
+    {
+        _maxTexturePoolSize = atoi(ptr);
+    }
 
-    getEnvVar("OSG_BUFFER_OBJECT_POOL_SIZE", _maxBufferObjectPoolSize);
+    if( (ptr = getenv("OSG_BUFFER_OBJECT_POOL_SIZE")) != 0)
+    {
+        _maxBufferObjectPoolSize = atoi(ptr);
+    }
 
 
     {  // Read implicit buffer attachments combinations for both render and resolve mask
@@ -583,141 +561,80 @@ void DisplaySettings::readEnvironmentalVariables()
 
         for( unsigned int n = 0; n < sizeof( variable ) / sizeof( variable[0] ); n++ )
         {
-            std::string str;
-            if (getEnvVar(variable[n], str))
-            {
-                if(str.find("OFF")!=std::string::npos) *mask[n] = 0;
+            const char* env = getenv( variable[n] );
+            if ( !env ) continue;
+            std::string str(env);
 
-                if(str.find("~DEFAULT")!=std::string::npos) *mask[n] ^= DEFAULT_IMPLICIT_BUFFER_ATTACHMENT;
-                else if(str.find("DEFAULT")!=std::string::npos) *mask[n] |= DEFAULT_IMPLICIT_BUFFER_ATTACHMENT;
+            if(str.find("OFF")!=std::string::npos) *mask[n] = 0;
 
-                if(str.find("~COLOR")!=std::string::npos) *mask[n] ^= IMPLICIT_COLOR_BUFFER_ATTACHMENT;
-                else if(str.find("COLOR")!=std::string::npos) *mask[n] |= IMPLICIT_COLOR_BUFFER_ATTACHMENT;
+            if(str.find("~DEFAULT")!=std::string::npos) *mask[n] ^= DEFAULT_IMPLICIT_BUFFER_ATTACHMENT;
+            else if(str.find("DEFAULT")!=std::string::npos) *mask[n] |= DEFAULT_IMPLICIT_BUFFER_ATTACHMENT;
 
-                if(str.find("~DEPTH")!=std::string::npos) *mask[n] ^= IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
-                else if(str.find("DEPTH")!=std::string::npos) *mask[n] |= (int)IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
+            if(str.find("~COLOR")!=std::string::npos) *mask[n] ^= IMPLICIT_COLOR_BUFFER_ATTACHMENT;
+            else if(str.find("COLOR")!=std::string::npos) *mask[n] |= IMPLICIT_COLOR_BUFFER_ATTACHMENT;
 
-                if(str.find("~STENCIL")!=std::string::npos) *mask[n] ^= (int)IMPLICIT_STENCIL_BUFFER_ATTACHMENT;
-                else if(str.find("STENCIL")!=std::string::npos) *mask[n] |= (int)IMPLICIT_STENCIL_BUFFER_ATTACHMENT;
-            }
+            if(str.find("~DEPTH")!=std::string::npos) *mask[n] ^= IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
+            else if(str.find("DEPTH")!=std::string::npos) *mask[n] |= (int)IMPLICIT_DEPTH_BUFFER_ATTACHMENT;
+
+            if(str.find("~STENCIL")!=std::string::npos) *mask[n] ^= (int)IMPLICIT_STENCIL_BUFFER_ATTACHMENT;
+            else if(str.find("STENCIL")!=std::string::npos) *mask[n] |= (int)IMPLICIT_STENCIL_BUFFER_ATTACHMENT;
         }
     }
 
-    if (getEnvVar("OSG_GL_VERSION", value) || getEnvVar("OSG_GL_CONTEXT_VERSION", value))
+    if( (ptr = getenv("OSG_GL_VERSION")) != 0 || (ptr = getenv("OSG_GL_CONTEXT_VERSION")) != 0)
     {
-        _glContextVersion = value;
+        _glContextVersion = ptr;
     }
 
-    getEnvVar("OSG_GL_CONTEXT_FLAGS", _glContextFlags);
-
-    getEnvVar("OSG_GL_CONTEXT_PROFILE_MASK", _glContextProfileMask);
-
-    if (getEnvVar("OSG_SWAP_METHOD", value))
+    if( (ptr = getenv("OSG_GL_CONTEXT_FLAGS")) != 0)
     {
-        if (value=="DEFAULT")
+        _glContextFlags = atoi(ptr);
+    }
+
+    if( (ptr = getenv("OSG_GL_CONTEXT_PROFILE_MASK")) != 0)
+    {
+        _glContextProfileMask = atoi(ptr);
+    }
+
+    if ((ptr = getenv("OSG_SWAP_METHOD")) != 0)
+    {
+        if (strcmp(ptr,"DEFAULT")==0)
         {
             _swapMethod = SWAP_DEFAULT;
         }
         else
-        if (value=="EXCHANGE")
+        if (strcmp(ptr,"EXCHANGE")==0)
         {
             _swapMethod = SWAP_EXCHANGE;
         }
         else
-        if (value=="COPY")
+        if (strcmp(ptr,"COPY")==0)
         {
             _swapMethod = SWAP_COPY;
         }
         else
-        if (value=="UNDEFINED")
+        if (strcmp(ptr,"UNDEFINED")==0)
         {
             _swapMethod = SWAP_UNDEFINED;
         }
 
     }
 
-    if (getEnvVar("OSG_SYNC_SWAP_BUFFERS", value))
+    if( (ptr = getenv("OSG_KEYSTONE")) != 0)
     {
-        if (value=="OFF")
-        {
-            _syncSwapBuffers = 0;
-        }
-        else
-        if (value=="ON")
-        {
-            _syncSwapBuffers = 1;
-        }
-        else
-        {
-            _syncSwapBuffers = atoi(value.c_str());
-        }
-    }
-
-
-    if (getEnvVar("OSG_VERTEX_BUFFER_HINT", value))
-    {
-        if (value=="VERTEX_BUFFER_OBJECT" || value=="VBO")
-        {
-            OSG_INFO<<"OSG_VERTEX_BUFFER_HINT set to VERTEX_BUFFER_OBJECT"<<std::endl;
-            _vertexBufferHint = VERTEX_BUFFER_OBJECT;
-        }
-        else if (value=="VERTEX_ARRAY_OBJECT" || value=="VAO")
-        {
-            OSG_INFO<<"OSG_VERTEX_BUFFER_HINT set to VERTEX_ARRAY_OBJECT"<<std::endl;
-            _vertexBufferHint = VERTEX_ARRAY_OBJECT;
-        }
-        else
-        {
-            OSG_INFO<<"OSG_VERTEX_BUFFER_HINT set to NO_PREFERENCE"<<std::endl;
-            _vertexBufferHint = NO_PREFERENCE;
-        }
-    }
-
-
-    if (getEnvVar("OSG_SHADER_HINT", value))
-    {
-        if (value=="GL2")
-        {
-            setShaderHint(SHADER_GL2);
-        }
-        else if (value=="GL3")
-        {
-            setShaderHint(SHADER_GL3);
-        }
-        else if (value=="GLES2")
-        {
-            setShaderHint(SHADER_GLES2);
-        }
-        else if (value=="GLES3")
-        {
-            setShaderHint(SHADER_GLES3);
-        }
-        else if (value=="NONE")
-        {
-            setShaderHint(SHADER_NONE);
-        }
-    }
-
-    if (getEnvVar("OSG_TEXT_SHADER_TECHNIQUE", value))
-    {
-        setTextShaderTechnique(value);
-    }
-
-    if (getEnvVar("OSG_KEYSTONE", value))
-    {
-        if (value=="OFF")
+        if (strcmp(ptr,"OFF")==0)
         {
             _keystoneHint = false;
         }
         else
-        if (value=="ON")
+        if (strcmp(ptr,"ON")==0)
         {
             _keystoneHint = true;
         }
     }
 
 
-    if (getEnvVar("OSG_KEYSTONE_FILES", value))
+    if ((ptr = getenv("OSG_KEYSTONE_FILES")) != 0)
     {
     #if defined(WIN32) && !defined(__CYGWIN__)
         char delimitor = ';';
@@ -725,7 +642,7 @@ void DisplaySettings::readEnvironmentalVariables()
         char delimitor = ':';
     #endif
 
-        std::string paths(value);
+        std::string paths(ptr);
         if (!paths.empty())
         {
             std::string::size_type start = 0;
@@ -741,30 +658,6 @@ void DisplaySettings::readEnvironmentalVariables()
                 _keystoneFileNames.push_back(lastPath);
         }
     }
-
-    if (getEnvVar("OSG_MENUBAR_BEHAVIOR", value))
-    {
-        if (value=="AUTO_HIDE")
-        {
-            _OSXMenubarBehavior = MENUBAR_AUTO_HIDE;
-        }
-        else
-        if (value=="FORCE_HIDE")
-        {
-            _OSXMenubarBehavior = MENUBAR_FORCE_HIDE;
-        }
-        else
-        if (value=="FORCE_SHOW")
-        {
-            _OSXMenubarBehavior = MENUBAR_FORCE_SHOW;
-        }
-    }
-
-    int enable = 0;
-    if (getEnvVar("OSG_NvOptimusEnablement", enable))
-    {
-        setNvOptimusEnablement(enable);
-    }
 }
 
 void DisplaySettings::readCommandLine(ArgumentParser& arguments)
@@ -775,7 +668,7 @@ void DisplaySettings::readCommandLine(ArgumentParser& arguments)
     if (arguments.getApplicationUsage())
     {
         arguments.getApplicationUsage()->addCommandLineOption("--display <type>","MONITOR | POWERWALL | REALITY_CENTER | HEAD_MOUNTED_DISPLAY");
-        arguments.getApplicationUsage()->addCommandLineOption("--stereo","Use default stereo mode which is ANAGLYPHIC if not overridden by environmental variable");
+        arguments.getApplicationUsage()->addCommandLineOption("--stereo","Use default stereo mode which is ANAGLYPHIC if not overriden by environmental variable");
         arguments.getApplicationUsage()->addCommandLineOption("--stereo <mode>","ANAGLYPHIC | QUAD_BUFFER | HORIZONTAL_SPLIT | VERTICAL_SPLIT | LEFT_EYE | RIGHT_EYE | HORIZONTAL_INTERLACE | VERTICAL_INTERLACE | CHECKERBOARD | ON | OFF ");
         arguments.getApplicationUsage()->addCommandLineOption("--rgba","Request a RGBA color buffer visual");
         arguments.getApplicationUsage()->addCommandLineOption("--stencil","Request a stencil buffer visual");
@@ -793,8 +686,6 @@ void DisplaySettings::readCommandLine(ArgumentParser& arguments)
         arguments.getApplicationUsage()->addCommandLineOption("--keystone <filename>","Specify a keystone file to be used by the viewer for keystone correction.");
         arguments.getApplicationUsage()->addCommandLineOption("--keystone-on","Set the keystone hint to true to tell the viewer to do keystone correction.");
         arguments.getApplicationUsage()->addCommandLineOption("--keystone-off","Set the keystone hint to false.");
-        arguments.getApplicationUsage()->addCommandLineOption("--menubar-behavior <behavior>","Set the menubar behavior (AUTO_HIDE | FORCE_HIDE | FORCE_SHOW)");
-        arguments.getApplicationUsage()->addCommandLineOption("--sync","Enable sync of swap buffers");
     }
 
     std::string str;
@@ -847,11 +738,6 @@ void DisplaySettings::readCommandLine(ArgumentParser& arguments)
     while(arguments.read("--samples",str))
     {
         _numMultiSamples = atoi(str.c_str());
-    }
-
-    while(arguments.read("--sync"))
-    {
-        _syncSwapBuffers = 1;
     }
 
     if (arguments.read("--keystone",str))
@@ -938,12 +824,6 @@ void DisplaySettings::readCommandLine(ArgumentParser& arguments)
         else if (str=="UNDEFINED") _swapMethod = SWAP_UNDEFINED;
     }
 
-    while(arguments.read("--menubar-behavior",str))
-    {
-        if (str=="AUTO_HIDE") _OSXMenubarBehavior = MENUBAR_AUTO_HIDE;
-        else if (str=="FORCE_HIDE") _OSXMenubarBehavior = MENUBAR_FORCE_HIDE;
-        else if (str=="FORCE_SHOW") _OSXMenubarBehavior = MENUBAR_FORCE_SHOW;
-    }
 
 }
 
@@ -1055,85 +935,4 @@ osg::Matrixd DisplaySettings::computeRightEyeViewImplementation(const osg::Matri
                        0.0,1.0,0.0,0.0,
                        0.0,0.0,1.0,0.0,
                        -es,0.0,0.0,1.0);
-}
-
-void DisplaySettings::setShaderHint(ShaderHint hint, bool setShaderValues)
-{
-    _shaderHint = hint;
-    if (setShaderValues)
-    {
-        switch(_shaderHint)
-        {
-        case(SHADER_GLES3) :
-            setValue("OSG_GLSL_VERSION", "#version 300 es");
-            setValue("OSG_PRECISION_FLOAT", "precision highp float;");
-            setValue("OSG_VARYING_IN", "in");
-            setValue("OSG_VARYING_OUT", "out");
-            OSG_INFO<<"DisplaySettings::SHADER_GLES3"<<std::endl;
-            break;
-        case(SHADER_GLES2) :
-            setValue("OSG_GLSL_VERSION", "");
-            setValue("OSG_PRECISION_FLOAT", "precision highp float;");
-            setValue("OSG_VARYING_IN", "varying");
-            setValue("OSG_VARYING_OUT", "varying");
-            OSG_INFO<<"DisplaySettings::SHADER_GLES2"<<std::endl;
-            break;
-        case(SHADER_GL3) :
-            setValue("OSG_GLSL_VERSION", "#version 330");
-            setValue("OSG_PRECISION_FLOAT", "");
-            setValue("OSG_VARYING_IN", "in");
-            setValue("OSG_VARYING_OUT", "out");
-            OSG_INFO<<"DisplaySettings::SHADER_GL3"<<std::endl;
-            break;
-        case(SHADER_GL2) :
-            setValue("OSG_GLSL_VERSION", "");
-            setValue("OSG_PRECISION_FLOAT", "");
-            setValue("OSG_VARYING_IN", "varying");
-            setValue("OSG_VARYING_OUT", "varying");
-            OSG_INFO<<"DisplaySettings::SHADER_GL2"<<std::endl;
-            break;
-        case(SHADER_NONE) :
-            setValue("OSG_GLSL_VERSION", "");
-            setValue("OSG_PRECISION_FLOAT", "");
-            setValue("OSG_VARYING_IN", "varying");
-            setValue("OSG_VARYING_OUT", "varying");
-            OSG_INFO<<"DisplaySettings::NONE"<<std::endl;
-            break;
-        }
-    }
-}
-
-void DisplaySettings::setValue(const std::string& name, const std::string& value)
-{
-    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_valueMapMutex);
-
-    _valueMap[name] = value;
-}
-
-bool DisplaySettings::getValue(const std::string& name, std::string& value, bool use_env_fallback) const
-{
-    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_valueMapMutex);
-
-    ValueMap::iterator itr = _valueMap.find(name);
-    if (itr!=_valueMap.end())
-    {
-        value = itr->second;
-        OSG_INFO<<"DisplaySettings::getValue("<<name<<") found existing value = ["<<value<<"]"<<std::endl;
-        return true;
-    }
-
-    if (!use_env_fallback) return false;
-
-    std::string str;
-    if (getEnvVar(name.c_str(), str))
-    {
-        OSG_INFO<<"DisplaySettings::getValue("<<name<<") found getEnvVar value = ["<<value<<"]"<<std::endl;
-        _valueMap[name] = value = str;
-        return true;
-
-    }
-    else
-    {
-        return false;
-    }
 }

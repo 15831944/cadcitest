@@ -44,39 +44,39 @@
 
 include (FindPackageHandleStandardArgs)
 
-find_path (Appleseed_INCLUDE_DIR renderer/api/project.h
+find_path (APPLESEED_INCLUDE_DIR renderer/api/project.h
 	HINTS
-	${Appleseed_ROOT}
+	${APPLESEED_ROOT}
 	PATH_SUFFIXES
    include
 	appleseed/include
 	)
 
-find_library (Appleseed_LIBRARY
+find_library (APPLESEED_LIBRARY
   	NAMES appleseed
 	HINTS
-	${Appleseed_ROOT}
+	${APPLESEED_ROOT}
 	PATH_SUFFIXES
   	lib64
   	lib
 	)
 
-# Handle the QUIETLY and REQUIRED arguments and set Appleseed_FOUND.
-find_package_handle_standard_args (Appleseed DEFAULT_MSG
-    Appleseed_INCLUDE_DIR
-    Appleseed_LIBRARY
+# Handle the QUIETLY and REQUIRED arguments and set APPLESEED_FOUND.
+find_package_handle_standard_args (APPLESEED DEFAULT_MSG
+    APPLESEED_INCLUDE_DIR
+    APPLESEED_LIBRARY
 )
 
 # Set the output variables.
-if (Appleseed_FOUND)
-    set (Appleseed_INCLUDE_DIRS ${Appleseed_INCLUDE_DIR})
-    set (Appleseed_LIBRARIES ${Appleseed_LIBRARY})
+if (APPLESEED_FOUND)
+    set (APPLESEED_INCLUDE_DIRS ${APPLESEED_INCLUDE_DIR})
+    set (APPLESEED_LIBRARIES ${APPLESEED_LIBRARY})
 else ()
-    set (Appleseed_INCLUDE_DIRS)
-    set (Appleseed_LIBRARIES)
+    set (APPLESEED_INCLUDE_DIRS)
+    set (APPLESEED_LIBRARIES)
 endif ()
 
 mark_as_advanced (
-    Appleseed_INCLUDE_DIR
-    Appleseed_LIBRARY
+    APPLESEED_INCLUDE_DIR
+    APPLESEED_LIBRARY
 )

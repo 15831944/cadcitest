@@ -59,7 +59,7 @@ class OSG_EXPORT DrawPixels : public Drawable
 
         virtual void drawImplementation(RenderInfo& renderInfo) const;
 
-        virtual BoundingBox computeBoundingBox() const;
+        virtual BoundingBox computeBound() const;
 
     protected:
 

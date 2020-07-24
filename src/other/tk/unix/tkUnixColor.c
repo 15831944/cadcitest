@@ -10,7 +10,7 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
-#include "tkUnixInt.h"
+#include "tkInt.h"
 #include "tkColor.h"
 
 /*
@@ -85,7 +85,7 @@ TkpFreeColor(
      */
 
     visual = tkColPtr->visual;
-    if ((visual->c_class != StaticGray) && (visual->c_class != StaticColor)
+    if ((visual->class != StaticGray) && (visual->class != StaticColor)
 	    && (tkColPtr->color.pixel != BlackPixelOfScreen(screen))
 	    && (tkColPtr->color.pixel != WhitePixelOfScreen(screen))) {
 	Tk_ErrorHandler handler;
@@ -137,27 +137,20 @@ TkpGetColor(
 	XColor screen;
 
 	if (((*name - 'A') & 0xdf) < sizeof(tkWebColors)/sizeof(tkWebColors[0])) {
-	    if (!((name[0] - 'G') & 0xdf) && !((name[1] - 'R') & 0xdf)
-		    && !((name[2] - 'A') & 0xdb) && !((name[3] - 'Y') & 0xdf)
-		    && !name[4]) {
-		name = "#808080808080";
-		goto gotWebColor;
-	    } else {
-		const char *p = tkWebColors[((*name - 'A') & 0x1f)];
-		if (p) {
-		    const char *q = name;
-		    while (!((*p - *(++q)) & 0xdf)) {
-			if (!*p++) {
-			    name = p;
-			    goto gotWebColor;
-			}
+	    const char *p = tkWebColors[((*name - 'A') & 0x1f)];
+	    if (p) {
+		const char *q = name;
+		while (!((*p - *(++q)) & 0xdf)) {
+		    if (!*p++) {
+			name = p;
+			goto gotWebColor;
 		    }
 		}
-	}
+	    }
 	}
 	if (strlen(name) > 99) {
 	/* Don't bother to parse this. [Bug 2809525]*/
-	return NULL;
+	return (TkColor *) NULL;
     } else if (XAllocNamedColor(display, colormap, name, &screen, &color) != 0) {
 	    DeleteStressedCmap(display, colormap);
 	} else {
@@ -185,7 +178,7 @@ TkpGetColor(
 	}
     }
 
-    tkColPtr = ckalloc(sizeof(TkColor));
+    tkColPtr = (TkColor *) ckalloc(sizeof(TkColor));
     tkColPtr->color = color;
 
     return tkColPtr;
@@ -220,7 +213,7 @@ TkpGetColorByValue(
 {
     Display *display = Tk_Display(tkwin);
     Colormap colormap = Tk_Colormap(tkwin);
-    TkColor *tkColPtr = ckalloc(sizeof(TkColor));
+    TkColor *tkColPtr = (TkColor *) ckalloc(sizeof(TkColor));
 
     tkColPtr->color.red = colorPtr->red;
     tkColPtr->color.green = colorPtr->green;
@@ -278,7 +271,7 @@ FindClosestColor(
 
     for (stressPtr = dispPtr->stressPtr; ; stressPtr = stressPtr->nextPtr) {
 	if (stressPtr == NULL) {
-	    stressPtr = ckalloc(sizeof(TkStressedCmap));
+	    stressPtr = (TkStressedCmap *) ckalloc(sizeof(TkStressedCmap));
 	    stressPtr->colormap = colormap;
 	    template.visualid = XVisualIDFromVisual(Tk_Visual(tkwin));
 
@@ -290,8 +283,8 @@ FindClosestColor(
 
 	    stressPtr->numColors = visInfoPtr->colormap_size;
 	    XFree((char *) visInfoPtr);
-	    stressPtr->colorPtr =
-		    ckalloc(stressPtr->numColors * sizeof(XColor));
+	    stressPtr->colorPtr = (XColor *) ckalloc((unsigned)
+		    (stressPtr->numColors * sizeof(XColor)));
 	    for (i = 0; i < stressPtr->numColors; i++) {
 		stressPtr->colorPtr[i].pixel = (unsigned long) i;
 	    }
@@ -399,8 +392,8 @@ DeleteStressedCmap(
 	    } else {
 		prevPtr->nextPtr = stressPtr->nextPtr;
 	    }
-	    ckfree(stressPtr->colorPtr);
-	    ckfree(stressPtr);
+	    ckfree((char *) stressPtr->colorPtr);
+	    ckfree((char *) stressPtr);
 	    return;
 	}
     }
@@ -439,7 +432,6 @@ TkpCmapStressed(
     }
     return 0;
 }
-
 
 /*
  * Local Variables:

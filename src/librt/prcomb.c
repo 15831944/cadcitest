@@ -61,8 +61,6 @@ main(int argc, char *argv[])
     mat_t identity_mat;
     int i;
 
-    bu_setprogname(argv[0]);
-
     if (argc < 3) {
 	fprintf(stderr, "Usage:\n\t%s db_file object1 object2 ...\n", argv[0]);
 	return 1;

@@ -22,9 +22,6 @@ SphericalManipulator::SphericalManipulator()
     _heading=0.0;
     _elevation=osg::PI_2;
 
-    _delta_frame_time = 0.0;
-    _last_frame_time = 0.0;
-
     _rotationMode = ELEVATION_HEADING;
 }
 //--------------------------------------------------------------------------------------------------
@@ -284,7 +281,7 @@ bool SphericalManipulator::calcMovement()
 
     float dx=0.0f;
     float dy=0.0f;
-    unsigned int buttonMask=0;
+    unsigned int buttonMask=osgGA::GUIEventAdapter::NONE;
 
     if (_ga_t0->getEventType()==GUIEventAdapter::SCROLL)
     {

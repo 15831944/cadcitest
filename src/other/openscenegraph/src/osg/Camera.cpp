@@ -12,12 +12,6 @@
 */
 #include <osg/Camera>
 #include <osg/RenderInfo>
-#include <osg/Texture1D>
-#include <osg/Texture2D>
-#include <osg/Texture3D>
-#include <osg/TextureRectangle>
-#include <osg/TextureCubeMap>
-#include <osg/Texture2DArray>
 #include <osg/Notify>
 
 using namespace osg;
@@ -41,8 +35,7 @@ Camera::Camera():
     _renderTargetImplementation(FRAME_BUFFER),
     _renderTargetFallback(FRAME_BUFFER),
     _implicitBufferAttachmentRenderMask( USE_DISPLAY_SETTINGS_MASK ),
-    _implicitBufferAttachmentResolveMask( USE_DISPLAY_SETTINGS_MASK ),
-    _attachmentMapModifiedCount(0)
+    _implicitBufferAttachmentResolveMask( USE_DISPLAY_SETTINGS_MASK )
 {
     setStateSet(new StateSet);
 }
@@ -73,8 +66,6 @@ Camera::Camera(const Camera& camera,const CopyOp& copyop):
     _bufferAttachmentMap(camera._bufferAttachmentMap),
     _implicitBufferAttachmentRenderMask(camera._implicitBufferAttachmentRenderMask),
     _implicitBufferAttachmentResolveMask(camera._implicitBufferAttachmentResolveMask),
-    _attachmentMapModifiedCount(camera._attachmentMapModifiedCount),
-    _affinity(camera._affinity),
     _initialDrawCallback(camera._initialDrawCallback),
     _preDrawCallback(camera._preDrawCallback),
     _postDrawCallback(camera._postDrawCallback),
@@ -330,26 +321,20 @@ void Camera::detach(BufferComponent buffer)
 
 void Camera::resizeGLObjectBuffers(unsigned int maxSize)
 {
-    if (_renderer.valid()) _renderer->resizeGLObjectBuffers(maxSize);
-    if (_renderingCache.valid()) _renderingCache->resizeGLObjectBuffers(maxSize);
-
-    if (_initialDrawCallback.valid()) _initialDrawCallback->resizeGLObjectBuffers(maxSize);
-    if (_preDrawCallback.valid()) _preDrawCallback->resizeGLObjectBuffers(maxSize);
-    if (_postDrawCallback.valid()) _postDrawCallback->resizeGLObjectBuffers(maxSize);
-    if (_finalDrawCallback.valid()) _finalDrawCallback->resizeGLObjectBuffers(maxSize);
+    if (_renderingCache.valid())
+    {
+        const_cast<Camera*>(this)->_renderingCache->resizeGLObjectBuffers(maxSize);
+    }
 
     Transform::resizeGLObjectBuffers(maxSize);
 }
 
 void Camera::releaseGLObjects(osg::State* state) const
 {
-    if (_renderer.valid()) _renderer->releaseGLObjects(state);
-    if (_renderingCache.valid()) _renderingCache->releaseGLObjects(state);
-
-    if (_initialDrawCallback.valid()) _initialDrawCallback->releaseGLObjects(state);
-    if (_preDrawCallback.valid()) _preDrawCallback->releaseGLObjects(state);
-    if (_postDrawCallback.valid()) _postDrawCallback->releaseGLObjects(state);
-    if (_finalDrawCallback.valid()) _finalDrawCallback->releaseGLObjects(state);
+    if (_renderingCache.valid())
+    {
+        const_cast<Camera*>(this)->_renderingCache->releaseGLObjects(state);
+    }
 
     Transform::releaseGLObjects(state);
 }
@@ -417,122 +402,8 @@ void Camera::inheritCullSettings(const CullSettings& settings, unsigned int inhe
             _drawBuffer = camera->_drawBuffer;
 
         if (inheritanceMask & READ_BUFFER)
-            _readBuffer = camera->_readBuffer;
+            _drawBuffer = camera->_readBuffer;
     }
-}
-
-void Camera::resizeAttachments(int width, int height)
-{
-    bool modified = false;
-    for(BufferAttachmentMap::iterator itr = _bufferAttachmentMap.begin();
-        itr != _bufferAttachmentMap.end();
-        ++itr)
-    {
-        Attachment& attachment = itr->second;
-        if (attachment._texture.valid())
-        {
-            {
-                osg::Texture1D* texture = dynamic_cast<osg::Texture1D*>(attachment._texture.get());
-                if (texture && (texture->getTextureWidth()!=width))
-                {
-                    modified = true;
-                    texture->setTextureWidth(width);
-                    texture->dirtyTextureObject();
-                }
-            }
-
-            {
-                osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(attachment._texture.get());
-                if (texture && ((texture->getTextureWidth()!=width) || (texture->getTextureHeight()!=height)))
-                {
-                    modified = true;
-                    texture->setTextureSize(width, height);
-                    texture->dirtyTextureObject();
-                }
-            }
-
-            {
-                osg::Texture3D* texture = dynamic_cast<osg::Texture3D*>(attachment._texture.get());
-                if (texture && ((texture->getTextureWidth()!=width) || (texture->getTextureHeight()!=height)))
-                {
-                    modified = true;
-                    texture->setTextureSize(width, height, texture->getTextureDepth());
-                    texture->dirtyTextureObject();
-                }
-            }
-
-            {
-                osg::Texture2DArray* texture = dynamic_cast<osg::Texture2DArray*>(attachment._texture.get());
-                if (texture && ((texture->getTextureWidth()!=width) || (texture->getTextureHeight()!=height)))
-                {
-                    modified = true;
-                    texture->setTextureSize(width, height, texture->getTextureDepth());
-                    texture->dirtyTextureObject();
-                }
-            }
-        }
-
-        if (attachment._image.valid() && (attachment._image->s()!=width || attachment._image->s()!=height) )
-        {
-            modified = true;
-            osg::Image* image = attachment._image.get();
-            image->allocateImage(width, height, image->r(),
-                                 image->getPixelFormat(), image->getDataType(),
-                                 image->getPacking());
-        }
-    }
-
-    if (modified)
-    {
-        dirtyAttachmentMap();
-    }
-}
-
-void Camera::resize(int width, int height, int resizeMask)
-{
-    if (getViewport())
-    {
-        double previousWidth = getViewport()->width();
-        double previousHeight = getViewport()->height();
-        double newWidth = width;
-        double newHeight = height;
-
-        if ((previousWidth!=newWidth) || (previousHeight!=newHeight))
-        {
-            if ((resizeMask&RESIZE_PROJECTIONMATRIX)!=0 && (getProjectionResizePolicy()!=FIXED))
-            {
-                double widthChangeRatio = newWidth / previousWidth;
-                double heigtChangeRatio = newHeight / previousHeight;
-                double aspectRatioChange = widthChangeRatio / heigtChangeRatio;
-                if (aspectRatioChange!=1.0)
-                {
-                    switch(getProjectionResizePolicy())
-                    {
-                        case(HORIZONTAL): getProjectionMatrix() *= osg::Matrix::scale(1.0/aspectRatioChange,1.0,1.0); break;
-                        case(VERTICAL): getProjectionMatrix() *= osg::Matrix::scale(1.0, aspectRatioChange,1.0); break;
-                        case(FIXED): break;
-                    }
-                }
-            }
-
-            if ((resizeMask&RESIZE_VIEWPORT)!=0)
-            {
-                setViewport(0,0,width, height);
-            }
-        }
-    }
-
-    if ((resizeMask&RESIZE_ATTACHMENTS)!=0)
-    {
-        resizeAttachments(width, height);
-    }
-}
-
-void Camera::setProcessorAffinity(const OpenThreads::Affinity& affinity)
-{
-    _affinity = affinity;
-
-    if (_cameraThread.valid()) _cameraThread->setProcessorAffinity(affinity);
 }
 
 void Camera::createCameraThread()
@@ -558,7 +429,6 @@ void Camera::setCameraThread(OperationThread* gt)
 
     if (_cameraThread.valid())
     {
-        _cameraThread->setProcessorAffinity(_affinity);
         _cameraThread->setParent(this);
     }
 }

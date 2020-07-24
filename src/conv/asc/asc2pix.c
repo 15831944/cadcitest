@@ -36,18 +36,14 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
-
 int lmap[256];		/* Map HEX ASCII to binary in left nybble  */
 int rmap[256];		/* Map HEX ASCII to binary in right nybble */
 
 int
-main(int UNUSED(argc), const char **argv)
+main(void)
 {
     int	a, b;
     int	i;
-
-    bu_setprogname(argv[0]);
 
     setmode(fileno(stdin), O_BINARY);
     setmode(fileno(stdout), O_BINARY);

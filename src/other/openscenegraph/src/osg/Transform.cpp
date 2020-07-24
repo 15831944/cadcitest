@@ -66,7 +66,7 @@ class TransformVisitor : public NodeVisitor
                     ritr != nodePath.rend();
                     ++ritr, --i)
                 {
-                    const osg::Camera* camera = (*ritr)->asCamera();
+                    const osg::Camera* camera = dynamic_cast<const osg::Camera*>(*ritr);
                     if (camera &&
                         (camera->getReferenceFrame()!=osg::Transform::RELATIVE_RF || camera->getParents().empty()))
                     {
@@ -80,7 +80,7 @@ class TransformVisitor : public NodeVisitor
                 i<nodePath.size();
                 ++i)
             {
-                nodePath[i]->accept(*this);
+                const_cast<Node*>(nodePath[i])->accept(*this);
             }
         }
 
@@ -178,18 +178,17 @@ BoundingSphere Transform::computeBound() const
     bsphere._center = bsphere._center*l2w;
 
     xdash -= bsphere._center;
-    osg::BoundingSphere::value_type sqrlen_xdash = xdash.length2();
+    osg::BoundingSphere::value_type len_xdash = xdash.length();
 
     ydash -= bsphere._center;
-    osg::BoundingSphere::value_type sqrlen_ydash = ydash.length2();
+    osg::BoundingSphere::value_type len_ydash = ydash.length();
 
     zdash -= bsphere._center;
-    osg::BoundingSphere::value_type sqrlen_zdash = zdash.length2();
+    osg::BoundingSphere::value_type len_zdash = zdash.length();
 
-    bsphere._radius = sqrlen_xdash;
-    if (bsphere._radius<sqrlen_ydash) bsphere._radius = sqrlen_ydash;
-    if (bsphere._radius<sqrlen_zdash) bsphere._radius = sqrlen_zdash;
-    bsphere._radius = (osg::BoundingSphere::value_type)sqrt(bsphere._radius);
+    bsphere._radius = len_xdash;
+    if (bsphere._radius<len_ydash) bsphere._radius = len_ydash;
+    if (bsphere._radius<len_zdash) bsphere._radius = len_zdash;
 
     return bsphere;
 

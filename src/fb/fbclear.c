@@ -29,11 +29,10 @@
 
 #include <stdlib.h>
 
-#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/getopt.h"
 #include "bu/exit.h"
-#include "dm.h"
+#include "fb.h"
 #include "pkg.h"
 
 #ifdef HAVE_WINSOCK_H
@@ -42,7 +41,7 @@
 
 
 static char *framebuffer = NULL;
-static struct fb *fbp;
+static fb *fbp;
 static int scr_width = 0;		/* use default size */
 static int scr_height = 0;
 static int clear_and_reset = 0;
@@ -90,7 +89,6 @@ get_args(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
-    bu_setprogname(argv[0]);
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);
 	bu_exit(1, NULL);

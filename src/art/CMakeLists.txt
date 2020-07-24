@@ -12,50 +12,44 @@ set(RT_STD_LIBS
   ${CMAKE_THREAD_LIBS_INIT}
   librt
   libnmg
-  libdm
+  libfb
   liboptical
   libicv
   ${M_LIBRARY}
   )
 
 find_package(Appleseed)
-if(Appleseed_FOUND)
-  message("Found Appleseed: ${Appleseed_LIBRARIES}")
+if(APPLESEED_FOUND)
+  message("Found Appleseed: ${APPLESEED_LIBRARIES}")
 
   # For some reason GCC won't suppress this warning with an in-src pragma push
   include(CheckCXXCompilerFlag)
   check_cxx_compiler_flag(-Wno-unknown-pragmas HAVE_WNO_UNKNOWN_PRAGMAS)
   if(HAVE_WNO_UNKNOWN_PRAGMAS)
     set_property(SOURCE art.cpp APPEND PROPERTY COMPILE_FLAGS "-Wno-unknown-pragmas")
-    set_property(SOURCE brlcadplugin.cpp APPEND PROPERTY COMPILE_FLAGS "-Wno-unknown-pragmas")
   endif(HAVE_WNO_UNKNOWN_PRAGMAS)
 
   # Using the binary version of appleseed on Linux, we need a couple specific additional
   # libraries linked in
-  get_filename_component(Appleseed_LIB_DIR "${Appleseed_LIBRARY}" DIRECTORY)
-  file(GLOB Appleseed_BOOST_SYSTEM_LIB "${Appleseed_LIB_DIR}/libboost_system-*")
-  file(GLOB Appleseed_OPENIMAGEIO_LIB "${Appleseed_LIB_DIR}/libOpenImageIO.*")
+  get_filename_component(APPLESEED_LIB_DIR "${APPLESEED_LIBRARY}" DIRECTORY)
+  file(GLOB APPLESEED_BOOST_SYSTEM_LIB "${APPLESEED_LIB_DIR}/libboost_system-*")
+  file(GLOB APPLESEED_OPENIMAGEIO_LIB "${APPLESEED_LIB_DIR}/libOpenImageIO.*")
 
   include_directories(
-    ${Appleseed_INCLUDE_DIRS}
+    ${APPLESEED_INCLUDE_DIRS}
     )
 
   set(ART_SRCS
     art.cpp
-    brlcadplugin.cpp
     ../rt/opt.c
     )
 
-  BRLCAD_ADDEXEC(art "${ART_SRCS}" "${RT_STD_LIBS};${Appleseed_LIBRARIES};${Appleseed_BOOST_SYSTEM_LIB};${Appleseed_OPENIMAGEIO_LIB}" TEST_USESDATA)
-  ADD_TARGET_DEPS(art dm-ogl dm-wgl)
-endif(Appleseed_FOUND)
+  BRLCAD_ADDEXEC(art "${ART_SRCS}" "${RT_STD_LIBS};${APPLESEED_LIBRARIES};${APPLESEED_BOOST_SYSTEM_LIB};${APPLESEED_OPENIMAGEIO_LIB}" TEST_USESDATA)
+endif(APPLESEED_FOUND)
 
 set(art_ignore_files
   CMakeLists.txt
   art.cpp
-  art.h
-  brlcadplugin.cpp
-  brlcadplugin.h
   )
 CMAKEFILES(${art_ignore_files})
 

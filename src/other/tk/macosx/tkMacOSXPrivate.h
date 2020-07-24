@@ -8,10 +8,8 @@
  *
  * See the file "license.terms" for information on usage and redistribution
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
- *
- * RCS: @(#) $Id: tkMacOSXPrivate.h 75258 2020-04-02 21:41:04Z starseeker $
  */
-
+ 
 #ifndef _TKMACPRIV
 #define _TKMACPRIV
 
@@ -59,6 +57,27 @@
 	if (0) {
 #define tk_else_mac_os_x_no(...) \
 	} else { __VA_ARGS__
+/* Private mapping macros defined according to Mac OS X version requirements */
+/* 10.5 Leopard */
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
+#define tk_if_mac_os_x_min_10_5		tk_if_mac_os_x_yes
+#define tk_else_mac_os_x_min_10_5	tk_else_mac_os_x_yes
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1050
+#define tk_if_mac_os_x_10_5		tk_if_mac_os_x_yes
+#define tk_else_mac_os_x_10_5		tk_else_mac_os_x_yes
+#endif /* MAC_OS_X_VERSION_MAX_ALLOWED */
+#else /* MAC_OS_X_VERSION_MIN_REQUIRED */
+#define tk_if_mac_os_x_min_10_5		tk_if_mac_os_x_chk
+#define tk_else_mac_os_x_min_10_5	tk_else_mac_os_x_chk
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1050
+#define tk_if_mac_os_x_10_5		tk_if_mac_os_x_chk
+#define tk_else_mac_os_x_10_5		tk_else_mac_os_x_chk
+#endif /* MAC_OS_X_VERSION_MAX_ALLOWED */
+#endif /* MAC_OS_X_VERSION_MIN_REQUIRED */
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 1050
+#define tk_if_mac_os_x_10_5		tk_if_mac_os_x_no
+#define tk_else_mac_os_x_10_5		tk_else_mac_os_x_no
+#endif /* MAC_OS_X_VERSION_MAX_ALLOWED */
 
 /*
  * Macros for DEBUG_ASSERT_MESSAGE et al from Debugging.h.
@@ -131,12 +150,15 @@ typedef struct TkMacOSXDrawingContext {
     NSView *view;
     HIShapeRef clipRgn;
     CGRect portBounds;
+    int focusLocked;
 } TkMacOSXDrawingContext;
 
 /*
  * Variables internal to TkAqua.
  */
 
+MODULE_SCOPE CGFloat tkMacOSXZeroScreenHeight;
+MODULE_SCOPE CGFloat tkMacOSXZeroScreenTop;
 MODULE_SCOPE long tkMacOSXMacOSXVersion;
 
 /*
@@ -175,8 +197,6 @@ MODULE_SCOPE OSStatus	TkMacOSHIShapeUnion(HIShapeRef inShape1,
 MODULE_SCOPE void *	TkMacOSXGetNamedSymbol(const char *module,
 			    const char *symbol);
 MODULE_SCOPE void	TkMacOSXDisplayChanged(Display *display);
-MODULE_SCOPE CGFloat	TkMacOSXZeroScreenHeight();
-MODULE_SCOPE CGFloat	TkMacOSXZeroScreenTop();
 MODULE_SCOPE int	TkMacOSXUseAntialiasedText(Tcl_Interp *interp,
 			    int enable);
 MODULE_SCOPE int	TkMacOSXInitCGDrawing(Tcl_Interp *interp, int enable,
@@ -187,13 +207,8 @@ MODULE_SCOPE WindowClass TkMacOSXWindowClass(TkWindow *winPtr);
 MODULE_SCOPE int	TkMacOSXIsWindowZoomed(TkWindow *winPtr);
 MODULE_SCOPE int	TkGenerateButtonEventForXPointer(Window window);
 MODULE_SCOPE EventModifiers TkMacOSXModifierState(void);
-MODULE_SCOPE NSBitmapImageRep* TkMacOSXBitmapRepFromDrawableRect(Drawable drawable,
+MODULE_SCOPE NSBitmapImageRep* BitmapRepFromDrawableRect(Drawable drawable,
 			    int x, int y, unsigned int width, unsigned int height);
-MODULE_SCOPE CGImageRef TkMacOSXCreateCGImageWithXImage(XImage *image);
-MODULE_SCOPE void       TkMacOSXDrawCGImage(Drawable d, GC gc, CGContextRef context,
-			    CGImageRef image, unsigned long imageForeground,
-			    unsigned long imageBackground, CGRect imageBounds,
-			    CGRect srcBounds, CGRect dstBounds);
 MODULE_SCOPE int	TkMacOSXSetupDrawingContext(Drawable d, GC gc,
 			    int useCG, TkMacOSXDrawingContext *dcPtr);
 MODULE_SCOPE void	TkMacOSXRestoreDrawingContext(
@@ -211,7 +226,6 @@ MODULE_SCOPE void	TkMacOSXWinCGBounds(TkWindow *winPtr, CGRect *bounds);
 MODULE_SCOPE HIShapeRef	TkMacOSXGetClipRgn(Drawable drawable);
 MODULE_SCOPE void	TkMacOSXInvalidateViewRegion(NSView *view,
 			    HIShapeRef rgn);
-MODULE_SCOPE CGContextRef TkMacOSXGetCGContextForDrawable(Drawable drawable);
 MODULE_SCOPE CGImageRef	TkMacOSXCreateCGImageWithDrawable(Drawable drawable);
 MODULE_SCOPE NSImage*	TkMacOSXGetNSImageWithTkImage(Display *display,
 			    Tk_Image image, int width, int height);
@@ -233,16 +247,6 @@ MODULE_SCOPE int	TkMacOSXStandardAboutPanelObjCmd(ClientData clientData,
 MODULE_SCOPE int	TkMacOSXIconBitmapObjCmd(ClientData clientData,
 			    Tcl_Interp *interp, int objc,
 			    Tcl_Obj *const objv[]);
-MODULE_SCOPE void       TkMacOSXDrawSolidBorder(Tk_Window tkwin, GC gc,
-			    int inset, int thickness);
-MODULE_SCOPE int 	TkMacOSXServices_Init(Tcl_Interp *interp);
-MODULE_SCOPE int	TkMacOSXRegisterServiceWidgetObjCmd(ClientData clientData,
-			    Tcl_Interp *interp, int objc,
-			    Tcl_Obj *const objv[]);
-MODULE_SCOPE NSString*  TclUniToNSString(const char *source, int numBytes);
-MODULE_SCOPE int        TclUniAtIndex(NSString *string, int index, char *uni,
-				      unsigned int *code);
-MODULE_SCOPE char*      NSStringToTclUni(NSString *string, int *numBytes);
 
 #pragma mark Private Objective-C Classes
 
@@ -260,54 +264,25 @@ VISIBILITY_HIDDEN
 - (BOOL)isSpecial:(NSUInteger)special;
 @end
 
-@interface TKMenu(TKMenuDelegate) <NSMenuDelegate>
-@end
-
 VISIBILITY_HIDDEN
 @interface TKApplication : NSApplication {
 @private
     Tcl_Interp *_eventInterp;
     NSMenu *_servicesMenu;
     TKMenu *_defaultMainMenu, *_defaultApplicationMenu;
-    NSMenuItem *_demoMenuItem;
     NSArray *_defaultApplicationMenuItems, *_defaultWindowsMenuItems;
-    NSArray *_defaultHelpMenuItems, *_defaultFileMenuItems;
+    NSArray *_defaultHelpMenuItems;
+    NSWindow *_windowWithMouse;
     NSAutoreleasePool *_mainPool;
 #ifdef __i386__
-    /* The Objective C runtime used on i386 requires this. */
-    int _poolLock;
-    int _macMinorVersion;
-    Bool _isDrawing;
+    BOOL _poolProtected;
 #endif
 }
-@property int poolLock;
-@property int macMinorVersion;
-@property Bool isDrawing;
-
+@property BOOL poolProtected;
 @end
 @interface TKApplication(TKInit)
 - (NSString *)tkFrameworkImagePath:(NSString*)image;
 - (void)_resetAutoreleasePool;
-- (void)_lockAutoreleasePool;
-- (void)_unlockAutoreleasePool;
-@end
-@interface TKApplication(TKKeyboard)
-- (void) keyboardChanged: (NSNotification *) notification;
-@end
-@interface TKApplication(TKWindowEvent) <NSApplicationDelegate>
-- (void) _setupWindowNotifications;
-@end
-@interface TKApplication(TKDialog) <NSOpenSavePanelDelegate>
-@end
-@interface TKApplication(TKMenu)
-- (void)tkSetMainMenu:(TKMenu *)menu;
-@end
-@interface TKApplication(TKMenus)
-- (void) _setupMenus;
-@end
-@interface NSApplication(TKNotify)
-/* We need to declare this hidden method. */
-- (void) _modalSession: (NSModalSession) session sendEvent: (NSEvent *) event;
 @end
 @interface TKApplication(TKEvent)
 - (NSEvent *)tkProcessEvent:(NSEvent *)theEvent;
@@ -318,6 +293,9 @@ VISIBILITY_HIDDEN
 @interface TKApplication(TKKeyEvent)
 - (NSEvent *)tkProcessKeyEvent:(NSEvent *)theEvent;
 @end
+@interface TKApplication(TKMenu)
+- (void)tkSetMainMenu:(TKMenu *)menu;
+@end
 @interface TKApplication(TKClipboard)
 - (void)tkProvidePasteboard:(TkDisplay *)dispPtr;
 - (void)tkCheckPasteboard;
@@ -325,37 +303,32 @@ VISIBILITY_HIDDEN
 @interface TKApplication(TKHLEvents)
 - (void) terminate: (id) sender;
 - (void) preferences: (id) sender;
-- (void) handleQuitApplicationEvent:   (NSAppleEventDescriptor *)event
+- (void) handleQuitApplicationEvent:   (NSAppleEventDescriptor *)event 
 		     withReplyEvent:   (NSAppleEventDescriptor *)replyEvent;
-- (void) handleOpenApplicationEvent:   (NSAppleEventDescriptor *)event
+- (void) handleOpenApplicationEvent:   (NSAppleEventDescriptor *)event 
 		     withReplyEvent:   (NSAppleEventDescriptor *)replyEvent;
-- (void) handleReopenApplicationEvent: (NSAppleEventDescriptor *)event
+- (void) handleReopenApplicationEvent: (NSAppleEventDescriptor *)event 
 		       withReplyEvent: (NSAppleEventDescriptor *)replyEvent;
 - (void) handleShowPreferencesEvent:   (NSAppleEventDescriptor *)event
 		     withReplyEvent:   (NSAppleEventDescriptor *)replyEvent;
-- (void) handleOpenDocumentsEvent:     (NSAppleEventDescriptor *)event
+- (void) handleOpenDocumentsEvent:     (NSAppleEventDescriptor *)event 
 		   withReplyEvent:     (NSAppleEventDescriptor *)replyEvent;
-- (void) handlePrintDocumentsEvent:    (NSAppleEventDescriptor *)event
+- (void) handlePrintDocumentsEvent:    (NSAppleEventDescriptor *)event 
 		   withReplyEvent:     (NSAppleEventDescriptor *)replyEvent;
-- (void) handleDoScriptEvent:          (NSAppleEventDescriptor *)event
+- (void) handleDoScriptEvent:          (NSAppleEventDescriptor *)event 
 		   withReplyEvent:     (NSAppleEventDescriptor *)replyEvent;
-- (void)handleURLEvent:                (NSAppleEventDescriptor*)event
-	           withReplyEvent:     (NSAppleEventDescriptor*)replyEvent;
 @end
 
 VISIBILITY_HIDDEN
-/*
- * Subclass TKContentView from NSTextInputClient to enable composition and
- * input from the Character Palette.
- */
-
-@interface TKContentView : NSView <NSTextInputClient>
-{
+@interface TKContentView : NSView <NSTextInput> {
 @private
+  /*Remove private API calls.*/
+#if 0
+    id _savedSubviews;
+    BOOL _subviewsSetAside;
+#endif
     NSString *privateWorkingText;
-    Bool _needsRedisplay;
 }
-@property Bool needsRedisplay;
 @end
 
 @interface TKContentView(TKKeyEvent)
@@ -363,27 +336,24 @@ VISIBILITY_HIDDEN
 @end
 
 @interface TKContentView(TKWindowEvent)
+- (void) drawRect: (NSRect) rect;
 - (void) generateExposeEvents: (HIShapeRef) shape;
+- (void) generateExposeEvents: (HIShapeRef) shape childrenOnly: (int) childrenOnly;
+- (void) viewDidEndLiveResize;
 - (void) tkToolbarButton: (id) sender;
-@end
-
-@interface NSWindow(TKWm)
-- (NSPoint) tkConvertPointToScreen:(NSPoint)point;
-- (NSPoint) tkConvertPointFromScreen:(NSPoint)point;
+- (BOOL) isOpaque;
+- (BOOL) wantsDefaultClipping;
+- (BOOL) acceptsFirstResponder;
+- (void) keyDown: (NSEvent *) theEvent;
 @end
 
 VISIBILITY_HIDDEN
 @interface TKWindow : NSWindow
 @end
 
-@interface TKWindow(TKWm)
-- (void)    tkLayoutChanged;
-@end
-
-@interface NSDrawerWindow : NSWindow
-{
-    id _i1, _i2;
-}
+@interface NSWindow(TKWm)
+- (NSPoint) convertPointToScreen:(NSPoint)point;
+- (NSPoint) convertPointFromScreen:(NSPoint)point;
 @end
 
 #pragma mark NSMenu & NSMenuItem Utilities
@@ -414,34 +384,4 @@ VISIBILITY_HIDDEN
 	keyEquivalentModifierMask:(NSUInteger)keyEquivalentModifierMask;
 @end
 
-@interface NSColorPanel(TKDialog)
-- (void) _setUseModalAppearance: (BOOL) flag;
-@end
-
-@interface NSFont(TKFont)
-- (NSFont *) bestMatchingFontForCharacters: (const UTF16Char *) characters
-	length: (NSUInteger) length attributes: (NSDictionary *) attributes
-	actualCoveredLength: (NSUInteger *) coveredLength;
-@end
-
-/*
- * This method of NSApplication is not declared in NSApplication.h so we
- * declare it here to be a method of the TKMenu category.
- */
-
-@interface NSApplication(TKMenu)
-- (void) setAppleMenu: (NSMenu *) menu;
-@end
-
 #endif /* _TKMACPRIV */
-
-int TkMacOSXGetAppPath(ClientData cd, Tcl_Interp *ip, int objc, Tcl_Obj *const objv[]);
-
-/*
- * Local Variables:
- * mode: objc
- * c-basic-offset: 4
- * fill-column: 79
- * coding: utf-8
- * End:
- */

@@ -19,12 +19,7 @@
  */
 /** @file libged/get_obj_bounds.c
  *
- * Calculate object bounds.
- *
- * TODO - why are there two versions of this?
- *
- * TODO - this belongs at the librt level, and probably
- * lower than that once libg is split out...
+ * The orot command.
  *
  */
 
@@ -123,7 +118,7 @@ ged_get_obj_bounds(struct ged *gedp,
 		if (rt_bound_tree(regp->reg_treetop, reg_min, reg_max)) {
 		    bu_vls_printf(gedp->ged_result_str, "rt_bound_tree failed for %s\n", regp->reg_name);
 		    rt_free_rti(rtip);
-		    return GED_ERROR;
+		    return TCL_ERROR;
 		}
 		VMINMAX(rpp_min, rpp_max, reg_min);
 		VMINMAX(rpp_min, rpp_max, reg_max);
@@ -148,7 +143,7 @@ ged_get_obj_bounds(struct ged *gedp,
 	    if (rt_bound_tree(regp->reg_treetop, reg_min, reg_max)) {
 		bu_vls_printf(gedp->ged_result_str, "rt_bound_tree failed for %s\n", regp->reg_name);
 		rt_free_rti(rtip);
-		return GED_ERROR;
+		return TCL_ERROR;
 	    }
 	    VMINMAX(rpp_min, rpp_max, reg_min);
 	    VMINMAX(rpp_min, rpp_max, reg_max);
@@ -159,7 +154,7 @@ ged_get_obj_bounds(struct ged *gedp,
 
     rt_free_rti(rtip);
 
-    return GED_OK;
+    return TCL_OK;
 }
 
 
@@ -244,7 +239,7 @@ _ged_get_obj_bounds2(struct ged *gedp,
     VSETALL(rpp_min, MAX_FASTF);
     VREVERSE(rpp_max, rpp_min);
 
-    if (get_objpath_mat(gedp, argc, argv, gtdp) == GED_ERROR)
+    if (get_objpath_mat(gedp, argc, argv, gtdp) == TCL_ERROR)
 	return GED_ERROR;
 
     dp = gtdp->gtd_obj[gtdp->gtd_objpos-1];

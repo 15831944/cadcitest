@@ -29,14 +29,13 @@
 
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/exit.h"
 #include "bu/getopt.h"
-#include "dm.h"
+#include "fb.h"
 #include "bn/spm.h"
 
 
-static struct fb *fbp;
+static fb *fbp;
 
 static char *framebuffer = NULL;
 static int scr_width = 0;
@@ -148,8 +147,6 @@ int
 main(int argc, char **argv)
 {
     bn_spm_map_t *mp;
-
-    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

@@ -40,7 +40,6 @@
 #include <string.h>
 #include "bio.h"
 
-#include "bu/app.h"
 #include "bu/getopt.h"
 #include "vmath.h"
 #include "bn.h"
@@ -79,8 +78,6 @@ main(int argc, char **argv)
     struct rt_wdb	*fpout = NULL;
     size_t doti;
     int	c;
-
-    bu_setprogname(argv[0]);
 
     grp_name = reg_name = NULL;
 

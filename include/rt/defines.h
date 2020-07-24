@@ -33,9 +33,9 @@
 #  if defined(RT_DLL_EXPORTS) && defined(RT_DLL_IMPORTS)
 #    error "Only RT_DLL_EXPORTS or RT_DLL_IMPORTS can be defined, not both."
 #  elif defined(RT_DLL_EXPORTS)
-#    define RT_EXPORT COMPILER_DLLEXPORT
+#    define RT_EXPORT __declspec(dllexport)
 #  elif defined(RT_DLL_IMPORTS)
-#    define RT_EXPORT COMPILER_DLLIMPORT
+#    define RT_EXPORT __declspec(dllimport)
 #  else
 #    define RT_EXPORT
 #  endif

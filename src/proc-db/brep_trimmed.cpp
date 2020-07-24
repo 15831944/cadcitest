@@ -24,7 +24,6 @@
 
 #include "common.h"
 
-#include "bu/app.h"
 #include "wdb.h"
 
 
@@ -624,8 +623,6 @@ int main(int argc, char *argv[])
     const char* id_name = "B-Rep Surface with interior trim";
     const char* geom_name = "brep_trimmed.s";
     fastf_t thickness = 0.0;
-
-    bu_setprogname(argv[0]);
 
     if (argc > 1) {
 	if (BU_STR_EQUAL(argv[1], "-H")) {

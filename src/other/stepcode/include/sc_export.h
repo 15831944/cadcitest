@@ -1,22 +1,14 @@
 #ifndef SC_EXPORT_H
 #define SC_EXPORT_H
 
-#if defined(_WIN32)
-# define COMPILER_DLLEXPORT __declspec(dllexport)
-# define COMPILER_DLLIMPORT __declspec(dllimport)
-#else
-# define COMPILER_DLLEXPORT __attribute__ ((visibility ("default")))
-# define COMPILER_DLLIMPORT __attribute__ ((visibility ("default")))
-#endif
-
 /* Import/Export flags for base. */
 #ifndef SC_BASE_EXPORT
 # if defined(SC_BASE_DLL_EXPORTS) && defined(SC_BASE_DLL_IMPORTS)
 #  error "Only SC_BASE_DLL_EXPORTS or SC_BASE_DLL_IMPORTS can be defined, not both."
 # elif defined(SC_BASE_DLL_EXPORTS)
-#  define SC_BASE_EXPORT COMPILER_DLLEXPORT
+#  define SC_BASE_EXPORT __declspec(dllexport)
 # elif defined(SC_BASE_DLL_IMPORTS)
-#  define SC_BASE_EXPORT COMPILER_DLLIMPORT
+#  define SC_BASE_EXPORT __declspec(dllimport)
 # else
 #  define SC_BASE_EXPORT
 # endif
@@ -27,9 +19,9 @@
 #  if defined(SC_EXPRESS_DLL_EXPORTS) && defined(SC_EXPRESS_DLL_IMPORTS)
 #    error "Only SC_EXPRESS_DLL_EXPORTS or SC_EXPRESS_DLL_IMPORTS can be defined, not both."
 #  elif defined(SC_EXPRESS_DLL_EXPORTS)
-#    define SC_EXPRESS_EXPORT COMPILER_DLLEXPORT
+#    define SC_EXPRESS_EXPORT __declspec(dllexport)
 #  elif defined(SC_EXPRESS_DLL_IMPORTS)
-#    define SC_EXPRESS_EXPORT COMPILER_DLLIMPORT
+#    define SC_EXPRESS_EXPORT __declspec(dllimport)
 #  else
 #    define SC_EXPRESS_EXPORT
 #  endif
@@ -40,9 +32,9 @@
 #  if defined(SC_EXPPP_DLL_EXPORTS) && defined(SC_EXPPP_DLL_IMPORTS)
 #    error "Only SC_EXPPP_DLL_EXPORTS or SC_EXPPP_DLL_IMPORTS can be defined, not both."
 #  elif defined(SC_EXPPP_DLL_EXPORTS)
-#    define SC_EXPPP_EXPORT COMPILER_DLLEXPORT
+#    define SC_EXPPP_EXPORT __declspec(dllexport)
 #  elif defined(SC_EXPPP_DLL_IMPORTS)
-#    define SC_EXPPP_EXPORT COMPILER_DLLIMPORT
+#    define SC_EXPPP_EXPORT __declspec(dllimport)
 #  else
 #    define SC_EXPPP_EXPORT
 #  endif
@@ -53,9 +45,9 @@
 #  if defined(SC_UTILS_DLL_EXPORTS) && defined(SC_UTILS_DLL_IMPORTS)
 #    error "Only SC_UTILS_DLL_EXPORTS or SC_UTILS_DLL_IMPORTS can be defined, not both."
 #  elif defined(SC_UTILS_DLL_EXPORTS)
-#    define SC_UTILS_EXPORT COMPILER_DLLEXPORT
+#    define SC_UTILS_EXPORT __declspec(dllexport)
 #  elif defined(SC_UTILS_DLL_IMPORTS)
-#    define SC_UTILS_EXPORT COMPILER_DLLIMPORT
+#    define SC_UTILS_EXPORT __declspec(dllimport)
 #  else
 #    define SC_UTILS_EXPORT
 #  endif
@@ -66,9 +58,9 @@
 #  if defined(SC_DAI_DLL_EXPORTS) && defined(SC_DAI_DLL_IMPORTS)
 #    error "Only SC_DAI_DLL_EXPORTS or SC_DAI_DLL_IMPORTS can be defined, not both."
 #  elif defined(SC_DAI_DLL_EXPORTS)
-#    define SC_DAI_EXPORT COMPILER_DLLEXPORT
+#    define SC_DAI_EXPORT __declspec(dllexport)
 #  elif defined(SC_DAI_DLL_IMPORTS)
-#    define SC_DAI_EXPORT COMPILER_DLLIMPORT
+#    define SC_DAI_EXPORT __declspec(dllimport)
 #  else
 #    define SC_DAI_EXPORT
 #  endif
@@ -79,9 +71,9 @@
 #  if defined(SC_CORE_DLL_EXPORTS) && defined(SC_CORE_DLL_IMPORTS)
 #    error "Only SC_CORE_DLL_EXPORTS or SC_CORE_DLL_IMPORTS can be defined, not both."
 #  elif defined(SC_CORE_DLL_EXPORTS)
-#    define SC_CORE_EXPORT COMPILER_DLLEXPORT
+#    define SC_CORE_EXPORT __declspec(dllexport)
 #  elif defined(SC_CORE_DLL_IMPORTS)
-#    define SC_CORE_EXPORT COMPILER_DLLIMPORT
+#    define SC_CORE_EXPORT __declspec(dllimport)
 #  else
 #    define SC_CORE_EXPORT
 #  endif
@@ -92,9 +84,9 @@
 #  if defined(SC_EDITOR_DLL_EXPORTS) && defined(SC_EDITOR_DLL_IMPORTS)
 #    error "Only SC_EDITOR_DLL_EXPORTS or SC_EDITOR_DLL_IMPORTS can be defined, not both."
 #  elif defined(SC_EDITOR_DLL_EXPORTS)
-#    define SC_EDITOR_EXPORT COMPILER_DLLEXPORT
+#    define SC_EDITOR_EXPORT __declspec(dllexport)
 #  elif defined(SC_EDITOR_DLL_IMPORTS)
-#    define SC_EDITOR_EXPORT COMPILER_DLLIMPORT
+#    define SC_EDITOR_EXPORT __declspec(dllimport)
 #  else
 #    define SC_EDITOR_EXPORT
 #  endif
@@ -105,9 +97,9 @@
 #  if defined(SC_LAZYFILE_DLL_EXPORTS) && defined(SC_LAZYFILE_DLL_IMPORTS)
 #    error "Only SC_LAZYFILE_DLL_EXPORTS or SC_LAZYFILE_DLL_IMPORTS can be defined, not both."
 #  elif defined(SC_LAZYFILE_DLL_EXPORTS)
-#    define SC_LAZYFILE_EXPORT COMPILER_DLLEXPORT
+#    define SC_LAZYFILE_EXPORT __declspec(dllexport)
 #  elif defined(SC_LAZYFILE_DLL_IMPORTS)
-#    define SC_LAZYFILE_EXPORT COMPILER_DLLIMPORT
+#    define SC_LAZYFILE_EXPORT __declspec(dllimport)
 #  else
 #    define SC_LAZYFILE_EXPORT
 #  endif

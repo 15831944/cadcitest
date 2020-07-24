@@ -14,14 +14,14 @@
 #include "tkInt.h"
 
 typedef enum {TOP, BOTTOM, LEFT, RIGHT} Side;
-static const char *const sideNames[] = {
+static CONST char *sideNames[] = {
     "top", "bottom", "left", "right", NULL
 };
 
-/*
- * For each window that the packer cares about (either because the window is
- * managed by the packer or because the window has slaves that are managed by
- * the packer), there is a structure of the following type:
+/* For each window that the packer cares about (either because
+ * the window is managed by the packer or because the window
+ * has slaves that are managed by the packer), there is a
+ * structure of the following type:
  */
 
 typedef struct Packer {
@@ -32,9 +32,9 @@ typedef struct Packer {
     struct Packer *masterPtr;	/* Master window within which this window is
 				 * packed (NULL means this window isn't
 				 * managed by the packer). */
-    struct Packer *nextPtr;	/* Next window packed within same master. List
-				 * is priority-ordered: first on list gets
-				 * packed first. */
+    struct Packer *nextPtr;	/* Next window packed within same master.
+				 * List is priority-ordered: first on list
+				 * gets packed first. */
     struct Packer *slavePtr;	/* First in list of slaves packed inside this
 				 * window (NULL means no packed slaves). */
     Side side;			/* Side of master against which this window is
@@ -87,8 +87,6 @@ typedef struct Packer {
  *				size. 0 means if this window is a master then
  *				Tk will set its requested size to fit the
  *				needs of its slaves.
- * ALLOCED_MASTER               1 means that Pack has allocated itself as
- *                              geometry master for this window.
  */
 
 #define REQUESTED_REPACK	1
@@ -97,7 +95,6 @@ typedef struct Packer {
 #define EXPAND			8
 #define OLD_STYLE		16
 #define DONT_PROPAGATE		32
-#define ALLOCED_MASTER		64
 
 /*
  * The following structure is the official type record for the packer:
@@ -119,11 +116,11 @@ static const Tk_GeomMgr packerType = {
 
 static void		ArrangePacking(ClientData clientData);
 static int		ConfigureSlaves(Tcl_Interp *interp, Tk_Window tkwin,
-			    int objc, Tcl_Obj *const objv[]);
-static void		DestroyPacker(void *memPtr);
+			    int objc, Tcl_Obj *CONST objv[]);
+static void		DestroyPacker(char *memPtr);
 static Packer *		GetPacker(Tk_Window tkwin);
 static int		PackAfter(Tcl_Interp *interp, Packer *prevPtr,
-			    Packer *masterPtr, int objc,Tcl_Obj *const objv[]);
+			    Packer *masterPtr, int objc,Tcl_Obj *CONST objv[]);
 static void		PackStructureProc(ClientData clientData,
 			    XEvent *eventPtr);
 static void		Unlink(Packer *packPtr);
@@ -131,13 +128,13 @@ static int		XExpansion(Packer *slavePtr, int cavityWidth);
 static int		YExpansion(Packer *slavePtr, int cavityHeight);
 
 /*
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  *
- * TkAppendPadAmount --
+ * TkPrintPadAmount --
  *
  *	This function generates a text value that describes one of the -padx,
  *	-pady, -ipadx, or -ipady configuration options. The text value
- *	generated is appended to the given Tcl_Obj.
+ *	generated is appended to the interpreter result.
  *
  * Results:
  *	None.
@@ -145,33 +142,29 @@ static int		YExpansion(Packer *slavePtr, int cavityHeight);
  * Side effects:
  *	None.
  *
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  */
 
 void
-TkAppendPadAmount(
-    Tcl_Obj *bufferObj,		/* The interpreter into which the result is
+TkPrintPadAmount(
+    Tcl_Interp *interp,		/* The interpreter into which the result is
 				 * written. */
-    const char *switchName,	/* One of "padx", "pady", "ipadx" or
-				 * "ipady" */
+    char *switchName,		/* One of "padx", "pady", "ipadx" or "ipady" */
     int halfSpace,		/* The left or top padding amount */
     int allSpace)		/* The total amount of padding */
 {
-    Tcl_Obj *padding[2];
-
+    char buffer[60 + 2*TCL_INTEGER_SPACE];
     if (halfSpace*2 == allSpace) {
-	Tcl_DictObjPut(NULL, bufferObj, Tcl_NewStringObj(switchName, -1),
-		Tcl_NewIntObj(halfSpace));
+	sprintf(buffer, " -%.10s %d", switchName, halfSpace);
     } else {
-	padding[0] = Tcl_NewIntObj(halfSpace);
-	padding[1] = Tcl_NewIntObj(allSpace - halfSpace);
-	Tcl_DictObjPut(NULL, bufferObj, Tcl_NewStringObj(switchName, -1),
-		Tcl_NewListObj(2, padding));
+	sprintf(buffer, " -%.10s {%d %d}", switchName, halfSpace,
+		allSpace - halfSpace);
     }
+    Tcl_AppendResult(interp, buffer, NULL);
 }
 
 /*
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  *
  * Tk_PackCmd --
  *
@@ -184,7 +177,7 @@ TkAppendPadAmount(
  * Side effects:
  *	See the user documentation.
  *
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  */
 
 int
@@ -192,11 +185,11 @@ Tk_PackObjCmd(
     ClientData clientData,	/* Main window associated with interpreter. */
     Tcl_Interp *interp,		/* Current interpreter. */
     int objc,			/* Number of arguments. */
-    Tcl_Obj *const objv[])	/* Argument objects. */
+    Tcl_Obj *CONST objv[])	/* Argument objects. */
 {
-    Tk_Window tkwin = clientData;
-    const char *argv2;
-    static const char *const optionStrings[] = {
+    Tk_Window tkwin = (Tk_Window) clientData;
+    char *argv2;
+    static CONST char *optionStrings[] = {
 	/* after, append, before and unpack are deprecated */
 	"after", "append", "before", "unpack",
 	"configure", "forget", "info", "propagate", "slaves", NULL };
@@ -206,8 +199,7 @@ Tk_PackObjCmd(
     int index;
 
     if (objc >= 2) {
-	const char *string = Tcl_GetString(objv[1]);
-
+	char *string = Tcl_GetString(objv[1]);
 	if (string[0] == '.') {
 	    return ConfigureSlaves(interp, tkwin, objc-1, objv+1);
 	}
@@ -217,8 +209,8 @@ Tk_PackObjCmd(
 	return TCL_ERROR;
     }
 
-    if (Tcl_GetIndexFromObjStruct(interp, objv[1], optionStrings,
-	    sizeof(char *), "option", 0, &index) != TCL_OK) {
+    if (Tcl_GetIndexFromObj(interp, objv[1], optionStrings, "option", 0,
+	    &index) != TCL_OK) {
 	/*
 	 * Call it again without the deprecated ones to get a proper error
 	 * message. This works well since there can't be any ambiguity between
@@ -226,8 +218,8 @@ Tk_PackObjCmd(
 	 */
 
 	Tcl_ResetResult(interp);
-	Tcl_GetIndexFromObjStruct(interp, objv[1], &optionStrings[4],
-		sizeof(char *), "option", 0, &index);
+	Tcl_GetIndexFromObj(interp, objv[1], &optionStrings[4], "option", 0,
+		&index);
 	return TCL_ERROR;
     }
 
@@ -242,9 +234,8 @@ Tk_PackObjCmd(
 	}
 	prevPtr = GetPacker(tkwin2);
 	if (prevPtr->masterPtr == NULL) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "window \"%s\" isn't packed", argv2));
-	    Tcl_SetErrorCode(interp, "TK", "PACK", "NOT_PACKED", NULL);
+	    Tcl_AppendResult(interp, "window \"", argv2,
+		    "\" isn't packed", NULL);
 	    return TCL_ERROR;
 	}
 	return PackAfter(interp, prevPtr, prevPtr->masterPtr, objc-3, objv+3);
@@ -276,9 +267,8 @@ Tk_PackObjCmd(
 	}
 	packPtr = GetPacker(tkwin2);
 	if (packPtr->masterPtr == NULL) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "window \"%s\" isn't packed", argv2));
-	    Tcl_SetErrorCode(interp, "TK", "PACK", "NOT_PACKED", NULL);
+	    Tcl_AppendResult(interp, "window \"", argv2,
+		    "\" isn't packed", NULL);
 	    return TCL_ERROR;
 	}
 	masterPtr = packPtr->masterPtr;
@@ -299,9 +289,8 @@ Tk_PackObjCmd(
     }
     case PACK_CONFIGURE:
 	if (argv2[0] != '.') {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "bad argument \"%s\": must be name of window", argv2));
-	    Tcl_SetErrorCode(interp, "TK", "VALUE", "WINDOW_PATH", NULL);
+	    Tcl_AppendResult(interp, "bad argument \"", argv2,
+		    "\": must be name of window", NULL);
 	    return TCL_ERROR;
 	}
 	return ConfigureSlaves(interp, tkwin, objc-2, objv+2);
@@ -316,7 +305,8 @@ Tk_PackObjCmd(
 	    }
 	    slavePtr = GetPacker(slave);
 	    if ((slavePtr != NULL) && (slavePtr->masterPtr != NULL)) {
-		Tk_ManageGeometry(slave, NULL, NULL);
+		Tk_ManageGeometry(slave, NULL,
+			(ClientData) NULL);
 		if (slavePtr->masterPtr->tkwin != Tk_Parent(slavePtr->tkwin)) {
 		    Tk_UnmaintainGeometry(slavePtr->tkwin,
 			    slavePtr->masterPtr->tkwin);
@@ -330,7 +320,6 @@ Tk_PackObjCmd(
     case PACK_INFO: {
 	register Packer *slavePtr;
 	Tk_Window slave;
-	Tcl_Obj *infoObj;
 
 	if (objc != 3) {
 	    Tcl_WrongNumArgs(interp, 2, objv, "window");
@@ -341,44 +330,35 @@ Tk_PackObjCmd(
 	}
 	slavePtr = GetPacker(slave);
 	if (slavePtr->masterPtr == NULL) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "window \"%s\" isn't packed", argv2));
-	    Tcl_SetErrorCode(interp, "TK", "PACK", "NOT_PACKED", NULL);
+	    Tcl_AppendResult(interp, "window \"", argv2,
+		    "\" isn't packed", NULL);
 	    return TCL_ERROR;
 	}
-
-	infoObj = Tcl_NewObj();
-	Tcl_DictObjPut(NULL, infoObj, Tcl_NewStringObj("-in", -1),
-		TkNewWindowObj(slavePtr->masterPtr->tkwin));
-	Tcl_DictObjPut(NULL, infoObj, Tcl_NewStringObj("-anchor", -1),
-		Tcl_NewStringObj(Tk_NameOfAnchor(slavePtr->anchor), -1));
-	Tcl_DictObjPut(NULL, infoObj, Tcl_NewStringObj("-expand", -1),
-		Tcl_NewBooleanObj(slavePtr->flags & EXPAND));
+	Tcl_AppendElement(interp, "-in");
+	Tcl_AppendElement(interp, Tk_PathName(slavePtr->masterPtr->tkwin));
+	Tcl_AppendElement(interp, "-anchor");
+	Tcl_AppendElement(interp, Tk_NameOfAnchor(slavePtr->anchor));
+	Tcl_AppendResult(interp, " -expand ",
+		(slavePtr->flags & EXPAND) ? "1" : "0", " -fill ", NULL);
 	switch (slavePtr->flags & (FILLX|FILLY)) {
 	case 0:
-	    Tcl_DictObjPut(NULL, infoObj, Tcl_NewStringObj("-fill", -1),
-		    Tcl_NewStringObj("none", -1));
+	    Tcl_AppendResult(interp, "none", NULL);
 	    break;
 	case FILLX:
-	    Tcl_DictObjPut(NULL, infoObj, Tcl_NewStringObj("-fill", -1),
-		    Tcl_NewStringObj("x", -1));
+	    Tcl_AppendResult(interp, "x", NULL);
 	    break;
 	case FILLY:
-	    Tcl_DictObjPut(NULL, infoObj, Tcl_NewStringObj("-fill", -1),
-		    Tcl_NewStringObj("y", -1));
+	    Tcl_AppendResult(interp, "y", NULL);
 	    break;
 	case FILLX|FILLY:
-	    Tcl_DictObjPut(NULL, infoObj, Tcl_NewStringObj("-fill", -1),
-		    Tcl_NewStringObj("both", -1));
+	    Tcl_AppendResult(interp, "both", NULL);
 	    break;
 	}
-	TkAppendPadAmount(infoObj, "-ipadx", slavePtr->iPadX/2, slavePtr->iPadX);
-	TkAppendPadAmount(infoObj, "-ipady", slavePtr->iPadY/2, slavePtr->iPadY);
-	TkAppendPadAmount(infoObj, "-padx", slavePtr->padLeft,slavePtr->padX);
-	TkAppendPadAmount(infoObj, "-pady", slavePtr->padTop, slavePtr->padY);
-	Tcl_DictObjPut(NULL, infoObj, Tcl_NewStringObj("-side", -1),
-		Tcl_NewStringObj(sideNames[slavePtr->side], -1));
-	Tcl_SetObjResult(interp, infoObj);
+	TkPrintPadAmount(interp, "ipadx", slavePtr->iPadX/2, slavePtr->iPadX);
+	TkPrintPadAmount(interp, "ipady", slavePtr->iPadY/2, slavePtr->iPadY);
+	TkPrintPadAmount(interp, "padx", slavePtr->padLeft, slavePtr->padX);
+	TkPrintPadAmount(interp, "pady", slavePtr->padTop, slavePtr->padY);
+	Tcl_AppendResult(interp, " -side ", sideNames[slavePtr->side], NULL);
 	break;
     }
     case PACK_PROPAGATE: {
@@ -403,16 +383,6 @@ Tk_PackObjCmd(
 	    return TCL_ERROR;
 	}
 	if (propagate) {
-	    /*
-	     * If we have slaves, we need to register as geometry master.
-	     */
-
-	    if (masterPtr->slavePtr != NULL) {
-		if (TkSetGeometryMaster(interp, master, "pack") != TCL_OK) {
-		    return TCL_ERROR;
-		}
-		masterPtr->flags |= ALLOCED_MASTER;
-	    }
 	    masterPtr->flags &= ~DONT_PROPAGATE;
 
 	    /*
@@ -425,13 +395,9 @@ Tk_PackObjCmd(
 	    }
 	    if (!(masterPtr->flags & REQUESTED_REPACK)) {
 		masterPtr->flags |= REQUESTED_REPACK;
-		Tcl_DoWhenIdle(ArrangePacking, masterPtr);
+		Tcl_DoWhenIdle(ArrangePacking, (ClientData) masterPtr);
 	    }
 	} else {
-	    if (masterPtr->flags & ALLOCED_MASTER) {
-		TkFreeGeometryMaster(master, "pack");
-		masterPtr->flags &= ~ALLOCED_MASTER;
-	    }
 	    masterPtr->flags |= DONT_PROPAGATE;
 	}
 	break;
@@ -439,7 +405,6 @@ Tk_PackObjCmd(
     case PACK_SLAVES: {
 	Tk_Window master;
 	Packer *masterPtr, *slavePtr;
-	Tcl_Obj *resultObj;
 
 	if (objc != 3) {
 	    Tcl_WrongNumArgs(interp, 2, objv, "window");
@@ -448,14 +413,11 @@ Tk_PackObjCmd(
 	if (TkGetWindowFromObj(interp, tkwin, objv[2], &master) != TCL_OK) {
 	    return TCL_ERROR;
 	}
-	resultObj = Tcl_NewObj();
 	masterPtr = GetPacker(master);
 	for (slavePtr = masterPtr->slavePtr; slavePtr != NULL;
 		slavePtr = slavePtr->nextPtr) {
-	    Tcl_ListObjAppendElement(NULL, resultObj,
-		    TkNewWindowObj(slavePtr->tkwin));
+	    Tcl_AppendElement(interp, Tk_PathName(slavePtr->tkwin));
 	}
-	Tcl_SetObjResult(interp, resultObj);
 	break;
     }
     case PACK_UNPACK: {
@@ -471,7 +433,8 @@ Tk_PackObjCmd(
 	}
 	packPtr = GetPacker(tkwin2);
 	if ((packPtr != NULL) && (packPtr->masterPtr != NULL)) {
-	    Tk_ManageGeometry(tkwin2, NULL, NULL);
+	    Tk_ManageGeometry(tkwin2, NULL,
+		    (ClientData) NULL);
 	    if (packPtr->masterPtr->tkwin != Tk_Parent(packPtr->tkwin)) {
 		Tk_UnmaintainGeometry(packPtr->tkwin,
 			packPtr->masterPtr->tkwin);
@@ -487,7 +450,7 @@ Tk_PackObjCmd(
 }
 
 /*
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  *
  * PackReqProc --
  *
@@ -501,7 +464,7 @@ Tk_PackObjCmd(
  *	Arranges for tkwin, and all its managed siblings, to be re-packed at
  *	the next idle point.
  *
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  */
 
 	/* ARGSUSED */
@@ -512,17 +475,17 @@ PackReqProc(
     Tk_Window tkwin)		/* Other Tk-related information about the
 				 * window. */
 {
-    register Packer *packPtr = clientData;
+    register Packer *packPtr = (Packer *) clientData;
 
     packPtr = packPtr->masterPtr;
     if (!(packPtr->flags & REQUESTED_REPACK)) {
 	packPtr->flags |= REQUESTED_REPACK;
-	Tcl_DoWhenIdle(ArrangePacking, packPtr);
+	Tcl_DoWhenIdle(ArrangePacking, (ClientData) packPtr);
     }
 }
 
 /*
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  *
  * PackLostSlaveProc --
  *
@@ -535,7 +498,7 @@ PackReqProc(
  * Side effects:
  *	Forgets all packer-related information about the slave.
  *
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  */
 
 	/* ARGSUSED */
@@ -545,7 +508,7 @@ PackLostSlaveProc(
 				 * stolen away. */
     Tk_Window tkwin)		/* Tk's handle for the slave window. */
 {
-    register Packer *slavePtr = clientData;
+    register Packer *slavePtr = (Packer *) clientData;
 
     if (slavePtr->masterPtr->tkwin != Tk_Parent(slavePtr->tkwin)) {
 	Tk_UnmaintainGeometry(slavePtr->tkwin, slavePtr->masterPtr->tkwin);
@@ -555,7 +518,7 @@ PackLostSlaveProc(
 }
 
 /*
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  *
  * ArrangePacking --
  *
@@ -570,7 +533,7 @@ PackLostSlaveProc(
  * Side effects:
  *	The packed slaves of masterPtr may get resized or moved.
  *
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  */
 
 static void
@@ -578,7 +541,7 @@ ArrangePacking(
     ClientData clientData)	/* Structure describing master whose slaves
 				 * are to be re-layed out. */
 {
-    register Packer *masterPtr = clientData;
+    register Packer *masterPtr = (Packer *) clientData;
     register Packer *slavePtr;
     int cavityX, cavityY, cavityWidth, cavityHeight;
 				/* These variables keep track of the
@@ -618,7 +581,7 @@ ArrangePacking(
     }
     masterPtr->abortPtr = &abort;
     abort = 0;
-    Tcl_Preserve(masterPtr);
+    Tcl_Preserve((ClientData) masterPtr);
 
     /*
      * Pass #1: scan all the slaves to figure out the total amount of space
@@ -687,7 +650,7 @@ ArrangePacking(
 	    && !(masterPtr->flags & DONT_PROPAGATE)) {
 	Tk_GeometryRequest(masterPtr->tkwin, maxWidth, maxHeight);
 	masterPtr->flags |= REQUESTED_REPACK;
-	Tcl_DoWhenIdle(ArrangePacking, masterPtr);
+	Tcl_DoWhenIdle(ArrangePacking, (ClientData) masterPtr);
 	goto done;
     }
 
@@ -878,7 +841,7 @@ ArrangePacking(
 
   done:
     masterPtr->abortPtr = NULL;
-    Tcl_Release(masterPtr);
+    Tcl_Release((ClientData) masterPtr);
 }
 
 /*
@@ -925,11 +888,9 @@ XExpansion(
 	childWidth = Tk_ReqWidth(slavePtr->tkwin) + slavePtr->doubleBw
 		+ slavePtr->padX + slavePtr->iPadX;
 	if ((slavePtr->side == TOP) || (slavePtr->side == BOTTOM)) {
-	    if (numExpand) {
-		curExpand = (cavityWidth - childWidth)/numExpand;
-		if (curExpand < minExpand) {
-		    minExpand = curExpand;
-		}
+	    curExpand = (cavityWidth - childWidth)/numExpand;
+	    if (curExpand < minExpand) {
+		minExpand = curExpand;
 	    }
 	} else {
 	    cavityWidth -= childWidth;
@@ -938,11 +899,9 @@ XExpansion(
 	    }
 	}
     }
-    if (numExpand) {
-	curExpand = cavityWidth/numExpand;
-	if (curExpand < minExpand) {
-	    minExpand = curExpand;
-	}
+    curExpand = cavityWidth/numExpand;
+    if (curExpand < minExpand) {
+	minExpand = curExpand;
     }
     return (minExpand < 0) ? 0 : minExpand;
 }
@@ -984,11 +943,9 @@ YExpansion(
 	childHeight = Tk_ReqHeight(slavePtr->tkwin) + slavePtr->doubleBw
 		+ slavePtr->padY + slavePtr->iPadY;
 	if ((slavePtr->side == LEFT) || (slavePtr->side == RIGHT)) {
-	    if (numExpand) {
-		curExpand = (cavityHeight - childHeight)/numExpand;
-		if (curExpand < minExpand) {
-		    minExpand = curExpand;
-		}
+	    curExpand = (cavityHeight - childHeight)/numExpand;
+	    if (curExpand < minExpand) {
+		minExpand = curExpand;
 	    }
 	} else {
 	    cavityHeight -= childHeight;
@@ -997,17 +954,15 @@ YExpansion(
 	    }
 	}
     }
-    if (numExpand) {
-	curExpand = cavityHeight/numExpand;
-	if (curExpand < minExpand) {
-	    minExpand = curExpand;
-	}
+    curExpand = cavityHeight/numExpand;
+    if (curExpand < minExpand) {
+	minExpand = curExpand;
     }
     return (minExpand < 0) ? 0 : minExpand;
 }
 
 /*
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  *
  * GetPacker --
  *
@@ -1022,7 +977,7 @@ YExpansion(
  *	A new packer structure may be created. If so, then a callback is set
  *	up to clean things up when the window is deleted.
  *
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  */
 
 static Packer *
@@ -1048,9 +1003,9 @@ GetPacker(
     hPtr = Tcl_CreateHashEntry(&dispPtr->packerHashTable, (char *) tkwin,
 	    &isNew);
     if (!isNew) {
-	return Tcl_GetHashValue(hPtr);
+	return (Packer *) Tcl_GetHashValue(hPtr);
     }
-    packPtr = ckalloc(sizeof(Packer));
+    packPtr = (Packer *) ckalloc(sizeof(Packer));
     packPtr->tkwin = tkwin;
     packPtr->masterPtr = NULL;
     packPtr->nextPtr = NULL;
@@ -1065,12 +1020,12 @@ GetPacker(
     packPtr->flags = 0;
     Tcl_SetHashValue(hPtr, packPtr);
     Tk_CreateEventHandler(tkwin, StructureNotifyMask,
-	    PackStructureProc, packPtr);
+	    PackStructureProc, (ClientData) packPtr);
     return packPtr;
 }
 
 /*
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  *
  * PackAfter --
  *
@@ -1084,7 +1039,7 @@ GetPacker(
  *	The geometry of the specified windows may change, both now and again
  *	in the future.
  *
- *------------------------------------------------------------------------
+ *--------------------------------------------------------------
  */
 
 static int
@@ -1095,12 +1050,13 @@ PackAfter(
 				 * masterPtr. */
     Packer *masterPtr,		/* Master in which to pack windows. */
     int objc,			/* Number of elements in objv. */
-    Tcl_Obj *const objv[])	/* Array of lists, each containing 2 elements:
+    Tcl_Obj *CONST objv[])	/* Array of lists, each containing 2 elements:
 				 * window name and side against which to
 				 * pack. */
 {
     register Packer *packPtr;
     Tk_Window tkwin, ancestor, parent;
+    int length;
     Tcl_Obj **options;
     int index, optionCount, c;
 
@@ -1112,10 +1068,9 @@ PackAfter(
 
     for ( ; objc > 0; objc -= 2, objv += 2, prevPtr = packPtr) {
 	if (objc < 2) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "wrong # args: window \"%s\" should be followed by options",
-		    Tcl_GetString(objv[0])));
-	    Tcl_SetErrorCode(interp, "TCL", "WRONGARGS", NULL);
+	    Tcl_AppendResult(interp, "wrong # args: window \"",
+		    Tcl_GetString(objv[0]), "\" should be followed by options",
+		    NULL);
 	    return TCL_ERROR;
 	}
 
@@ -1137,10 +1092,8 @@ PackAfter(
 	    }
 	    if (((Tk_FakeWin *) (ancestor))->flags & TK_TOP_HIERARCHY) {
 	    badWindow:
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"can't pack %s inside %s", Tcl_GetString(objv[0]),
-			Tk_PathName(masterPtr->tkwin)));
-		Tcl_SetErrorCode(interp, "TK", "GEOMETRY", "HIERARCHY", NULL);
+		Tcl_AppendResult(interp, "can't pack ", Tcl_GetString(objv[0]),
+			" inside ", Tk_PathName(masterPtr->tkwin), NULL);
 		return TCL_ERROR;
 	    }
 	}
@@ -1169,25 +1122,24 @@ PackAfter(
 	packPtr->flags |= OLD_STYLE;
 	for (index = 0 ; index < optionCount; index++) {
 	    Tcl_Obj *curOptPtr = options[index];
-	    const char *curOpt = Tcl_GetString(curOptPtr);
-	    size_t length = curOptPtr->length;
+	    char *curOpt = Tcl_GetStringFromObj(curOptPtr, &length);
 
 	    c = curOpt[0];
 
 	    if ((c == 't')
-		    && (strncmp(curOpt, "top", length)) == 0) {
+		    && (strncmp(curOpt, "top", (size_t) length)) == 0) {
 		packPtr->side = TOP;
 	    } else if ((c == 'b')
-		    && (strncmp(curOpt, "bottom", length)) == 0) {
+		    && (strncmp(curOpt, "bottom", (size_t) length)) == 0) {
 		packPtr->side = BOTTOM;
 	    } else if ((c == 'l')
-		    && (strncmp(curOpt, "left", length)) == 0) {
+		    && (strncmp(curOpt, "left", (size_t) length)) == 0) {
 		packPtr->side = LEFT;
 	    } else if ((c == 'r')
-		    && (strncmp(curOpt, "right", length)) == 0) {
+		    && (strncmp(curOpt, "right", (size_t) length)) == 0) {
 		packPtr->side = RIGHT;
 	    } else if ((c == 'e')
-		    && (strncmp(curOpt, "expand", length)) == 0) {
+		    && (strncmp(curOpt, "expand", (size_t) length)) == 0) {
 		packPtr->flags |= EXPAND;
 	    } else if ((c == 'f')
 		    && (strcmp(curOpt, "fill")) == 0) {
@@ -1199,10 +1151,8 @@ PackAfter(
 	    } else if ((c == 'p') && (strcmp(curOpt, "padx")) == 0) {
 		if (optionCount < (index+2)) {
 		missingPad:
-		    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			    "wrong # args: \"%s\" option must be"
-			    " followed by screen distance", curOpt));
-		    Tcl_SetErrorCode(interp, "TK", "OLDPACK", "BAD_PARAMETER",
+		    Tcl_AppendResult(interp, "wrong # args: \"", curOpt,
+			    "\" option must be followed by screen distance",
 			    NULL);
 		    return TCL_ERROR;
 		}
@@ -1229,11 +1179,8 @@ PackAfter(
 	    } else if ((c == 'f') && (length > 1)
 		    && (strncmp(curOpt, "frame", (size_t) length) == 0)) {
 		if (optionCount < (index+2)) {
-		    Tcl_SetObjResult(interp, Tcl_NewStringObj(
-			    "wrong # args: \"frame\""
-			    " option must be followed by anchor point", -1));
-		    Tcl_SetErrorCode(interp, "TK", "OLDPACK", "BAD_PARAMETER",
-			    NULL);
+		    Tcl_AppendResult(interp, "wrong # args: \"frame\" ",
+			    "option must be followed by anchor point", NULL);
 		    return TCL_ERROR;
 		}
 		if (Tk_GetAnchorFromObj(interp, options[index+1],
@@ -1242,17 +1189,15 @@ PackAfter(
 		}
 		index++;
 	    } else {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"bad option \"%s\": should be top, bottom, left,"
-			" right, expand, fill, fillx, filly, padx, pady, or"
-			" frame", curOpt));
-		Tcl_SetErrorCode(interp, "TK", "OLDPACK", "BAD_PARAMETER",
-			NULL);
+		Tcl_AppendResult(interp, "bad option \"", curOpt,
+			"\": should be top, bottom, left, right, expand, ",
+			"fill, fillx, filly, padx, pady, or frame", NULL);
 		return TCL_ERROR;
 	    }
 	}
 
 	if (packPtr != prevPtr) {
+
 	    /*
 	     * Unpack this window if it's currently packed.
 	     */
@@ -1280,17 +1225,7 @@ PackAfter(
 		packPtr->nextPtr = prevPtr->nextPtr;
 		prevPtr->nextPtr = packPtr;
 	    }
-	    Tk_ManageGeometry(tkwin, &packerType, packPtr);
-
-	    if (!(masterPtr->flags & DONT_PROPAGATE)) {
-		if (TkSetGeometryMaster(interp, masterPtr->tkwin, "pack")
-			!= TCL_OK) {
-		    Tk_ManageGeometry(tkwin, NULL, NULL);
-		    Unlink(packPtr);
-		    return TCL_ERROR;
-		}
-		masterPtr->flags |= ALLOCED_MASTER;
-	    }
+	    Tk_ManageGeometry(tkwin, &packerType, (ClientData) packPtr);
 	}
     }
 
@@ -1303,7 +1238,7 @@ PackAfter(
     }
     if (!(masterPtr->flags & REQUESTED_REPACK)) {
 	masterPtr->flags |= REQUESTED_REPACK;
-	Tcl_DoWhenIdle(ArrangePacking, masterPtr);
+	Tcl_DoWhenIdle(ArrangePacking, (ClientData) masterPtr);
     }
     return TCL_OK;
 }
@@ -1349,24 +1284,13 @@ Unlink(
     }
     if (!(masterPtr->flags & REQUESTED_REPACK)) {
 	masterPtr->flags |= REQUESTED_REPACK;
-	Tcl_DoWhenIdle(ArrangePacking, masterPtr);
+	Tcl_DoWhenIdle(ArrangePacking, (ClientData) masterPtr);
     }
     if (masterPtr->abortPtr != NULL) {
 	*masterPtr->abortPtr = 1;
     }
 
     packPtr->masterPtr = NULL;
-
-    /*
-     * If we have emptied this master from slaves it means we are no longer
-     * handling it and should mark it as free.
-     */
-
-    if ((masterPtr->slavePtr == NULL) && (masterPtr->flags & ALLOCED_MASTER)) {
-	TkFreeGeometryMaster(masterPtr->tkwin, "pack");
-	masterPtr->flags &= ~ALLOCED_MASTER;
-    }
-
 }
 
 /*
@@ -1389,12 +1313,11 @@ Unlink(
 
 static void
 DestroyPacker(
-    void *memPtr)		/* Info about packed window that is now
+    char *memPtr)		/* Info about packed window that is now
 				 * dead. */
 {
-    register Packer *packPtr = memPtr;
-
-    ckfree(packPtr);
+    register Packer *packPtr = (Packer *) memPtr;
+    ckfree((char *) packPtr);
 }
 
 /*
@@ -1421,20 +1344,20 @@ PackStructureProc(
 				 * eventPtr. */
     XEvent *eventPtr)		/* Describes what just happened. */
 {
-    register Packer *packPtr = clientData;
+    register Packer *packPtr = (Packer *) clientData;
 
     if (eventPtr->type == ConfigureNotify) {
 	if ((packPtr->slavePtr != NULL)
 		&& !(packPtr->flags & REQUESTED_REPACK)) {
 	    packPtr->flags |= REQUESTED_REPACK;
-	    Tcl_DoWhenIdle(ArrangePacking, packPtr);
+	    Tcl_DoWhenIdle(ArrangePacking, (ClientData) packPtr);
 	}
 	if ((packPtr->masterPtr != NULL)
 	        && (packPtr->doubleBw != 2*Tk_Changes(packPtr->tkwin)->border_width)) {
 	    if (!(packPtr->masterPtr->flags & REQUESTED_REPACK)) {
 		packPtr->doubleBw = 2*Tk_Changes(packPtr->tkwin)->border_width;
 		packPtr->masterPtr->flags |= REQUESTED_REPACK;
-		Tcl_DoWhenIdle(ArrangePacking, packPtr->masterPtr);
+		Tcl_DoWhenIdle(ArrangePacking, (ClientData) packPtr->masterPtr);
 	    }
 	}
     } else if (eventPtr->type == DestroyNotify) {
@@ -1446,7 +1369,8 @@ PackStructureProc(
 
 	for (slavePtr = packPtr->slavePtr; slavePtr != NULL;
 		slavePtr = nextPtr) {
-	    Tk_ManageGeometry(slavePtr->tkwin, NULL, NULL);
+	    Tk_ManageGeometry(slavePtr->tkwin, NULL,
+		    (ClientData) NULL);
 	    Tk_UnmapWindow(slavePtr->tkwin);
 	    slavePtr->masterPtr = NULL;
 	    nextPtr = slavePtr->nextPtr;
@@ -1460,10 +1384,10 @@ PackStructureProc(
 	}
 
 	if (packPtr->flags & REQUESTED_REPACK) {
-	    Tcl_CancelIdleCall(ArrangePacking, packPtr);
+	    Tcl_CancelIdleCall(ArrangePacking, (ClientData) packPtr);
 	}
 	packPtr->tkwin = NULL;
-	Tcl_EventuallyFree(packPtr, (Tcl_FreeProc *) DestroyPacker);
+	Tcl_EventuallyFree((ClientData) packPtr, DestroyPacker);
     } else if (eventPtr->type == MapNotify) {
 	/*
 	 * When a master gets mapped, must redo the geometry computation so
@@ -1473,7 +1397,7 @@ PackStructureProc(
 	if ((packPtr->slavePtr != NULL)
 		&& !(packPtr->flags & REQUESTED_REPACK)) {
 	    packPtr->flags |= REQUESTED_REPACK;
-	    Tcl_DoWhenIdle(ArrangePacking, packPtr);
+	    Tcl_DoWhenIdle(ArrangePacking, (ClientData) packPtr);
 	}
     } else if (eventPtr->type == UnmapNotify) {
 	register Packer *packPtr2;
@@ -1515,17 +1439,16 @@ ConfigureSlaves(
     Tk_Window tkwin,		/* Any window in application containing
 				 * slaves. Used to look up slave names. */
     int objc,			/* Number of elements in argv. */
-    Tcl_Obj *const objv[])	/* Argument objects: contains one or more
+    Tcl_Obj *CONST objv[])	/* Argument objects: contains one or more
 				 * window names followed by any number of
 				 * "option value" pairs. Caller must make sure
 				 * that there is at least one window name. */
 {
     Packer *masterPtr, *slavePtr, *prevPtr, *otherPtr;
     Tk_Window other, slave, parent, ancestor;
-    TkWindow *master;
     int i, j, numWindows, tmp, positionGiven;
-    const char *string;
-    static const char *const optionStrings[] = {
+    char *string;
+    static CONST char *optionStrings[] = {
 	"-after", "-anchor", "-before", "-expand", "-fill",
 	"-in", "-ipadx", "-ipady", "-padx", "-pady", "-side", NULL };
     enum options {
@@ -1562,10 +1485,8 @@ ConfigureSlaves(
 	    return TCL_ERROR;
 	}
 	if (Tk_TopWinHierarchy(slave)) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "can't pack \"%s\": it's a top-level window",
-		    Tcl_GetString(objv[j])));
-	    Tcl_SetErrorCode(interp, "TK", "GEOMETRY", "TOPLEVEL", NULL);
+	    Tcl_AppendResult(interp, "can't pack \"", Tcl_GetString(objv[j]),
+		    "\": it's a top-level window", NULL);
 	    return TCL_ERROR;
 	}
 	slavePtr = GetPacker(slave);
@@ -1588,14 +1509,13 @@ ConfigureSlaves(
 
 	for (i = numWindows; i < objc; i+=2) {
 	    if ((i+2) > objc) {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"extra option \"%s\" (option with no value?)",
-			Tcl_GetString(objv[i])));
-		Tcl_SetErrorCode(interp, "TK", "PACK", "BAD_PARAMETER", NULL);
+		Tcl_AppendResult(interp, "extra option \"",
+			Tcl_GetString(objv[i]),
+			"\" (option with no value?)", NULL);
 		return TCL_ERROR;
 	    }
-	    if (Tcl_GetIndexFromObjStruct(interp, objv[i], optionStrings,
-		    sizeof(char *), "option", 0, &index) != TCL_OK) {
+	    if (Tcl_GetIndexFromObj(interp, objv[i], optionStrings, "option",
+		    0, &index) != TCL_OK) {
 		return TCL_ERROR;
 	    }
 
@@ -1609,11 +1529,9 @@ ConfigureSlaves(
 		    prevPtr = GetPacker(other);
 		    if (prevPtr->masterPtr == NULL) {
 		    notPacked:
-			Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-				"window \"%s\" isn't packed",
-				Tcl_GetString(objv[i+1])));
-			Tcl_SetErrorCode(interp, "TK", "PACK", "NOT_PACKED",
-				NULL);
+			Tcl_AppendResult(interp, "window \"",
+				Tcl_GetString(objv[i+1]),
+				"\" isn't packed", NULL);
 			return TCL_ERROR;
 		    }
 		    masterPtr = prevPtr->masterPtr;
@@ -1668,10 +1586,8 @@ ConfigureSlaves(
 		} else if (strcmp(string, "both") == 0) {
 		    slavePtr->flags |= FILLX|FILLY;
 		} else {
-		    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			    "bad fill style \"%s\": must be "
-			    "none, x, y, or both", string));
-		    Tcl_SetErrorCode(interp, "TK", "VALUE", "FILL", NULL);
+		    Tcl_AppendResult(interp, "bad fill style \"", string,
+			    "\": must be none, x, y, or both", NULL);
 		    return TCL_ERROR;
 		}
 		break;
@@ -1693,22 +1609,24 @@ ConfigureSlaves(
 		break;
 	    case CONF_IPADX:
 		if ((Tk_GetPixelsFromObj(interp, slave, objv[i+1], &tmp)
-			!= TCL_OK) || (tmp < 0)) {
-		    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			    "bad ipadx value \"%s\": must be positive screen"
-			    " distance", Tcl_GetString(objv[i+1])));
-		    Tcl_SetErrorCode(interp, "TK", "VALUE", "INT_PAD", NULL);
+			!= TCL_OK)
+			|| (tmp < 0)) {
+		    Tcl_ResetResult(interp);
+		    Tcl_AppendResult(interp, "bad ipadx value \"",
+			    Tcl_GetString(objv[i+1]),
+			    "\": must be positive screen distance", NULL);
 		    return TCL_ERROR;
 		}
 		slavePtr->iPadX = tmp * 2;
 		break;
 	    case CONF_IPADY:
 		if ((Tk_GetPixelsFromObj(interp, slave, objv[i+1], &tmp)
-			!= TCL_OK) || (tmp < 0)) {
-		    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			    "bad ipady value \"%s\": must be positive screen"
-			    " distance", Tcl_GetString(objv[i+1])));
-		    Tcl_SetErrorCode(interp, "TK", "VALUE", "INT_PAD", NULL);
+			!= TCL_OK)
+			|| (tmp < 0)) {
+		    Tcl_ResetResult(interp);
+		    Tcl_AppendResult(interp, "bad ipady value \"",
+			    Tcl_GetString(objv[i+1]),
+			    "\": must be positive screen distance", NULL);
 		    return TCL_ERROR;
 		}
 		slavePtr->iPadY = tmp * 2;
@@ -1726,8 +1644,8 @@ ConfigureSlaves(
 		}
 		break;
 	    case CONF_SIDE:
-		if (Tcl_GetIndexFromObjStruct(interp, objv[i+1], sideNames,
-			sizeof(char *), "side", TCL_EXACT, &side) != TCL_OK) {
+		if (Tcl_GetIndexFromObj(interp, objv[i+1], sideNames, "side",
+			TCL_EXACT, &side) != TCL_OK) {
 		    return TCL_ERROR;
 		}
 		slavePtr->side = (Side) side;
@@ -1785,36 +1703,15 @@ ConfigureSlaves(
 		break;
 	    }
 	    if (Tk_TopWinHierarchy(ancestor)) {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-			"can't pack %s inside %s", Tcl_GetString(objv[j]),
-			Tk_PathName(masterPtr->tkwin)));
-		Tcl_SetErrorCode(interp, "TK", "GEOMETRY", "HIERARCHY", NULL);
+		Tcl_AppendResult(interp, "can't pack ", Tcl_GetString(objv[j]),
+			" inside ", Tk_PathName(masterPtr->tkwin), NULL);
 		return TCL_ERROR;
 	    }
 	}
 	if (slave == masterPtr->tkwin) {
-	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "can't pack %s inside itself", Tcl_GetString(objv[j])));
-	    Tcl_SetErrorCode(interp, "TK", "GEOMETRY", "SELF", NULL);
+	    Tcl_AppendResult(interp, "can't pack ", Tcl_GetString(objv[j]),
+		    " inside itself", NULL);
 	    return TCL_ERROR;
-	}
-
-	/*
-	 * Check for management loops.
-	 */
-
-	for (master = (TkWindow *)masterPtr->tkwin; master != NULL;
-	     master = (TkWindow *)TkGetGeomMaster(master)) {
-	    if (master == (TkWindow *)slave) {
-		Tcl_SetObjResult(interp, Tcl_ObjPrintf(
-		    "can't put %s inside %s, would cause management loop",
-	            Tcl_GetString(objv[j]), Tk_PathName(masterPtr->tkwin)));
-		Tcl_SetErrorCode(interp, "TK", "GEOMETRY", "LOOP", NULL);
-		return TCL_ERROR;
-	    }
-	}
-	if (masterPtr->tkwin != Tk_Parent(slave)) {
-	    ((TkWindow *)slave)->maintainerPtr = (TkWindow *)masterPtr->tkwin;
 	}
 
 	/*
@@ -1831,7 +1728,6 @@ ConfigureSlaves(
 	    }
 	    Unlink(slavePtr);
 	}
-
 	slavePtr->masterPtr = masterPtr;
 	if (prevPtr == NULL) {
 	    slavePtr->nextPtr = masterPtr->slavePtr;
@@ -1840,18 +1736,8 @@ ConfigureSlaves(
 	    slavePtr->nextPtr = prevPtr->nextPtr;
 	    prevPtr->nextPtr = slavePtr;
 	}
-	Tk_ManageGeometry(slave, &packerType, slavePtr);
+	Tk_ManageGeometry(slave, &packerType, (ClientData) slavePtr);
 	prevPtr = slavePtr;
-
-	if (!(masterPtr->flags & DONT_PROPAGATE)) {
-	    if (TkSetGeometryMaster(interp, masterPtr->tkwin, "pack")
-		    != TCL_OK) {
-		Tk_ManageGeometry(slave, NULL, NULL);
-		Unlink(slavePtr);
-		return TCL_ERROR;
-	    }
-	    masterPtr->flags |= ALLOCED_MASTER;
-	}
 
 	/*
 	 * Arrange for the master to be re-packed at the first idle moment.
@@ -1863,7 +1749,7 @@ ConfigureSlaves(
 	}
 	if (!(masterPtr->flags & REQUESTED_REPACK)) {
 	    masterPtr->flags |= REQUESTED_REPACK;
-	    Tcl_DoWhenIdle(ArrangePacking, masterPtr);
+	    Tcl_DoWhenIdle(ArrangePacking, (ClientData) masterPtr);
 	}
     }
     return TCL_OK;

@@ -39,7 +39,6 @@
 
 #include "bio.h" /* for b_off_t */
 
-#include "bu/app.h"
 #include "bu/file.h"
 #include "bu/malloc.h"
 #include "bu/exit.h"
@@ -122,8 +121,6 @@ main(int argc, char **argv)
     size_t ret;
 
     int atoival;
-
-    bu_setprogname(argv[0]);
 
     if (argc < 3) {
 	bu_exit(1, "%s", usage);
