@@ -13,8 +13,6 @@ jobs:
     - name: configure
       run: mkdir build && cd build && cmake --version && cmake .. && more CMakeCache.txt && ls -R
     - name: build
-      run: cd build && make distcheck && more distcheck-enableall_debug.log && more distcheck-enableall_release.log
-      #- name: configure2
-      #run: cd build && make distclean && cmake .. -DENABLE_ALL=ON && more CMakeCache.txt && ls -R
-      #- name: build2
-      #run: cd build && make && make check
+      run: cd build && make distcheck
+    - name: info
+      run: cd build && more distcheck-enableall_debug.log && more distcheck-enableall_release.log
