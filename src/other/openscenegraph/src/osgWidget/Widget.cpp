@@ -1,5 +1,5 @@
 // -*-c++-*- osgWidget - Code by: Jeremy Moles (cubicool) 2007-2008
-// $Id: Widget.cpp 64 2008-06-30 21:32:00Z cubicool $
+// $Id$
 
 #include <osg/io_utils>
 #include <osg/Math>
@@ -339,7 +339,8 @@ bool Widget::setImage(const std::string& filePath, bool setTexCoords, bool useTe
         return false;
     }
 
-    return setImage(osgDB::readImageFile(filePath), setTexCoords, useTextRect);
+    osg::ref_ptr<osg::Image> image = osgDB::readRefImageFile(filePath);
+    return setImage(image.get(), setTexCoords, useTextRect);
 }
 
 bool Widget::setTexture(osg::Texture* texture, bool setTexCoords, bool useTextRect) {

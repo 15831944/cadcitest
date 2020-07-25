@@ -1,4 +1,4 @@
-/* $Id: tiffiop.h,v 1.90 2016-12-02 21:56:56 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

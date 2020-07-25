@@ -39,6 +39,7 @@
 
 #include "bio.h"
 
+#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
 #include "bu/file.h"
@@ -46,7 +47,7 @@
 #include "bu/log.h"
 #include "bu/snooze.h"
 #include "vmath.h"
-#include "fb.h"
+#include "dm.h"
 
 #include "pkg.h"
 
@@ -213,8 +214,10 @@ int
 main(int argc, char **argv)
 {
     int y;
-    fb *fbp;
+    struct fb *fbp;
     int xout, yout, n, m, xstart, xskip;
+
+    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

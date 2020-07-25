@@ -1,4 +1,4 @@
-/* $Id: substr.cc 860 2008-04-09 22:57:45Z nuno-lopes $ */
+/* $Id$ */
 #include <string.h>
 #include <stdlib.h>
 #include "substr.h"

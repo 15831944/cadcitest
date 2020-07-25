@@ -47,11 +47,12 @@
 #include "bio.h"
 
 #include "vmath.h"
+#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
 #include "bu/exit.h"
 #include "bn.h"
-#include "fb.h"
+#include "dm.h"
 
 
 #define CHAR	1
@@ -393,6 +394,7 @@ wlt_reconstruct_2d(void)
 int
 main(int ac, char **av)
 {
+    bu_setprogname(av[0]);
 
     /* parse command flags, and make sure there are arguments
      * left over for processing.

@@ -1,4 +1,4 @@
-/* $Id: main.cc 858 2008-04-03 20:53:44Z helly $ */
+/* $Id$ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #elif defined(_WIN32)

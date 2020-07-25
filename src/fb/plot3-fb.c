@@ -79,12 +79,13 @@
 
 #include "bio.h"
 
+#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/cv.h"
 #include "bu/getopt.h"
 #include "bu/process.h"
 #include "bu/exit.h"
-#include "fb.h"
+#include "dm.h"
 #include "bn/plot3.h"
 
 #define COMMA ','
@@ -319,7 +320,7 @@ static int sigs[] = {
 
 
 static FILE *pfin;		/* input file FIO block ptr */
-fb *fbp;			/* Current framebuffer */
+struct fb *fbp;			/* Current framebuffer */
 
 
 /*
@@ -1355,6 +1356,8 @@ int
 main(int argc, char **argv)
 {
     Nscanlines = Npixels = 512;
+
+    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

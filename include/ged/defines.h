@@ -42,9 +42,9 @@ __BEGIN_DECLS
 #  if defined(GED_DLL_EXPORTS) && defined(GED_DLL_IMPORTS)
 #    error "Only GED_DLL_EXPORTS or GED_DLL_IMPORTS can be defined, not both."
 #  elif defined(GED_DLL_EXPORTS)
-#    define GED_EXPORT __declspec(dllexport)
+#    define GED_EXPORT COMPILER_DLLEXPORT
 #  elif defined(GED_DLL_IMPORTS)
-#    define GED_EXPORT __declspec(dllimport)
+#    define GED_EXPORT COMPILER_DLLIMPORT
 #  else
 #    define GED_EXPORT
 #  endif
@@ -170,6 +170,9 @@ struct ged_drawable {
     int				gd_shaded_mode;		/**< @brief  1 - draw bots shaded by default */
 };
 
+
+typedef void (*ged_io_handler_callback_t)(void *, int);
+
 struct ged_cmd;
 
 /* struct details are private - use accessor functions to manipulate */
@@ -199,10 +202,8 @@ struct ged {
 
     struct ged_drawable		*ged_gdp;
     struct bview		*ged_gvp;
-    struct fbserv_obj		*ged_fbsp; /* FIXME: this shouldn't be here */
     struct bu_hash_tbl		*ged_selections; /**< @brief object name -> struct rt_object_selections */
 
-    void			*ged_dmp;
     void			*ged_refresh_clientdata;	/**< @brief  client data passed to refresh handler */
     void			(*ged_refresh_handler)(void *);	/**< @brief  function for handling refresh requests */
     void			(*ged_output_handler)(struct ged *, char *);	/**< @brief  function for handling output */
@@ -213,6 +214,11 @@ struct ged {
 
     /* FIXME -- this ugly hack needs to die.  the result string should be stored before the call. */
     int 			ged_internal_call;
+
+    /* Handler functions for I/O communication with asynchronous subprocess commands */
+    int io_mode;
+    void (*ged_create_io_handler)(void **chan, struct bu_process *p, int fd, int mode, void *data, ged_io_handler_callback_t callback);
+    void (*ged_delete_io_handler)(void *interp, void *chan, struct bu_process *p, int fd, void *data, ged_io_handler_callback_t callback);
 
     /* FOR LIBGED INTERNAL USE */
     struct ged_cmd *cmds;
@@ -225,13 +231,8 @@ struct ged {
     void *ged_interp; /* Temporary - do not rely on when designing new functionality */
     db_search_callback_t ged_interp_eval; /* FIXME: broke the rule written on the previous line */
 
-
     /* Interface to LIBDM */
-    int ged_dm_width;
-    int ged_dm_height;
-    int ged_dmp_is_null;
-    void (*ged_dm_get_display_image)(struct ged *, unsigned char **);
-
+    void *ged_dmp;
 };
 
 typedef int (*ged_func_ptr)(struct ged *, int, const char *[]);

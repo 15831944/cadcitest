@@ -32,7 +32,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-static const char rcsid[] = "$Id: htmlinline.c,v 1.60 2008/01/12 14:23:05 danielk1977 Exp $";
+static const char rcsid[] = "$Id$";
 
 #include "htmllayout.h"
 #include <stdio.h>

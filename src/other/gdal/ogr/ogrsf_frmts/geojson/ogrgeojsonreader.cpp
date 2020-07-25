@@ -33,7 +33,7 @@
 #include <json.h> // JSON-C
 #include <ogr_api.h>
 
-CPL_CVSID("$Id: ogrgeojsonreader.cpp 38123 2017-04-23 11:20:44Z rouault $");
+CPL_CVSID("$Id$");
 
 /************************************************************************/
 /*                           OGRGeoJSONReader                           */

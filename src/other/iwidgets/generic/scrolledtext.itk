@@ -11,7 +11,7 @@
 # ----------------------------------------------------------------------
 #  AUTHOR: Mark L. Ulferts              EMAIL: mulferts@austin.dsccc.com
 #
-#  @(#) $Id: scrolledtext.itk 44710 2011-05-27 22:29:28Z starseeker $
+#  @(#) $Id$
 # ----------------------------------------------------------------------
 #            Copyright (c) 1995 DSC Technologies Corporation
 # ======================================================================
@@ -40,11 +40,11 @@
 # Usual options.
 #
 itk::usual Scrolledtext {
-    keep -background -borderwidth -cursor \
-	 -foreground -highlightcolor -highlightthickness \
+    keep -activebackground -activerelief -background -borderwidth -cursor \
+	 -elementborderwidth -foreground -highlightcolor -highlightthickness \
 	 -insertbackground -insertborderwidth -insertofftime -insertontime \
-	 -insertwidth -labelfont -selectbackground -selectborderwidth \
-	 -selectforeground -textbackground -textfont
+	 -insertwidth -jump -labelfont -selectbackground -selectborderwidth \
+	 -selectforeground -textbackground -textfont -troughcolor 
 }
 
 # ------------------------------------------------------------------

@@ -49,6 +49,7 @@
 #include "bio.h"
 #include "bresource.h"
 #include "bsocket.h"
+#include "bu/app.h"
 
 /* decls for strict c90 */
 
@@ -77,7 +78,7 @@ extern int gettimeofday(struct timeval *, void *);
 #include "bn.h"
 #include "raytrace.h"
 #include "optical.h"
-#include "fb.h"
+#include "dm.h"
 #include "pkg.h"
 
 /* private */
@@ -215,7 +216,7 @@ struct servers {
 } servers[MAXSERVERS];
 
 
-fb *fbp = FB_NULL;		/* Current framebuffer ptr */
+struct fb *fbp = FB_NULL;		/* Current framebuffer ptr */
 int cur_fbwidth;		/* current fb width */
 int fbwidth;			/* fb width - S command */
 int fbheight;			/* fb height - S command */
@@ -3533,6 +3534,8 @@ main(int argc, char *argv[])
 {
     struct servers *sp;
     int i, done;
+
+    bu_setprogname(argv[0]);
 
     /* Random inits */
     our_hostname = get_our_hostname();

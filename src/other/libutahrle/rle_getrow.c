@@ -27,10 +27,10 @@
  * Date:	Wed Apr 10 1985
  * Copyright (c) 1985 Spencer W. Thomas
  *
- * $Id: rle_getrow.c 29840 2007-12-20 20:36:39Z bob1961 $
+ * $Id$
  */
 #ifndef lint
-static char rcs_ident[] = "$Id: rle_getrow.c 29840 2007-12-20 20:36:39Z bob1961 $";
+static char rcs_ident[] = "$Id$";
 #endif
 
 #include "stdio.h"

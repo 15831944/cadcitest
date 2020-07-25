@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: safileio.c,v 1.4 2008-01-16 20:05:14 bram Exp $
+ * $Id$
  *
  * Project:  Shapelib
  * Purpose:  Default implementation of file io based on stdio.
@@ -33,7 +33,7 @@
  * DEALINGS IN THE SOFTWARE.
  ******************************************************************************
  *
- * $Log: safileio.c,v $
+ * $Log$
  * Revision 1.4  2008-01-16 20:05:14  bram
  * Add file hooks that accept UTF-8 encoded filenames on some platforms.  Use SASetupUtf8Hooks
  *  tosetup the hooks and check SHPAPI_UTF8_HOOKS for its availability.  Currently, this

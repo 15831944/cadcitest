@@ -1,4 +1,4 @@
-/* $Id: code.h 525 2006-05-25 13:32:49Z helly $ */
+/* $Id$ */
 #ifndef _code_h
 #define _code_h
 

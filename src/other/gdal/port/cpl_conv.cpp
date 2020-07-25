@@ -44,6 +44,10 @@
 #define _XOPEN_SOURCE 700
 #endif
 
+#if defined(__OpenBSD__)
+#  undef _XOPEN_SOURCE
+#endif
+
 // For atoll (at least for NetBSD)
 #define _ISOC99_SOURCE
 
@@ -81,7 +85,7 @@
 // Uncomment to get list of options that have been fetched and set.
 // #define DEBUG_CONFIG_OPTIONS
 
-CPL_CVSID("$Id: cpl_conv.cpp 37987 2017-04-14 07:42:50Z rouault $");
+CPL_CVSID("$Id$");
 
 static CPLMutex *hConfigMutex = NULL;
 static volatile char **g_papszConfigOptions = NULL;

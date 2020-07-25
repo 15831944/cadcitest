@@ -1,4 +1,4 @@
-/* $Id: tif_compress.c,v 1.25 2016-10-25 20:04:22 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

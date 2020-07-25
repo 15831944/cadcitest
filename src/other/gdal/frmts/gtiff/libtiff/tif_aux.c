@@ -1,4 +1,4 @@
-/* $Id: tif_aux.c,v 1.29 2016-11-11 20:45:53 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1991-1997 Sam Leffler

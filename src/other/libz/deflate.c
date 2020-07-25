@@ -47,7 +47,7 @@
  *
  */
 
-/* @(#) $Id: deflate.c 69900 2017-06-08 22:07:34Z starseeker $ */
+/* @(#) $Id$ */
 
 #include "deflate.h"
 

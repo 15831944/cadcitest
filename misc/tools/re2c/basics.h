@@ -1,4 +1,4 @@
-/* $Id: basics.h 520 2006-05-25 13:31:06Z helly $ */
+/* $Id$ */
 #ifndef _basics_h
 #define _basics_h
 

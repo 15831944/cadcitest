@@ -32,14 +32,15 @@
 
 #include "bio.h"
 
+#include "bu/app.h"
 #include "bu/str.h"
 #include "bu/exit.h"
-#include "fb.h"
+#include "dm.h"
 
 
 long bin[256];
 int verbose = 0;
-fb *fbp;
+struct fb *fbp;
 
 static char *Usage = "Usage: bwhist [-v] [file.bw]\n";
 
@@ -55,6 +56,8 @@ main(int argc, char **argv)
     unsigned char *bp;
     unsigned char white[3*512];
     FILE *fp;
+
+    bu_setprogname(argv[0]);
 
     if (BU_STR_EQUAL(argv[1], "-h") || BU_STR_EQUAL(argv[1], "-?"))
 	bu_exit(1, "%s", Usage);

@@ -31,11 +31,12 @@
 
 #include "bio.h"
 
+#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/getopt.h"
 #include "bu/exit.h"
 #include "vmath.h"
-#include "fb.h"
+#include "dm.h"
 
 
 #define LINELEN 8192
@@ -113,7 +114,7 @@ get_args(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
-    fb *fbp;
+    struct fb *fbp;
 
     int x, y;
     int xin, yin;		/* number of screen output lines */
@@ -123,6 +124,8 @@ main(int argc, char **argv)
 	[-s squaresize] [-w width] [-n height] [file.bw]\n";
 
     height = width = 512;		/* Defaults */
+
+    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

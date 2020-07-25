@@ -37,7 +37,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  * COPYRIGHT:
  */
-static const char rcsid[] = "$Id: htmlfloat.c,v 1.21 2006/10/27 15:19:18 danielk1977 Exp $";
+static const char rcsid[] = "$Id$";
 
 #include <assert.h>
 #include "html.h"

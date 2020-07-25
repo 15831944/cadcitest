@@ -1,14 +1,12 @@
 /* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 /*
- *  Main authors:
- *     Vincent Barichard <Vincent.Barichard@univ-angers.fr>
+ *  Main authors: Vincent Barichard <Vincent.Barichard@univ-angers.fr>
  *
- *  Copyright:
- *     Vincent Barichard, 2012
+ *  Copyright (c) 2012 Vincent Barichard
  *
  *  Last modified:
- *     $Date: 2013-07-08 14:22:40 +0200 (Mon, 08 Jul 2013) $ by $Author: schulte $
- *     $Revision: 13820 $
+ *     $Date$ by $Author$
+ *     $Revision$
  *
  *  This file is part of Gecode, the generic constraint
  *  development environment:
@@ -41,6 +39,8 @@
 
 #include <gecode/minimodel.hh>
 #include <gecode/float.hh>
+
+#include "bu/app.h"
 
 using namespace Gecode;
 
@@ -112,6 +112,7 @@ public:
  *  \relates CartesianHeart
  */
 int main(int argc, char* argv[]) {
+  bu_setprogname(argv[0]);
   Options opt("CartesianHeart");
   opt.parse(argc,argv);
   opt.solutions(0);

@@ -1,4 +1,4 @@
-/* $Id: tif_pixarlog.c,v 1.49 2016-12-02 23:05:51 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1996-1997 Sam Leffler

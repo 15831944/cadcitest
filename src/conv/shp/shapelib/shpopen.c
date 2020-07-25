@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: shpopen.c,v 1.64 2010-01-28 11:34:34 fwarmerdam Exp $
+ * $Id$
  *
  * Project:  Shapelib
  * Purpose:  Implementation of core Shapefile read/write functions.
@@ -33,7 +33,7 @@
  * DEALINGS IN THE SOFTWARE.
  ******************************************************************************
  *
- * $Log: shpopen.c,v $
+ * $Log$
  * Revision 1.64  2010-01-28 11:34:34  fwarmerdam
  * handle the shape file length limits more gracefully (#3236)
  *

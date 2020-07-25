@@ -31,7 +31,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 static char const rcsid[] =
-        "@(#) $Id: htmlparse.c,v 1.121 2007/12/08 15:33:00 danielk1977 Exp $";
+        "@(#) $Id$";
 
 #include <string.h>
 #include <stdlib.h>

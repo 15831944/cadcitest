@@ -1,4 +1,4 @@
-/* $Id: cpl_minizip_unzip.h 35921 2016-10-25 02:28:29Z goatbar $ */
+/* $Id$ */
 /* Modified version by Even Rouault. :
      - Addition of cpl_unzGetCurrentFileZStreamPos
      - Decoration of symbol names unz* -> cpl_unz*
@@ -64,7 +64,7 @@ extern "C" {
 #endif
 
 #ifndef _ZLIB_H
-#include <zlib.h>
+#include "zlib.h"
 #endif
 
 #ifndef CPL_MINIZIP_IOAPI_H_INCLUDED

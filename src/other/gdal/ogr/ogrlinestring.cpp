@@ -34,7 +34,7 @@
 #include <cstdlib>
 #include <algorithm>
 
-CPL_CVSID("$Id: ogrlinestring.cpp 36883 2016-12-15 13:31:12Z rouault $");
+CPL_CVSID("$Id$");
 
 /************************************************************************/
 /*                           OGRSimpleCurve()                           */

@@ -45,10 +45,13 @@ set(density_DATAFILES
   )
 BRLCAD_ADDDATA(density_DATAFILES data)
 
+add_subdirectory(nirt)
+
 BRLCAD_ADDDATA(profont/ProFont.ttf fonts)
 
 BRLCAD_ADDDATA(nsis/brlcad.ico icons)
 BRLCAD_ADDDATA(nsis/archer.ico icons)
+
 
 add_subdirectory(doxygen)
 add_subdirectory(CMake)
@@ -206,6 +209,7 @@ set(misc_ignore_files
   repoconv/custom/r29886_tags.fi
   repoconv/cvs_authormap
   repoconv/cvs_repaired/sphflake.pix,v
+  repoconv/gitattributes
   repoconv/gitignore.tar.gz
   repoconv/manual_merge_info.tar.gz
   repoconv/md5.hpp
@@ -239,6 +243,7 @@ set(misc_ignore_files
   repoconv/svn_date.cxx
   repoconv/svn_date.h
   repoconv/svn_de-rcs.cxx
+  repoconv/svn_git_diff.cxx
   repoconv/svn_map_commit_revs.cxx
   repoconv/svn_msgs.cxx
   repoconv/svnfexport.cxx
@@ -246,7 +251,20 @@ set(misc_ignore_files
   repoconv/svnfexport_svn.cxx
   repoconv/sync_commit.sh
   repoconv/sync_commit_trunk.sh
+  repoconv/tagmap.sh
   repoconv/terra.dsp
+  repowork/COPYING
+  repowork/README
+  repowork/blob.cpp
+  repowork/TextFlow.hpp
+  repowork/repowork.cpp
+  repowork/reset.cpp
+  repowork/misc_cmds.cpp
+  repowork/cxxopts.hpp
+  repowork/tag.cpp
+  repowork/repowork.h
+  repowork/commit.cpp
+  repowork/CMakeLists.txt
   win32-msvc/CMakeLists.txt
   win32-msvc/Dll/BrlcadCore.def
   win32-msvc/Dll/BrlcadCore.rc

@@ -1,4 +1,4 @@
-/* $Id: tif_luv.c,v 1.45 2017-01-11 20:33:35 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1997 Greg Ward Larson

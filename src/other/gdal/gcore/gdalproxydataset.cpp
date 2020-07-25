@@ -38,7 +38,7 @@
 #include "gdal.h"
 #include "gdal_priv.h"
 
-CPL_CVSID("$Id: gdalproxydataset.cpp 36526 2016-11-27 15:46:54Z goatbar $");
+CPL_CVSID("$Id$");
 
 /*! @cond Doxygen_Suppress */
 /* ******************************************************************** */

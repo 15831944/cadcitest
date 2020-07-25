@@ -30,11 +30,12 @@
 #include "bio.h"
 
 #include "vmath.h"
+#include "bu/app.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
 #include "bu/exit.h"
 #include "bn.h"
-#include "fb.h"
+#include "dm.h"
 
 
 static unsigned char *scanline;		/* 1 scanline pixel buffer */
@@ -119,6 +120,8 @@ main(int argc, char **argv)
 {
     int r, g, b;
     size_t i;
+
+    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

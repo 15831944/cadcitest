@@ -1,5 +1,5 @@
 /*
- * $Id: scanargs.c 29840 2007-12-20 20:36:39Z bob1961 $
+ * $Id$
  * 		Version 7 compatible
  * 	Argument scanner, scans argv style argument list.
  *

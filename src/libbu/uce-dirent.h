@@ -1,6 +1,9 @@
 /*
  * uce-dirent.h - operating system independent dirent implementation
  *
+ * TODO - see if https://github.com/tronkko/dirent has any logic for
+ * newer Windows systems we should be using here...
+ *
  * Copyright (C) 1998-2002  Toni Ronkko
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -25,9 +28,9 @@
  *
  * May 28 1998, Toni Ronkko <tronkko@messi.uku.fi>
  *
- * $Id: uce-dirent.h,v 1.7 2002/05/13 10:48:35 tr Exp $
+ * $Id$
  *
- * $Log: uce-dirent.h,v $
+ * $Log$
  * Revision 1.7  2002/05/13 10:48:35  tr
  * embedded some source code directly to the header so that no source
  * modules need to be included in the MS Visual C project using the

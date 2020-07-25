@@ -1,4 +1,4 @@
-/* $Id: tiffio.h,v 1.94 2017-01-11 19:02:49 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

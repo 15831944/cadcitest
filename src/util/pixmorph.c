@@ -45,12 +45,13 @@
 #include "bio.h"
 
 #include "vmath.h"
+#include "bu/app.h"
 #include "bu/color.h"
 #include "bu/getopt.h"
 #include "bu/malloc.h"
 #include "bu/exit.h"
 #include "bn.h"
-#include "fb.h"
+#include "dm.h"
 
 
 /* Adapted from an assignment for
@@ -413,6 +414,8 @@ main(int argc, char **argv)
     struct lineseg *lines;
     long int i;
     long int autosize;
+
+    bu_setprogname(argv[0]);
 
     autosize = 1L;
     pa_width = pa_height = 0;

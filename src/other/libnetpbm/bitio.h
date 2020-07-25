@@ -1,5 +1,5 @@
 /*\
- * $Id: bitio.h,v 1.4 1992/11/24 19:37:02 dws Exp dws $
+ * $Id$
  *
  * bitio.h - bitstream I/O
  *
@@ -14,7 +14,7 @@
  * in supporting documentation.  This software is provided "as is"
  * without express or implied warranty.
  *
- * $Log: bitio.h,v $
+ * $Log$
  * Revision 1.4  1992/11/24  19:37:02  dws
  * Added copyright
  *

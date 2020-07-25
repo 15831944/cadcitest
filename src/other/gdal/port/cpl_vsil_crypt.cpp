@@ -44,7 +44,7 @@ void CPL_DLL VSIInstallCryptFileHandler();
 void CPL_DLL VSISetCryptKey( const GByte* pabyKey, int nKeySize );
 CPL_C_END
 
-CPL_CVSID("$Id: cpl_vsil_crypt.cpp 37003 2016-12-23 14:54:07Z goatbar $");
+CPL_CVSID("$Id$");
 
 static const char VSICRYPT_PREFIX[] = "/vsicrypt/";
 

@@ -29,7 +29,7 @@
 
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <png.h>
+#include "png.h"
 
 #include "bio.h"
 
@@ -38,7 +38,7 @@
 #include "bu/log.h"
 #include "bu/malloc.h"
 #include "vmath.h"
-#include "fb.h"
+#include "dm.h"
 
 #include "pkg.h"
 
@@ -128,7 +128,7 @@ main(int argc, char **argv)
     static int scanpix;			/* # of pixels of scanline */
     static ColorMap cmap;		/* libfb color map */
 
-    fb *fbp;
+    struct fb *fbp;
     int y;
     int got;
     png_structp png_p;
@@ -139,6 +139,8 @@ Usage: fb-png [-i -c] [-# nbytes/pixel] [-F framebuffer] [-g gamma]\n\
 	[-s squaresize] [-w width] [-n height] [file.png]\n";
 
     screen_height = screen_width = 512;		/* Defaults */
+
+    bu_setprogname(argv[0]);
 
     if (!get_args(argc, argv)) {
 	(void)fputs(usage, stderr);

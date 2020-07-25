@@ -1,5 +1,5 @@
 /*
- * $Id: json_tokener.c,v 1.20 2006/07/25 03:24:50 mclark Exp $
+ * $Id$
  *
  * Copyright (c) 2004, 2005 Metaparadigm Pte. Ltd.
  * Michael Clark <michael@metaparadigm.com>

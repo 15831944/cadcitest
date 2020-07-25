@@ -49,7 +49,7 @@
 extern
 int EPSGGetWGS84Transform( int nGeogCS, std::vector<CPLString>& asTransform );
 
-CPL_CVSID("$Id: ogr_srs_proj4.cpp 36850 2016-12-13 23:53:14Z rouault $");
+CPL_CVSID("$Id$");
 
 /* -------------------------------------------------------------------- */
 /*      The following list comes from osrs/proj/src/pj_ellps.c.         */
