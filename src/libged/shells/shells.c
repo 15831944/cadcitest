@@ -33,7 +33,7 @@
 
 
 int
-ged_shells(struct ged *gedp, int argc, const char *argv[])
+ged_shells_core(struct ged *gedp, int argc, const char *argv[])
 {
     struct directory *old_dp, *new_dp;
     struct rt_db_internal old_intern, new_intern;
@@ -107,7 +107,7 @@ ged_shells(struct ged *gedp, int argc, const char *argv[])
 	    new_intern.idb_meth = &OBJ[ID_NMG];
 	    new_intern.idb_ptr = (void *)m_tmp;
 
-	    new_dp=db_diradd(gedp->ged_wdbp->dbip, bu_vls_addr(&shell_name), RT_DIR_PHONY_ADDR, 0, RT_DIR_SOLID, (void *)&new_intern.idb_type);
+	    new_dp = db_diradd(gedp->ged_wdbp->dbip, bu_vls_addr(&shell_name), RT_DIR_PHONY_ADDR, 0, RT_DIR_SOLID, (void *)&new_intern.idb_type);
 	    if (new_dp == RT_DIR_NULL) {
 		bu_vls_printf(gedp->ged_result_str, "An error has occurred while adding a new object to the database.\n");
 		return GED_ERROR;
@@ -132,10 +132,29 @@ ged_shells(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl shells_cmd_impl = {
+    "shells",
+    ged_shells_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd shells_cmd = { &shells_cmd_impl };
+const struct ged_cmd *shells_cmds[] = { &shells_cmd, NULL };
+
+static const struct ged_plugin pinfo = { shells_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

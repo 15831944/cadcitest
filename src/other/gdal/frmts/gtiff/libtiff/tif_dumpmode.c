@@ -1,4 +1,4 @@
-/* $Header$ */
+/* $Header: /cvs/maptools/cvsroot/libtiff/libtiff/tif_dumpmode.c,v 1.15 2015-12-12 18:04:26 erouault Exp $ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

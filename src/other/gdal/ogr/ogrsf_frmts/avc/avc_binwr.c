@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: avc_binwr.c 36381 2016-11-21 10:29:21Z rouault $
  *
  * Name:     avc_binwr.c
  * Project:  Arc/Info vector coverage (AVC)  E00->BIN conversion library
@@ -28,7 +28,7 @@
  * DEALINGS IN THE SOFTWARE.
  **********************************************************************
  *
- * $Log$
+ * $Log: avc_binwr.c,v $
  * Revision 1.18  2008/07/23 20:51:38  dmorissette
  * Fixed GCC 4.1.x compile warnings related to use of char vs unsigned char
  * (GDAL/OGR ticket http://trac.osgeo.org/gdal/ticket/2495)

@@ -115,7 +115,6 @@ set(misc_ignore_files
   repoconv/CONVERT.sh
   repoconv/NOTES
   repoconv/RESUME.sh
-  repoconv/account-map
   repoconv/audit_merges/audit_merges.cxx
   repoconv/audit_merges/commit_list.txt
   repoconv/checkout_dercs.sh
@@ -207,7 +206,13 @@ set(misc_ignore_files
   repoconv/custom/r29886_cvs_svn_rel-5-1-branch_sync.fi
   repoconv/custom/r29886_cvs_svn_trunk_sync.fi
   repoconv/custom/r29886_tags.fi
+  repoconv/account-map
+  repoconv/account-map_svnfexport.txt
   repoconv/cvs_authormap
+  repoconv/cvs_authormap_svnfexport.txt
+  repoconv/cvs_info.sh
+  repoconv/domap.sh
+  repoconv/email_fixups.txt
   repoconv/cvs_repaired/sphflake.pix,v
   repoconv/gitattributes
   repoconv/gitignore.tar.gz
@@ -215,7 +220,6 @@ set(misc_ignore_files
   repoconv/md5.hpp
   repoconv/sha1.hpp
   repoconv/svn2git/README
-  repoconv/svn2git/account-map
   repoconv/svn2git/archive_branches.sh
   repoconv/svn2git/rules
   repoconv/svn2git/rules-geomcore
@@ -253,6 +257,15 @@ set(misc_ignore_files
   repoconv/sync_commit_trunk.sh
   repoconv/tagmap.sh
   repoconv/terra.dsp
+  repoconv/verify/cvs.sh
+  repoconv/verify/cvs_repaired/sphflake.pix,v
+  repoconv/verify/cxxopts.hpp
+  repoconv/verify/md5.hpp
+  repoconv/verify/sha1.hpp
+  repoconv/verify/svn.sh
+  repoconv/verify/svn_de-rcs.cxx
+  repoconv/verify/verify.cpp
+  repoconv/verify/verify.sh
   repowork/COPYING
   repowork/README
   repowork/blob.cpp

@@ -78,7 +78,8 @@ edcodes_traverse_node(struct db_i *dbip, struct rt_comb_internal *UNUSED(comb), 
     RT_CK_DBI(dbip);
     RT_CK_TREE(comb_leaf);
 
-    if ((nextdp=db_lookup(dbip, comb_leaf->tr_l.tl_name, LOOKUP_NOISY)) == RT_DIR_NULL)
+    nextdp = db_lookup(dbip, comb_leaf->tr_l.tl_name, LOOKUP_NOISY);
+    if (nextdp == RT_DIR_NULL)
 	return;
 
     pathpos = (int *)user_ptr1;
@@ -105,8 +106,8 @@ edcodes_collect_regnames(struct ged *gedp, struct directory *dp, int pathpos)
     if (!(dp->d_flags & RT_DIR_COMB))
 	return EDCODES_OK;
 
-    if ((id=rt_db_get_internal(&intern, dp, gedp->ged_wdbp->dbip,
-			       (matp_t)NULL, &rt_uniresource)) < 0) {
+    id = rt_db_get_internal(&intern, dp, gedp->ged_wdbp->dbip, (matp_t)NULL, &rt_uniresource);
+    if (id < 0) {
 	bu_vls_printf(gedp->ged_result_str,
 		      "Cannot get records for %s\n", dp->d_namep);
 	return EDCODES_NOTOK;
@@ -139,7 +140,7 @@ edcodes_collect_regnames(struct ged *gedp, struct directory *dp, int pathpos)
 
 
 int
-ged_edcodes(struct ged *gedp, int argc, const char *argv[])
+ged_edcodes_core(struct ged *gedp, int argc, const char *argv[])
 {
     int i;
     int nflag = 0;
@@ -216,7 +217,7 @@ ged_edcodes(struct ged *gedp, int argc, const char *argv[])
     if (!fp)
 	return GED_ERROR;
 
-    av = (char **)bu_malloc(sizeof(char *)*(argc + 2), "ged_edcodes av");
+    av = (char **)bu_malloc(sizeof(char *)*(argc + 2), "ged_edcodes_core av");
     av[0] = "wcodes";
     av[1] = tmpfil;
     for (i = 2; i < argc + 1; ++i)
@@ -228,7 +229,7 @@ ged_edcodes(struct ged *gedp, int argc, const char *argv[])
 
     if (ged_wcodes(gedp, argc + 1, (const char **)av) == GED_ERROR) {
 	bu_file_delete(tmpfil);
-	bu_free((void *)av, "ged_edcodes av");
+	bu_free((void *)av, "ged_edcodes_core av");
 	return GED_ERROR;
     }
 
@@ -239,7 +240,8 @@ ged_edcodes(struct ged *gedp, int argc, const char *argv[])
 	int line_count=0;
 	int j;
 
-	if ((f_srt=fopen(tmpfil, "r+")) == NULL) {
+	f_srt = fopen(tmpfil, "r+");
+	if (f_srt == NULL) {
 	    bu_vls_printf(gedp->ged_result_str, "%s: Failed to open temp file for sorting\n", argv[0]);
 	    bu_file_delete(tmpfil);
 	    return GED_ERROR;
@@ -272,9 +274,9 @@ ged_edcodes(struct ged *gedp, int argc, const char *argv[])
 	rewind(f_srt);
 	for (j = 0; j < line_count; j++) {
 	    fprintf(f_srt, "%s", line_array[j]);
-	    bu_free(line_array[j], "ged_edcodes line array element");
+	    bu_free(line_array[j], "ged_edcodes_core line array element");
 	}
-	bu_free((char *)line_array, "ged_edcodes line array");
+	bu_free((char *)line_array, "ged_edcodes_core line array");
 	fclose(f_srt);
     }
 
@@ -286,15 +288,34 @@ ged_edcodes(struct ged *gedp, int argc, const char *argv[])
 	status = GED_ERROR;
 
     bu_file_delete(tmpfil);
-    bu_free((void *)av, "ged_edcodes av");
+    bu_free((void *)av, "ged_edcodes_core av");
     return status;
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl edcodes_cmd_impl = {
+    "edcodes",
+    ged_edcodes_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd edcodes_cmd = { &edcodes_cmd_impl };
+const struct ged_cmd *edcodes_cmds[] = { &edcodes_cmd, NULL };
+
+static const struct ged_plugin pinfo = { edcodes_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

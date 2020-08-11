@@ -49,7 +49,7 @@
 #include "ogr_p.h"
 #include "ogr_srs_api.h"
 
-CPL_CVSID("$Id$");
+CPL_CVSID("$Id: ogrspatialreference.cpp 37774 2017-03-18 20:52:44Z rouault $");
 
 // The current opinion is that WKT longitudes like central meridian
 // should be relative to Greenwich, not the prime meridian in use.

@@ -136,7 +136,7 @@ get_args(int argc, char **argv)
 		scr_height = atoi(bu_optarg);
 		break;
 	    case 'p':
-		pause_sec=atoi(bu_optarg);
+		pause_sec = atoi(bu_optarg);
 		break;
 
 	    default:		/* 'h' '?' */
@@ -152,7 +152,8 @@ get_args(int argc, char **argv)
 	setmode(infd, O_BINARY);
     } else {
 	file_name = argv[bu_optind];
-	if ((infd = open(file_name, 0)) < 0) {
+	infd = open(file_name, 0);
+	if (infd < 0) {
 	    perror(file_name);
 	    fprintf(stderr,
 			  "pix-fb: cannot open \"%s\" for reading\n",
@@ -171,7 +172,7 @@ get_args(int argc, char **argv)
 
 
 int
-ged_pix2fb(struct ged *gedp, int argc, const char *argv[])
+ged_pix2fb_core(struct ged *gedp, int argc, const char *argv[])
 {
     int ret;
 
@@ -231,6 +232,25 @@ ged_pix2fb(struct ged *gedp, int argc, const char *argv[])
     return GED_ERROR;
 }
 
+
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl pix2fb_cmd_impl = {
+    "pix2fb",
+    ged_pix2fb_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd pix2fb_cmd = { &pix2fb_cmd_impl };
+const struct ged_cmd *pix2fb_cmds[] = { &pix2fb_cmd, NULL };
+
+static const struct ged_plugin pinfo = { pix2fb_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
 
 /*
  * Local Variables:

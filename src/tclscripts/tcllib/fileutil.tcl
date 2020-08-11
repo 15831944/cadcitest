@@ -9,7 +9,7 @@
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
 # 
-# RCS: @(#) $Id$
+# RCS: @(#) $Id: fileutil.tcl,v 1.78 2010/06/17 04:46:19 andreas_kupries Exp $
 
 package require Tcl 8.2
 package require cmdline

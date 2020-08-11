@@ -2324,7 +2324,8 @@ extrude_in(struct ged *gedp, const char **cmd_argvs, struct rt_db_internal *inte
     eip->sketch_name = bu_strdup(cmd_argvs[15]);
     /* eip->keypoint = atoi(cmd_argvs[16]); */
 
-    if ((dp=db_lookup(gedp->ged_wdbp->dbip, eip->sketch_name, LOOKUP_NOISY)) == RT_DIR_NULL) {
+    dp = db_lookup(gedp->ged_wdbp->dbip, eip->sketch_name, LOOKUP_NOISY);
+    if (dp == RT_DIR_NULL) {
 	bu_vls_printf(gedp->ged_result_str, "Cannot find sketch (%s) for extrusion (%s)\n",
 		      eip->sketch_name, cmd_argvs[1]);
 	eip->skt = (struct rt_sketch_internal *)NULL;
@@ -2377,7 +2378,8 @@ revolve_in(struct ged *gedp, const char **cmd_argvs, struct rt_db_internal *inte
     VUNITIZE(rip->r);
     VUNITIZE(rip->axis3d);
 
-    if ((dp=db_lookup(gedp->ged_wdbp->dbip, bu_vls_addr(&rip->sketch_name), LOOKUP_NOISY)) == RT_DIR_NULL) {
+    dp = db_lookup(gedp->ged_wdbp->dbip, bu_vls_addr(&rip->sketch_name), LOOKUP_NOISY);
+    if (dp == RT_DIR_NULL) {
 	bu_vls_printf(gedp->ged_result_str, "Cannot find sketch (%s) for revolve (%s)\n",
 		      bu_vls_addr(&rip->sketch_name), cmd_argvs[1]);
 	rip->skt = (struct rt_sketch_internal *)NULL;
@@ -2441,6 +2443,7 @@ superell_in(struct ged *gedp, const char *cmd_argvs[], struct rt_db_internal *in
 
     n = 14;                             /* SUPERELL has 12 (same as ELL) + 2 (for <n, e>) params */
 
+    intern->idb_major_type = DB5_MAJORTYPE_BRLCAD;
     intern->idb_type = ID_SUPERELL;
     intern->idb_meth = &OBJ[ID_SUPERELL];
     BU_ALLOC(intern->idb_ptr, struct rt_superell_internal);
@@ -2865,6 +2868,7 @@ joint_in(struct ged *gedp, const char *cmd_argv[], struct rt_db_internal *intern
     struct rt_joint_internal *jip;
     n = 10;
 
+    intern->idb_major_type = DB5_MAJORTYPE_BRLCAD;
     intern->idb_type = ID_JOINT;
     intern->idb_meth = &OBJ[ID_JOINT];
     intern->idb_ptr = bu_malloc(sizeof(struct rt_joint_internal), "rt_joint_internal");
@@ -3035,10 +3039,10 @@ argc 1       2     3     4 5 6 7    8 9 10 11 12 13 14    15 16 17 18 19 20 21
 	prev = datum;
     }
 
+    intern->idb_major_type = DB5_MAJORTYPE_BRLCAD;
+    intern->idb_type = ID_DATUM;
     intern->idb_ptr = datums;
     intern->idb_meth = &OBJ[ID_DATUM];
-    intern->idb_type = ID_DATUM;
-    intern->idb_major_type = DB5_MAJORTYPE_BRLCAD;
 
     /* Set a default color for datum objects */
     bu_avs_add(&intern->idb_avs, "color", "255/255/0");
@@ -3112,6 +3116,7 @@ script_in(struct ged *UNUSED(gedp), const char **cmd_argvs, struct rt_db_interna
 {
     struct rt_script_internal *script_ip;
 
+    intern->idb_major_type = DB5_MAJORTYPE_BRLCAD;
     intern->idb_type = ID_SCRIPT;
     intern->idb_meth = &OBJ[ID_SCRIPT];
     BU_ALLOC(intern->idb_ptr, struct rt_script_internal);
@@ -3126,7 +3131,7 @@ script_in(struct ged *UNUSED(gedp), const char **cmd_argvs, struct rt_db_interna
 
 
 int
-ged_in(struct ged *gedp, int argc, const char *argv[])
+ged_in_core(struct ged *gedp, int argc, const char *argv[])
 {
     struct directory *dp;
     char *name;
@@ -3470,7 +3475,7 @@ ged_in(struct ged *gedp, int argc, const char *argv[])
 do_new_update:
     /* The function may have already written via LIBWDB */
     if (internal.idb_ptr != NULL) {
-	dp=db_diradd(gedp->ged_wdbp->dbip, name, RT_DIR_PHONY_ADDR, 0, RT_DIR_SOLID, (void *)&internal.idb_type);
+	dp = db_diradd(gedp->ged_wdbp->dbip, name, RT_DIR_PHONY_ADDR, 0, RT_DIR_SOLID, (void *)&internal.idb_type);
 	if (dp == RT_DIR_NULL) {
 	    rt_db_free_internal(&internal);
 	    bu_vls_printf(gedp->ged_result_str, "%s: Cannot add '%s' to directory\n", argv[0], name);
@@ -3487,6 +3492,25 @@ do_new_update:
     return GED_OK;
 }
 
+
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl typein_cmd_impl = {
+    "in",
+    ged_in_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd typein_cmd = { &typein_cmd_impl };
+const struct ged_cmd *typein_cmds[] = { &typein_cmd, NULL };
+
+static const struct ged_plugin pinfo = { typein_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
 
 /*
  * Local Variables:

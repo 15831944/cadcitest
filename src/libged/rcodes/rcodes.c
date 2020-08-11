@@ -33,7 +33,7 @@
 
 
 int
-ged_rcodes(struct ged *gedp, int argc, const char *argv[])
+ged_rcodes_core(struct ged *gedp, int argc, const char *argv[])
 {
     int item, air, mat, los;
     size_t g_changed = 0;
@@ -64,7 +64,8 @@ ged_rcodes(struct ged *gedp, int argc, const char *argv[])
 	return GED_ERROR;
     }
 
-    if ((fp = fopen(argv[1], "r")) == NULL) {
+    fp = fopen(argv[1], "r");
+    if (fp == NULL) {
 	bu_vls_printf(gedp->ged_result_str, "%s: Failed to read file - %s", argv[0], argv[1]);
 	return GED_ERROR;
     }
@@ -155,10 +156,29 @@ ged_rcodes(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl rcodes_cmd_impl = {
+    "rcodes",
+    ged_rcodes_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd rcodes_cmd = { &rcodes_cmd_impl };
+const struct ged_cmd *rcodes_cmds[] = { &rcodes_cmd, NULL };
+
+static const struct ged_plugin pinfo = { rcodes_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

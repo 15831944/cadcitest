@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id$
+ * $Id: avc_mbyte.h 35903 2016-10-24 12:09:43Z goatbar $
  *
  * Name:     avc.h
  * Project:  Arc/Info Vector coverage (AVC) BIN<->E00 conversion library
@@ -29,7 +29,7 @@
  * DEALINGS IN THE SOFTWARE.
  **********************************************************************
  *
- * $Log$
+ * $Log: avc_mbyte.h,v $
  * Revision 1.4  2008/07/23 20:51:38  dmorissette
  * Fixed GCC 4.1.x compile warnings related to use of char vs unsigned char
  * (GDAL/OGR ticket http://trac.osgeo.org/gdal/ticket/2495)

@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: config.h.win32,v 1.2 2006/01/26 02:16:28 mclark Exp $
  *
  * Copyright (c) 2004, 2005 Metaparadigm Pte. Ltd.
  * Michael Clark <michael@metaparadigm.com>

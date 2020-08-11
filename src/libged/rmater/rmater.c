@@ -77,7 +77,7 @@ extract_mater_from_line(char *line,
 
 
 int
-ged_rmater(struct ged *gedp, int argc, const char *argv[])
+ged_rmater_core(struct ged *gedp, int argc, const char *argv[])
 {
 #ifndef LINELEN
 #define LINELEN 256
@@ -113,7 +113,8 @@ ged_rmater(struct ged *gedp, int argc, const char *argv[])
 	return GED_ERROR;
     }
 
-    if ((fp = fopen(argv[1], "r")) == NULL) {
+    fp = fopen(argv[1], "r");
+    if (fp == NULL) {
 	bu_vls_printf(gedp->ged_result_str, "ged_rmater: Failed to read file - %s", argv[1]);
 	return GED_ERROR;
     }
@@ -160,10 +161,29 @@ ged_rmater(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl rmater_cmd_impl = {
+    "rmater",
+    ged_rmater_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd rmater_cmd = { &rmater_cmd_impl };
+const struct ged_cmd *rmater_cmds[] = { &rmater_cmd, NULL };
+
+static const struct ged_plugin pinfo = { rmater_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id$
+ * $Id: ogrgeoconceptdatasource.h$
  *
  * Name:     ogrgeoconceptdatasource.h
  * Project:  OpenGIS Simple Features Reference Implementation

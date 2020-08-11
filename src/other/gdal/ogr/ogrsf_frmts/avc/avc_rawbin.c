@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id$
+ * $Id: avc_rawbin.c 34524 2016-07-03 02:47:25Z goatbar $
  *
  * Name:     avc_rawbin.c
  * Project:  Arc/Info vector coverage (AVC)  BIN->E00 conversion library
@@ -29,7 +29,7 @@
  * DEALINGS IN THE SOFTWARE.
  **********************************************************************
  *
- * $Log$
+ * $Log: avc_rawbin.c,v $
  * Revision 1.14  2008/07/23 20:51:38  dmorissette
  * Fixed GCC 4.1.x compile warnings related to use of char vs unsigned char
  * (GDAL/OGR ticket http://trac.osgeo.org/gdal/ticket/2495)

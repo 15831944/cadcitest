@@ -27,7 +27,7 @@
  * Date:	Mon Aug  9 1982
  * Copyright (c) 1982,1986 Spencer W. Thomas
  *
- * $Id$
+ * $Id: Runput.c 37572 2010-02-05 13:58:19Z brlcad $
  *
  * Modified by:	Todd W. Fuqua
  * 	Date:	Jul 22 1984

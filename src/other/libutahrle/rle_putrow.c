@@ -27,7 +27,7 @@
  * Date:	1 April 1981
  * Copyright (c) 1981,1986 Spencer W. Thomas
  *
- * $Id$
+ * $Id: rle_putrow.c 28910 2007-09-14 15:22:11Z erikgreenwald $
  */
 
 #include "stdio.h"

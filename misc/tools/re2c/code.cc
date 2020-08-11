@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: code.cc 861 2008-05-25 13:23:02Z helly $ */
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>

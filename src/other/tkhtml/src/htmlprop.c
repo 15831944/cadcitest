@@ -36,7 +36,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-static const char rcsid[] = "$Id$";
+static const char rcsid[] = "$Id: htmlprop.c,v 1.135 2007/12/05 10:11:12 danielk1977 Exp $";
 
 #include "html.h"
 #include <assert.h>

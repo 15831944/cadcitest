@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id$
+ * $Id: ogr_xplane_nav_reader.cpp$
  *
  * Project:  X-Plane nav.dat file reader header
  * Purpose:  Definition of classes for X-Plane nav.dat file reader

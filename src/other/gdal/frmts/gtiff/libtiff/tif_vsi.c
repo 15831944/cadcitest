@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id$
+ * $Id: tif_vsi.c 37104 2017-01-11 19:08:08Z rouault $
  *
  * Project:  GeoTIFF Driver
  * Purpose:  Implement system hook functions for libtiff on top of CPL/VSI,

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: translate.cc 714 2007-04-29 15:36:42Z helly $ */
 #include "globals.h"
 
 namespace re2c

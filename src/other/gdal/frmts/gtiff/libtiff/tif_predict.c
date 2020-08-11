@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: tif_predict.c,v 1.42 2017-02-25 17:05:12 erouault Exp $ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

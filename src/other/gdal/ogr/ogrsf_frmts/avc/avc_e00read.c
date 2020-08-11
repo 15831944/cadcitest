@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id$
+ * $Id: avc_e00read.c 34524 2016-07-03 02:47:25Z goatbar $
  *
  * Name:     avc_e00read.c
  * Project:  Arc/Info vector coverage (AVC)  BIN->E00 conversion library
@@ -31,7 +31,7 @@
  * DEALINGS IN THE SOFTWARE.
  **********************************************************************
  *
- * $Log$
+ * $Log: avc_e00read.c,v $
  * Revision 1.28  2008/07/30 19:22:18  dmorissette
  * Move detection of EXP header directly in AVCE00ReadOpenE00() and use
  * VSIFGets() instead of CPLReadLine() to avoid problem with huge one line

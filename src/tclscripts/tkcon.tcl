@@ -225,7 +225,7 @@ proc ::tkcon::Init {args} {
 	    alias tkcon_clear tdir dump echo idebug lremove
 	    tkcon_puts tkcon_gets observe observe_var unalias which what
 	}
-	RCS		{RCS: @(#) $Id$}
+	RCS		{RCS: @(#) $Id: tkcon.tcl,v 1.120 2013/01/23 01:19:51 hobbs Exp $}
 	HEADURL		{http://tkcon.cvs.sourceforge.net/viewvc/tkcon/tkcon/tkcon.tcl}
 
 	docs		"http://tkcon.sourceforge.net/"

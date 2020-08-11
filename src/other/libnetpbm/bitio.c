@@ -1,5 +1,5 @@
 /*\
- * $Id$
+ * $Id: bitio.c,v 1.5 1992/11/24 19:36:46 dws Exp dws $
  *
  * bitio.c - bitstream I/O
  *
@@ -14,7 +14,7 @@
  * in supporting documentation.  This software is provided "as is"
  * without express or implied warranty.
  *
- * $Log$
+ * $Log: bitio.c,v $
  * Revision 1.5  1992/11/24  19:36:46  dws
  * Added copyright.
  *

@@ -140,7 +140,8 @@ _ged_cyclic_search_subtree(struct db_full_path *path, int curr_bool, union tree 
 	    _ged_cyclic_search_subtree(path, OP_UNION, tp->tr_b.tb_left, traverse_func, client_data);
 	    break;
 	case OP_DB_LEAF:
-	    if ((dp=db_lookup(gedp->ged_wdbp->dbip, tp->tr_l.tl_name, LOOKUP_QUIET)) == RT_DIR_NULL) {
+	    dp = db_lookup(gedp->ged_wdbp->dbip, tp->tr_l.tl_name, LOOKUP_QUIET);
+	    if (dp == RT_DIR_NULL) {
 		return;
 	    } else {
 		/* See if we've got a cyclic path */
@@ -469,7 +470,7 @@ _ged_invalid_shape_check(struct _ged_invalid_data *idata, struct ged *gedp, int 
 }
 
 extern "C" int
-ged_lint(struct ged *gedp, int argc, const char *argv[])
+ged_lint_core(struct ged *gedp, int argc, const char *argv[])
 {
     size_t pc;
     int ret = GED_OK;
@@ -603,11 +604,29 @@ ged_lint_memfree:
     return ret;
 }
 
-// Local Variables:
-// tab-width: 8
-// mode: C++
-// c-basic-offset: 4
-// indent-tabs-mode: t
-// c-file-style: "stroustrup"
-// End:
-// ex: shiftwidth=4 tabstop=8
+
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+extern "C" {
+    struct ged_cmd_impl lint_cmd_impl = { "lint", ged_lint_core, GED_CMD_DEFAULT };
+    const struct ged_cmd lint_cmd = { &lint_cmd_impl };
+    const struct ged_cmd *lint_cmds[] = { &lint_cmd,  NULL };
+
+    static const struct ged_plugin pinfo = { lint_cmds, 1 };
+
+    COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+    {
+	return &pinfo;
+    }
+}
+#endif
+
+/*
+ * Local Variables:
+ * tab-width: 8
+ * mode: C
+ * indent-tabs-mode: t
+ * c-file-style: "stroustrup"
+ * End:
+ * ex: shiftwidth=4 tabstop=8
+ */

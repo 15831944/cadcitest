@@ -1,5 +1,5 @@
 // -*-c++-*- osgWidget - Code by: Jeremy Moles (cubicool) 2007-2008
-// $Id$
+// $Id: Window.cpp 66 2008-07-14 21:54:09Z cubicool $
 
 #include <algorithm>
 #include <osgGA/GUIEventAdapter>

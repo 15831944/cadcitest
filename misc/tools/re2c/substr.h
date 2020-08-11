@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: substr.h 860 2008-04-09 22:57:45Z nuno-lopes $ */
 #ifndef _substr_h
 #define _substr_h
 

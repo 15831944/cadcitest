@@ -85,13 +85,14 @@ add_subdirectory(rtedge)
 # RtWizard Image Generation Regression Tests
 add_subdirectory(rtwizard)
 
-add_subdirectory(spdi)
-
 # Simulation of a 3rd party BRL-CAD library client code
 add_subdirectory(user)
 
 # solids Regression Tests
 add_subdirectory(solids)
+
+# spdi Regression Tests
+add_subdirectory(spdi)
 
 # shaders Regression Tests
 add_subdirectory(shaders)

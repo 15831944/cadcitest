@@ -35,7 +35,7 @@
 
 
 int
-ged_bo(struct ged *gedp, int argc, const char *argv[])
+ged_bo_core(struct ged *gedp, int argc, const char *argv[])
 {
     int c;
     unsigned int minor_type=0;
@@ -182,7 +182,8 @@ ged_bo(struct ged *gedp, int argc, const char *argv[])
 
 	obj_name = (char *)*argv;
 
-	if ((dp=db_lookup(gedp->ged_wdbp->dbip, obj_name, LOOKUP_NOISY)) == RT_DIR_NULL) {
+	dp = db_lookup(gedp->ged_wdbp->dbip, obj_name, LOOKUP_NOISY);
+	if (dp == RT_DIR_NULL) {
 	    return GED_ERROR;
 	}
 	if (!(dp->d_major_type & DB5_MAJORTYPE_BINARY_MASK)) {
@@ -238,10 +239,29 @@ ged_bo(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl bo_cmd_impl = {
+    "bo",
+    ged_bo_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd bo_cmd = { &bo_cmd_impl };
+const struct ged_cmd *bo_cmds[] = { &bo_cmd, NULL };
+
+static const struct ged_plugin pinfo = { bo_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

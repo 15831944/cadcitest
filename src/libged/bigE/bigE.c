@@ -182,7 +182,7 @@ add_solid(const struct directory *dp,
 
 	    if (solid_is_plate_mode_bot
 		|| !eptr->l.m
-		|| (bot=nmg_bot(s, &RTG.rtg_vlfree, &dgcdp->gedp->ged_wdbp->wdb_tol)) == (struct rt_bot_internal *)NULL)
+		|| (bot = nmg_bot(s, &RTG.rtg_vlfree, &dgcdp->gedp->ged_wdbp->wdb_tol)) == (struct rt_bot_internal *)NULL)
 	    {
 		eptr->l.stp->st_id = id;
 		eptr->l.stp->st_meth = &OBJ[id];
@@ -251,7 +251,8 @@ build_etree(union tree *tp,
 	    BU_LIST_INIT(&eptr->l.seghead);
 	    break;
 	case OP_DB_LEAF:
-	    if ((dp=db_lookup(dgcdp->gedp->ged_wdbp->dbip, tp->tr_l.tl_name, LOOKUP_NOISY)) == RT_DIR_NULL) {
+	    dp = db_lookup(dgcdp->gedp->ged_wdbp->dbip, tp->tr_l.tl_name, LOOKUP_NOISY);
+	    if (dp == RT_DIR_NULL) {
 	      break;
 	    }
 	    eptr = add_solid(dp, tp->tr_l.tl_mat, dgcdp);
@@ -1979,7 +1980,7 @@ fix_halfs(struct _ged_client_data *dgcdp)
 
 
 int
-ged_E(struct ged *gedp, int argc, const char *argv[])
+ged_E_core(struct ged *gedp, int argc, const char *argv[])
 {
     int i;
     int c;
@@ -2127,6 +2128,25 @@ ged_E(struct ged *gedp, int argc, const char *argv[])
     return GED_OK;
 }
 
+
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl bigE_cmd_impl = {
+    "E",
+    ged_E_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd bigE_cmd = { &bigE_cmd_impl };
+const struct ged_cmd *bigE_cmds[] = { &bigE_cmd, NULL };
+
+static const struct ged_plugin pinfo = { bigE_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
 
 /*
  * Local Variables:

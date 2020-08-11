@@ -184,6 +184,8 @@ if(EXISTS "@CMAKE_SOURCE_DIR@/.git")
     foreach(ITEM ${GIT_STDOUT})
       list(APPEND GIT_STATUS ${ITEM})
     endforeach(ITEM ${GIT_STDOUT})
+    # Apparently can get an empty list entry from GIT_STDOUT - remove any empty
+    # entries so CMake won't complain.
     list(REMOVE_ITEM "" GIT_STATUS)
     foreach(ITEM ${GIT_STATUS})
       if(${ITEM} MATCHES "^\\?\\?")

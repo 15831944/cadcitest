@@ -47,7 +47,7 @@
 // #include "gdalsse_priv.h"
 #include "gdalwarper.h"
 
-CPL_CVSID("$Id$");
+CPL_CVSID("$Id: overview.cpp 37377 2017-02-13 18:43:53Z rouault $");
 
 /************************************************************************/
 /*                     GDALResampleChunk32R_Near()                      */

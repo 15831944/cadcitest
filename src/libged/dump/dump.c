@@ -33,7 +33,7 @@
 
 
 int
-ged_dump(struct ged *gedp, int argc, const char *argv[])
+ged_dump_core(struct ged *gedp, int argc, const char *argv[])
 {
     struct rt_wdb *op;
     int ret;
@@ -56,7 +56,8 @@ ged_dump(struct ged *gedp, int argc, const char *argv[])
 	return GED_ERROR;
     }
 
-    if ((op = wdb_fopen(argv[1])) == RT_WDB_NULL) {
+    op = wdb_fopen(argv[1]);
+    if (op == RT_WDB_NULL) {
 	bu_vls_printf(gedp->ged_result_str, "dump: %s: cannot create", argv[1]);
 	return GED_ERROR;
     }
@@ -73,10 +74,29 @@ ged_dump(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl dump_cmd_impl = {
+    "dump",
+    ged_dump_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd dump_cmd = { &dump_cmd_impl };
+const struct ged_cmd *dump_cmds[] = { &dump_cmd, NULL };
+
+static const struct ged_plugin pinfo = { dump_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

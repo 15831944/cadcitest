@@ -34,7 +34,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-static const char rcsid[] = "$Id$";
+static const char rcsid[] = "$Id: htmltable.c,v 1.124 2007/11/03 11:23:16 danielk1977 Exp $";
 
 
 #include "htmllayout.h"

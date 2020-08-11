@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id$
+ * $Id: ogrgeoconceptdriver.h$
  *
  * Name:     ogrgeoconceptdriver.h
  * Project:  OpenGIS Simple Features Reference Implementation

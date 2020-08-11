@@ -704,7 +704,7 @@ _write_bot(struct ged *gedp, struct rt_bot_internal *bot, const char *name, stru
     intern.idb_meth = &OBJ[ID_BOT];
     intern.idb_ptr = (void *)bot;
 
-    dp=db_diradd(dbip, name, RT_DIR_PHONY_ADDR, 0, RT_DIR_SOLID, (void *)&intern.idb_type);
+    dp = db_diradd(dbip, name, RT_DIR_PHONY_ADDR, 0, RT_DIR_SOLID, (void *)&intern.idb_type);
     if (dp == RT_DIR_NULL) {
 	if (opts->verbosity) {
 	    bu_log("Cannot add %s to directory\n", name);
@@ -737,7 +737,7 @@ _write_nmg(struct ged *gedp, struct model *nmg_model, const char *name, struct _
     intern.idb_meth = &OBJ[ID_NMG];
     intern.idb_ptr = (void *)nmg_model;
 
-    dp=db_diradd(dbip, name, RT_DIR_PHONY_ADDR, 0, RT_DIR_SOLID, (void *)&intern.idb_type);
+    dp = db_diradd(dbip, name, RT_DIR_PHONY_ADDR, 0, RT_DIR_SOLID, (void *)&intern.idb_type);
     if (dp == RT_DIR_NULL) {
 	if (opts->verbosity) {
 	    bu_log("Cannot add %s to directory\n", name);
@@ -2811,8 +2811,8 @@ _nonovlp_brep_facetize(struct ged *gedp, int argc, const char **argv, struct _ge
 }
 
 
-int
-ged_facetize(struct ged *gedp, int argc, const char *argv[])
+extern "C" int
+ged_facetize_core(struct ged *gedp, int argc, const char *argv[])
 {
     int ret = GED_OK;
     static const char *usage = "Usage: facetize [ -nmhT | [--NMG] [--CM] [--SPSR] ] [old_obj1 | new_obj] [old_obj* ...] [old_objN | new_obj]\n";
@@ -2974,11 +2974,29 @@ ged_facetize_memfree:
 
 
 
-// Local Variables:
-// tab-width: 8
-// mode: C++
-// c-basic-offset: 4
-// indent-tabs-mode: t
-// c-file-style: "stroustrup"
-// End:
-// ex: shiftwidth=4 tabstop=8
+
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+extern "C" {
+    struct ged_cmd_impl facetize_cmd_impl = { "facetize", ged_facetize_core, GED_CMD_DEFAULT };
+    const struct ged_cmd facetize_cmd = { &facetize_cmd_impl };
+    const struct ged_cmd *facetize_cmds[] = { &facetize_cmd,  NULL };
+
+    static const struct ged_plugin pinfo = { facetize_cmds, 1 };
+
+    COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+    {
+	return &pinfo;
+    }
+}
+#endif
+
+/*
+ * Local Variables:
+ * tab-width: 8
+ * mode: C
+ * indent-tabs-mode: t
+ * c-file-style: "stroustrup"
+ * End:
+ * ex: shiftwidth=4 tabstop=8
+ */

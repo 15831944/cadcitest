@@ -28,7 +28,7 @@
  * Copyright (c) 1986, University of Utah
  */
 #ifndef lint
-static char rcs_ident[] = "$Id$";
+static char rcs_ident[] = "$Id: rle_getraw.c 28910 2007-09-14 15:22:11Z erikgreenwald $";
 #endif
 
 #include <stdio.h>

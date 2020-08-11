@@ -1,18 +1,123 @@
+#  Use setup similar to https://github.com/cristianadam/HelloWorld/
+#
+
 name: BRL-CAD
 
 on: [push]
 
 jobs:
-  build-mac:
+  build:
+    #
+    #  Define a matrix of the operating system and compiler combinations
+    #  we want to build against.
+    #
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Windows Latest MSVC", artifact: "Windows-MSVC.tar.xz",
+            os: windows-latest,
+            cc: "cl", cxx: "cl",
+            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          }
+        - {
+            name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
+            os: ubuntu-latest,
+            cc: "gcc", cxx: "g++"
+          }
+        - {
+            name: "macOS Latest Clang", artifact: "macOS.tar.xz",
+            os: macos-latest,
+            cc: "clang", cxx: "clang++"
+          }
 
-    runs-on: macos-latest
-
+    #
+    #  For each platform, we need to checkout the git repository,
+    #  and run CMake.
+    #
+    #  The logic below uses the approach demonstrated by Cristian Adam
+    #  which takes CMake's scripting mode (-P) and passes in from stdin
+    #  a script that incorporates values defined in the YAML environment.
+    #
+    #  Windows in particular needs the environment set up for compilation,
+    #  so the script recognizes when it is in that environment and
+    #  operates accordingly.
+    #
     steps:
     - uses: actions/checkout@v1
-    - uses: lukka/get-cmake@latest
-    - name: configure
-      run: mkdir build && cd build && cmake --version && cmake .. && more CMakeCache.txt && ls -R
-    - name: build
-      run: cd build && make distcheck
-    - name: info
-      run: cd build && more distcheck-enableall_debug.log && more distcheck-enableall_release.log
+
+    - name: Configure
+      shell: cmake -P {0}
+      run: |
+        set(ENV{CC} ${{ matrix.config.cc }})
+        set(ENV{CXX} ${{ matrix.config.cxx }})
+
+        if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
+          execute_process(
+            COMMAND "${{ matrix.config.environment_script }}" && set
+            OUTPUT_FILE environment_script_output.txt
+          )
+          file(STRINGS environment_script_output.txt output_lines)
+          foreach(line IN LISTS output_lines)
+            if (line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
+              set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
+            endif()
+          endforeach()
+        endif()
+
+        set(path_separator ":")
+        if ("${{ runner.os }}" STREQUAL "Windows")
+          set(path_separator ";")
+        endif()
+        set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
+
+        execute_process(
+          COMMAND cmake
+            -S .
+            -B build
+            -D CMAKE_BUILD_TYPE=$ENV{BUILD_TYPE}
+            -D CMAKE_VERBOSE_DISTCHECK=ON
+          RESULT_VARIABLE result
+        )
+        if (NOT result EQUAL 0)
+          message(FATAL_ERROR "Bad exit status")
+        endif()
+
+    #
+    #  As with the configure stage, the build uses CMake's scripting mode (-P)
+    #  and passes a script in on stdin.
+    #
+    #  Windows needs the environment set up for compilation - paths for the
+    #  compilation are not set up by default in command line environments,
+    #  unlike most Unix-like systems.  Accordingly the script recognizes when
+    #  it is on Windows and executes the necessary setup code.
+    #
+    - name: Build
+      shell: cmake -P {0}
+      run: |
+        if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
+          file(STRINGS environment_script_output.txt output_lines)
+          foreach(line IN LISTS output_lines)
+            if (line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
+              set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
+            endif()
+          endforeach()
+        endif()
+
+        set(path_separator ":")
+        if ("${{ runner.os }}" STREQUAL "Windows")
+          set(path_separator ";")
+        endif()
+        set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
+
+        execute_process(
+          COMMAND cmake --build build --config Release --target distcheck
+          RESULT_VARIABLE result
+        )
+        if (NOT result EQUAL 0)
+          message(FATAL_ERROR "Bad exit status")
+        endif()
+

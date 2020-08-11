@@ -36,7 +36,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-static const char rcsid[] = "$Id$";
+static const char rcsid[] = "$Id: htmltree.c,v 1.161 2008/02/14 08:39:14 danielk1977 Exp $";
 
 #include "html.h"
 #include "swproc.h"

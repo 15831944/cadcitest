@@ -420,7 +420,7 @@ copy_v5_solid(struct db_i *dbip, struct directory *proto, struct ged_clone_state
 	bu_vls_strcpy(&obj_list.names[idx].dest[i], bu_vls_addr(name));
 
 	/* actually copy the primitive to the new name */
-	argv[0] = "clone_copy";
+	argv[0] = "copy";
 	argv[1] = proto->d_namep;
 	argv[2] = bu_vls_addr(name);
 	argv[3] = (char *)0;
@@ -643,7 +643,8 @@ copy_v5_comb(struct db_i *dbip, struct directory *proto, struct ged_clone_state 
 		return NULL;
 	    }
 
-	    if ((dp=db_diradd(dbip, bu_vls_addr(name), RT_DIR_PHONY_ADDR, 0, proto->d_flags, (void *)&proto->d_minor_type)) == RT_DIR_NULL) {
+	    dp = db_diradd(dbip, bu_vls_addr(name), RT_DIR_PHONY_ADDR, 0, proto->d_flags, (void *)&proto->d_minor_type);
+	    if (dp == RT_DIR_NULL) {
 		bu_vls_printf(state->gedp->ged_result_str, "An error has occurred while adding a new object to the database.");
 		return NULL;
 	    }
@@ -986,7 +987,7 @@ get_args(struct ged *gedp, int argc, char **argv, struct ged_clone_state *state)
 
 
 int
-ged_clone(struct ged *gedp, int argc, const char *argv[])
+ged_clone_core(struct ged *gedp, int argc, const char *argv[])
 {
     struct ged_clone_state state;
     struct directory *copy;
@@ -1020,10 +1021,29 @@ ged_clone(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl clone_cmd_impl = {
+    "clone",
+    ged_clone_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd clone_cmd = { &clone_cmd_impl };
+const struct ged_cmd *clone_cmds[] = { &clone_cmd, NULL };
+
+static const struct ged_plugin pinfo = { clone_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

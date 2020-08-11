@@ -1,5 +1,5 @@
 /*
- * $Id$
+ * $Id: json_object.c,v 1.17 2006/07/25 03:24:50 mclark Exp $
  *
  * Copyright (c) 2004, 2005 Metaparadigm Pte. Ltd.
  * Michael Clark <michael@metaparadigm.com>

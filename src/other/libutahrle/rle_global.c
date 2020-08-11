@@ -27,7 +27,7 @@
  * Date:	Thu Apr 25 1985
  * Copyright (c) 1985,1986 Spencer W. Thomas
  *
- * $Id$
+ * $Id: rle_global.c 28910 2007-09-14 15:22:11Z erikgreenwald $
  */
 
 #include <stdio.h>

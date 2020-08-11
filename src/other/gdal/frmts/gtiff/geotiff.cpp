@@ -109,7 +109,7 @@
 #include "xtiffio.h"
 
 
-CPL_CVSID("$Id$");
+CPL_CVSID("$Id: geotiff.cpp 39129 2017-06-15 10:32:38Z rouault $");
 
 #if SIZEOF_VOIDP == 4
 static bool bGlobalStripIntegerOverflow = false;

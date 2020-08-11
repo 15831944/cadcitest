@@ -2,7 +2,7 @@
 #include "html.h"
 #include "cssInt.h"
 
-static const char rcsid[] = "$Id$";
+static const char rcsid[] = "$Id: csssearch.c,v 1.7 2007/10/27 08:37:50 hkoba Exp $";
 
 /*-----------------------------------------------------------------------
  * 

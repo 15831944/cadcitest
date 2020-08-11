@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id$
+ * $Id: e00compr.h 35885 2016-10-24 06:23:09Z goatbar $
  *
  * Name:     e00compr.h
  * Project:  Compressed E00 Read/Write library
@@ -7,7 +7,7 @@
  * Purpose:  Header file containing all definitions for the library.
  * Author:   Daniel Morissette, dmorissette@mapgears.com
  *
- * $Log$
+ * $Log: e00compr.h,v $
  * Revision 1.10  2009-02-24 20:03:50  aboudreault
  * Added a short manual pages (#1875)
  * Updated documentation and code examples (#247)

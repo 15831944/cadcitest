@@ -11,7 +11,7 @@
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
 # 
-# RCS: @(#) $Id$
+# RCS: @(#) $Id: cmdline.tcl,v 1.28 2011/02/23 17:41:52 andreas_kupries Exp $
 
 package require Tcl 8.2
 package provide cmdline 1.5
@@ -446,7 +446,7 @@ proc ::cmdline::getArgv0 {} {
 # See the file "license.terms" for information on usage and redistribution
 # of this file, and for a DISCLAIMER OF ALL WARRANTIES.
 # 
-# RCS: @(#) $Id$
+# RCS: @(#) $Id: cmdline.tcl,v 1.28 2011/02/23 17:41:52 andreas_kupries Exp $
 
 namespace eval ::cmdline {
     namespace export typedGetopt typedGetoptions typedUsage

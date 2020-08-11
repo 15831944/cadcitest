@@ -32,8 +32,8 @@
 #include "../ged_private.h"
 
 
-int
-ged_getmat(struct ged *gedp, int argc, const char *argv[])
+static int
+_getmat(struct ged *gedp, int argc, const char *argv[])
 {
     struct directory *dp;
     struct rt_db_internal intern;
@@ -174,7 +174,7 @@ fail:
  *
  */
 int
-ged_putmat(struct ged *gedp, int argc, const char *argv[])
+ged_putmat_core(struct ged *gedp, int argc, const char *argv[])
 {
     int result = GED_OK;	/* Return code */
     char *newargv[20+2];
@@ -196,7 +196,7 @@ ged_putmat(struct ged *gedp, int argc, const char *argv[])
     }
 
     if (argc == 2)
-	return ged_getmat(gedp, argc, argv);
+	return _getmat(gedp, argc, argv);
 
     if (argc < 3 || 18 < argc) {
 	bu_vls_printf(gedp->ged_result_str, "Usage: %s %s", argv[0], usage);
@@ -248,10 +248,29 @@ ged_putmat(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl putmat_cmd_impl = {
+    "putmat",
+    ged_putmat_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd putmat_cmd = { &putmat_cmd_impl };
+const struct ged_cmd *putmat_cmds[] = { &putmat_cmd, NULL };
+
+static const struct ged_plugin pinfo = { putmat_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id$
+ * $Id: avc_e00gen.c 36380 2016-11-21 10:21:20Z rouault $
  *
  * Name:     avc_e00gen.c
  * Project:  Arc/Info vector coverage (AVC)  BIN->E00 conversion library
@@ -29,7 +29,7 @@
  * DEALINGS IN THE SOFTWARE.
  **********************************************************************
  *
- * $Log$
+ * $Log: avc_e00gen.c,v $
  * Revision 1.18  2008/07/23 20:51:38  dmorissette
  * Fixed GCC 4.1.x compile warnings related to use of char vs unsigned char
  * (GDAL/OGR ticket http://trac.osgeo.org/gdal/ticket/2495)

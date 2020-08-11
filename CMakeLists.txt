@@ -3343,8 +3343,6 @@ set(toplevel_DOCFILES
   )
 BRLCAD_ADDDATA(toplevel_DOCFILES ".")
 
-CMAKEFILES(.github/workflows/btest.yml)
-
 # Now that everything is configured, print a summary of the build
 # settings.
 if(NOT BRLCAD_DISABLE_SUMMARY)

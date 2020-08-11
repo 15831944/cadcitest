@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: tif_fax3.c,v 1.79 2017-02-25 17:05:12 erouault Exp $ */
 
 /*
  * Copyright (c) 1990-1997 Sam Leffler

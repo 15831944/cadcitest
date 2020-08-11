@@ -1,5 +1,5 @@
 ./"
-./" $Id$
+./" $Id: re2c.1.in 862 2008-05-25 14:30:45Z helly $
 ./"
 .TH RE2C 1 "@PACKAGE_DATE@" "Version @PACKAGE_VERSION@"
 .ds re \fBre2c\fP

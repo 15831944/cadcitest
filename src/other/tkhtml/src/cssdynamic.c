@@ -2,7 +2,7 @@
 #include "html.h"
 #include "cssInt.h"
 
-static const char rcsid[] = "$Id$";
+static const char rcsid[] = "$Id: cssdynamic.c,v 1.12 2007/06/10 07:53:03 danielk1977 Exp $";
 
 /*
  * How dynamic CSS selectors are implemented:

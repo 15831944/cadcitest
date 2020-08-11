@@ -26,7 +26,7 @@
  * Date:	Mon Aug  9 1982
  * Copyright (c) 1982 Spencer W. Thomas
  *
- * $Id$
+ * $Id: rle_put.h 27486 2007-02-03 07:20:30Z brlcad $
  */
 
 #include "rle.h"

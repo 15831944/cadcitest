@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: tif_swab.c,v 1.14 2016-09-04 21:32:56 erouault Exp $ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

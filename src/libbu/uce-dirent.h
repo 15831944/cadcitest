@@ -28,9 +28,9 @@
  *
  * May 28 1998, Toni Ronkko <tronkko@messi.uku.fi>
  *
- * $Id$
+ * $Id: uce-dirent.h,v 1.7 2002/05/13 10:48:35 tr Exp $
  *
- * $Log$
+ * $Log: uce-dirent.h,v $
  * Revision 1.7  2002/05/13 10:48:35  tr
  * embedded some source code directly to the header so that no source
  * modules need to be included in the MS Visual C project using the

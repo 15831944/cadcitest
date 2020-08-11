@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: actions.cc 850 2008-03-24 01:05:08Z helly $ */
 #include <time.h>
 #include <string.h>
 #include <iostream>

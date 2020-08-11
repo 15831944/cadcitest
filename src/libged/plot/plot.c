@@ -49,7 +49,7 @@ extern int pclose(FILE *stream);
  * grid, 3d w/color, |filter, infinite Z
  */
 int
-ged_plot(struct ged *gedp, int argc, const char *argv[])
+ged_plot_core(struct ged *gedp, int argc, const char *argv[])
 {
     FILE *fp;
     int Three_D;			/* 0=2-D -vs- 1=3-D */
@@ -114,7 +114,8 @@ ged_plot(struct ged *gedp, int argc, const char *argv[])
 	    bu_vls_strcat(&str, " ");
 	    bu_vls_strcat(&str, argv[1]);
 	}
-	if ((fp = popen(bu_vls_addr(&str), "w")) == NULL) {
+	fp = popen(bu_vls_addr(&str), "wb");
+	if (fp == NULL) {
 	    perror(bu_vls_addr(&str));
 	    return GED_ERROR;
 	}
@@ -123,7 +124,8 @@ ged_plot(struct ged *gedp, int argc, const char *argv[])
 	bu_vls_free(&str);
 	is_pipe = 1;
     } else {
-	if ((fp = fopen(argv[1], "w")) == NULL) {
+	fp = fopen(argv[1], "wb");
+	if (fp == NULL) {
 	    perror(argv[1]);
 	    return GED_ERROR;
 	}
@@ -143,10 +145,29 @@ ged_plot(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl plot_cmd_impl = {
+    "plot",
+    ged_plot_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd plot_cmd = { &plot_cmd_impl };
+const struct ged_cmd *plot_cmds[] = { &plot_cmd, NULL };
+
+static const struct ged_plugin pinfo = { plot_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

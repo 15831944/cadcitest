@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: tif_getimage.c,v 1.103 2017-02-25 17:05:12 erouault Exp $ */
 
 /*
  * Copyright (c) 1991-1997 Sam Leffler

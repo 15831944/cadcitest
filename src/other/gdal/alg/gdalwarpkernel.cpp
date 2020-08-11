@@ -71,7 +71,7 @@
 
 #endif
 
-CPL_CVSID("$Id$");
+CPL_CVSID("$Id: gdalwarpkernel.cpp 38093 2017-04-21 21:02:44Z rouault $");
 
 static const double BAND_DENSITY_THRESHOLD = 0.0000000001;
 static const float SRC_DENSITY_THRESHOLD =  0.000000001f;

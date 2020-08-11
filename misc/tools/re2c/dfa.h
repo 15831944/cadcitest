@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: dfa.h 850 2008-03-24 01:05:08Z helly $ */
 #ifndef _dfa_h
 #define _dfa_h
 

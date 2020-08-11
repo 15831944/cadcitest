@@ -1,5 +1,5 @@
 // -*-c++-*- osgWidget - Code by: Jeremy Moles (cubicool) 2007-2008
-// $Id$
+// $Id: Widget.cpp 64 2008-06-30 21:32:00Z cubicool $
 
 #include <osg/io_utils>
 #include <osg/Math>

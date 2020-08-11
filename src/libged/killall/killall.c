@@ -33,7 +33,7 @@
 
 
 int
-ged_killall(struct ged *gedp, int argc, const char *argv[])
+ged_killall_core(struct ged *gedp, int argc, const char *argv[])
 {
     int nflag;
     int ret;
@@ -67,6 +67,7 @@ ged_killall(struct ged *gedp, int argc, const char *argv[])
 	nflag = 0;
 
     gedp->ged_internal_call = 1;
+    argv[0] = "killrefs";
     if ((ret = ged_killrefs(gedp, argc, argv)) != GED_OK) {
 	gedp->ged_internal_call = 0;
 	bu_vls_printf(gedp->ged_result_str, "KILL skipped because of earlier errors.\n");
@@ -87,10 +88,29 @@ ged_killall(struct ged *gedp, int argc, const char *argv[])
 }
 
 
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl killall_cmd_impl = {
+    "killall",
+    ged_killall_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd killall_cmd = { &killall_cmd_impl };
+const struct ged_cmd *killall_cmds[] = { &killall_cmd, NULL };
+
+static const struct ged_plugin pinfo = { killall_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
+
 /*
  * Local Variables:
- * tab-width: 8
  * mode: C
+ * tab-width: 8
  * indent-tabs-mode: t
  * c-file-style: "stroustrup"
  * End:

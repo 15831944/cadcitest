@@ -25,7 +25,7 @@
  *		kolb@yale.edu
  * Date:	Tue Aug 22 1989
  * Copyright (C) 1989 Craig E. Kolb
- * $Id$
+ * $Id: colorquant.c 37572 2010-02-05 13:58:19Z brlcad $
  *
  * $Log$
  * Revision 14.2  2005/01/23 14:29:55  brlcad

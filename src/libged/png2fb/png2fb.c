@@ -115,7 +115,8 @@ get_args(int argc, char **argv)
 	setmode(fileno(fp_in), O_BINARY);
     } else {
 	file_name = argv[bu_optind];
-	if ((fp_in = fopen(file_name, "rb")) == NULL) {
+	fp_in = fopen(file_name, "rb");
+	if (fp_in == NULL) {
 	    perror(file_name);
 	    fprintf(stderr,
 		    "png-fb: cannot open \"%s\" for reading\n",
@@ -132,7 +133,7 @@ get_args(int argc, char **argv)
 
 
 int
-ged_png2fb(struct ged *gedp, int argc, const char *argv[])
+ged_png2fb_core(struct ged *gedp, int argc, const char *argv[])
 {
     int ret;
 
@@ -188,6 +189,25 @@ ged_png2fb(struct ged *gedp, int argc, const char *argv[])
     return GED_ERROR;
 }
 
+
+#ifdef GED_PLUGIN
+#include "../include/plugin.h"
+struct ged_cmd_impl png2fb_cmd_impl = {
+    "png2fb",
+    ged_png2fb_core,
+    GED_CMD_DEFAULT
+};
+
+const struct ged_cmd png2fb_cmd = { &png2fb_cmd_impl };
+const struct ged_cmd *png2fb_cmds[] = { &png2fb_cmd, NULL };
+
+static const struct ged_plugin pinfo = { png2fb_cmds, 1 };
+
+COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
+{
+    return &pinfo;
+}
+#endif /* GED_PLUGIN */
 
 /*
  * Local Variables:

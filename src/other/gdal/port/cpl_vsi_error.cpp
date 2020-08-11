@@ -48,7 +48,7 @@
 #define TIMESTAMP_DEBUG
 // #define MEMORY_DEBUG
 
-CPL_CVSID("$Id$");
+CPL_CVSID("$Id: cpl_vsi_error.cpp 37003 2016-12-23 14:54:07Z goatbar $");
 
 static const int DEFAULT_LAST_ERR_MSG_SIZE =
 #if !defined(HAVE_VSNPRINTF)

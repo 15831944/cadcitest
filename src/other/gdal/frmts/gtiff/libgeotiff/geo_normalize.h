@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id$
+ * $Id: geo_normalize.h 2233 2012-10-09 01:33:11Z warmerdam $
  *
  * Project:  libgeotiff
  * Purpose:  Include file related to geo_normalize.c containing Code to

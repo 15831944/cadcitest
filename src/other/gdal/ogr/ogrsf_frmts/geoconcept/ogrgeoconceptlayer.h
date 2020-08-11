@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id$
+ * $Id: ogrgeoconceptlayer.h$
  *
  * Name:     ogrgeoconceptlayer.h
  * Project:  OpenGIS Simple Features Reference Implementation
