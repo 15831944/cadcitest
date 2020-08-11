@@ -3645,6 +3645,8 @@ if(NOT BRLCAD_IS_SUBBUILD)
     DISTCLEAN("${CMAKE_BINARY_DIR}/.ninja_deps")
   endif("${CMAKE_GENERATOR}" MATCHES "Ninja")
 
+  CMAKEFILES(.github/workflows/btest.yml)
+
   # ----------------------------------------------------------------------------
   # Define a distcheck target.  This performs a variety of tests to determine
   # whether BRL-CAD is in a distribution ready state.  Default to the standard
