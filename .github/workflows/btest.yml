@@ -113,10 +113,17 @@ jobs:
         endif()
         set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
 
-        execute_process(
-          COMMAND cmake --build build --config Release --target distcheck
-          RESULT_VARIABLE result
-        )
+        if ("${{ runner.os }}" STREQUAL "Windows")
+           execute_process(
+             COMMAND cmake --build build --config Release --target distcheck-enableall_release
+             RESULT_VARIABLE result
+           )
+        else ("${{ runner.os }}" STREQUAL "Windows")
+           execute_process(
+             COMMAND cmake --build build --config Release --target distcheck
+             RESULT_VARIABLE result
+           )
+        endif ("${{ runner.os }}" STREQUAL "Windows")
         if (NOT result EQUAL 0)
           message(FATAL_ERROR "Bad exit status")
         endif()
