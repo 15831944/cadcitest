@@ -168,6 +168,7 @@ if(EXISTS "@CMAKE_SOURCE_DIR@/.git")
       ERROR_VARIABLE GIT_STDERR
       RESULT_VARIABLE RETVAL)
     string(REGEX REPLACE "\r?\n" ";" GIT_FILES "${GIT_STDOUT}")
+    string(REGEX REPLACE ";$" "" GIT_FILES "${GIT_FILES}")
     if (RETVAL)
       message("")
       message("WARNING: Git does not seem to be working correctly.")
