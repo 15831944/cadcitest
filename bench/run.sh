@@ -585,7 +585,7 @@ else
 fi
 
 # more sanity checks, make sure the binaries and scripts run
-eval \"$RT\" -s1 -F/dev/debug \"${DB}/moss.g\" LIGHT > /dev/null 2>&1
+eval \"$RT\" -s1 -Fnu \"${DB}/moss.g\" LIGHT > /dev/null 2>&1
 ret=$?
 if test ! "x${ret}" = "x0" ; then
     $ECHO
