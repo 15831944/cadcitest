@@ -338,6 +338,8 @@ if("${CMAKE_GENERATOR}" MATCHES "Ninja")
   set(DISTCLEAN_OUTFILES ${DISTCLEAN_OUTFILES} build.ninja rules.ninja)
 endif("${CMAKE_GENERATOR}" MATCHES "Ninja")
 
+CMAKEFILES(.github/workflows/btest.yml)
+
 #---------------------------------------------------------------------
 # By default (as of version 2.8.2) CMake does not provide access to
 # global lists of executable and library targets.  This is useful
@@ -3645,8 +3647,6 @@ if(NOT BRLCAD_IS_SUBBUILD)
     DISTCLEAN("${CMAKE_BINARY_DIR}/.ninja_deps")
   endif("${CMAKE_GENERATOR}" MATCHES "Ninja")
 
-  CMAKEFILES(.github/workflows/btest.yml)
-
   # ----------------------------------------------------------------------------
   # Define a distcheck target.  This performs a variety of tests to determine
   # whether BRL-CAD is in a distribution ready state.  Default to the standard
@@ -3739,25 +3739,18 @@ DISTCLEAN("${CMAKE_BINARY_DIR}/CMakeTmp/timedelta_end.c")
 get_property(CMAKE_DISTCLEAN_TARGET_LIST GLOBAL PROPERTY CMAKE_DISTCLEAN_TARGET_LIST)
 list(REMOVE_DUPLICATES CMAKE_DISTCLEAN_TARGET_LIST)
 configure_file("${BRLCAD_CMAKE_DIR}/distclean.cmake.in" "${BRLCAD_BINARY_DIR}/distclean.cmake" @ONLY)
-if("${CMAKE_GENERATOR}" MATCHES "Make")
+if ("${CMAKE_GENERATOR}" MATCHES "Visual Studio")
   add_custom_target(distclean
-    COMMAND ${CMAKE_COMMAND} -E echo "Running make clean..."
-    COMMAND ${CMAKE_COMMAND} -E chdir "${BRLCAD_BINARY_DIR}" $(MAKE) clean
-    COMMAND ${CMAKE_COMMAND} -E echo "Running make clean... done."
     COMMAND ${CMAKE_COMMAND} -P "${BRLCAD_BINARY_DIR}/distclean.cmake"
     )
-elseif("${CMAKE_GENERATOR}" MATCHES "Ninja")
+else ("${CMAKE_GENERATOR}" MATCHES "Visual Studio")
   add_custom_target(distclean
-    COMMAND ${CMAKE_COMMAND} -E echo "Running make clean..."
-    COMMAND ${CMAKE_COMMAND} -E chdir "${BRLCAD_BINARY_DIR}" ninja -t clean
-    COMMAND ${CMAKE_COMMAND} -E echo "Running make clean... done."
+    COMMAND ${CMAKE_COMMAND} -E echo "Running clean target..."
+    COMMAND ${CMAKE_COMMAND} --build ${BRLCAD_BINARY_DIR} --target clean
+    COMMAND ${CMAKE_COMMAND} -E echo "Running clean target... done."
     COMMAND ${CMAKE_COMMAND} -P "${BRLCAD_BINARY_DIR}/distclean.cmake"
     )
-else("${CMAKE_GENERATOR}" MATCHES "Make")
-  add_custom_target(distclean
-    COMMAND ${CMAKE_COMMAND} -E echo "Not implemented for generator ${CMAKE_GENERATOR}"
-    )
-endif("${CMAKE_GENERATOR}" MATCHES "Make")
+endif ("${CMAKE_GENERATOR}" MATCHES "Visual Studio")
 if(TARGET distclean)
   set_target_properties(distclean PROPERTIES FOLDER "Compilation Utilities")
 endif(TARGET distclean)
