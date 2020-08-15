@@ -1146,6 +1146,7 @@ struct dm_impl dm_tk_impl = {
     null_getDisplayImage,	/* display to image function */
     null_reshape,
     null_makeCurrent,
+    null_doevent,
     null_openFb,
     NULL,
     NULL,
@@ -1158,15 +1159,18 @@ struct dm_impl dm_tk_impl = {
     NULL,
     NULL,
     0,
+    1,				/* is graphical */
+    "Tk",                       /* uses Tk graphics system */
     0,				/* no displaylist */
     0,				/* no stereo */
     PLOTBOUND,			/* zoom-in limit */
     1,				/* bound flag */
     "Tk",
     "Tcl/Tk Abstraction Layer",
-    1,
-    0,
-    0,
+    1, /* top */
+    0, /* width */
+    0, /* height */
+    0, /* dirty */
     0, /* bytes per pixel */
     0, /* bits per channel */
     0,
@@ -1201,7 +1205,7 @@ struct dm_impl dm_tk_impl = {
 struct dm dm_tk = { &dm_tk_impl };
 
 #ifdef DM_PLUGIN
-static const struct dm_plugin pinfo = { &dm_tk };
+static const struct dm_plugin pinfo = { DM_API, &dm_tk };
 
 COMPILER_DLLEXPORT const struct dm_plugin *dm_plugin_info()
 {

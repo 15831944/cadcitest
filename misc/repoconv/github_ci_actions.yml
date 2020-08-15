@@ -1,4 +1,24 @@
-#  Use setup similar to https://github.com/cristianadam/HelloWorld/
+#
+#  This logic defines cross platform build testing for BRL-CAD using
+#  Github's "Actions" mechanism.
+#
+#  We define a setup similar to https://github.com/cristianadam/HelloWorld/
+#
+#  Github has a time limit on these tests, and we also don't want to stress the
+#  system too heavily (particularly if we want to run them per-commit.)   For
+#  testing purposes we're currently using distcheck, but for eventual
+#  production use we need to change our build targets to something more
+#  streamlined.  It is probably also worth disabling step and gdal based
+#  features for the standard tests, as those compilation pieces are quite
+#  expensive - they should probably be regulated to something like a once-a-day
+#  test.
+#
+#  TODO - figure out how to schedule chron based jobs as well as the per
+#  commit tests below, so we can define rarer but progressively more
+#  comprehensive and heaver test runs.
+#
+#  TODO - figure out if we can generate actual release binaries from the
+#  artifacts of these builds.
 #
 
 name: BRL-CAD
@@ -115,8 +135,7 @@ jobs:
 
         if ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --config Release --target ALL_BUILD
-             COMMAND cmake --build build --config Release --target check
+             COMMAND cmake --build build --config Release --target distcheck-enableall_release
              RESULT_VARIABLE result
            )
         else ("${{ runner.os }}" STREQUAL "Windows")

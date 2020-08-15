@@ -338,8 +338,6 @@ if("${CMAKE_GENERATOR}" MATCHES "Ninja")
   set(DISTCLEAN_OUTFILES ${DISTCLEAN_OUTFILES} build.ninja rules.ninja)
 endif("${CMAKE_GENERATOR}" MATCHES "Ninja")
 
-CMAKEFILES(.github/workflows/btest.yml)
-
 #---------------------------------------------------------------------
 # By default (as of version 2.8.2) CMake does not provide access to
 # global lists of executable and library targets.  This is useful
@@ -3701,7 +3699,7 @@ function(DIFF_FILE filename)
   string(REGEX REPLACE "\r?\n" "" NEW_STR "${BIN_STR}")
   if(NOT "${OLD_STR}" STREQUAL "${NEW_STR}")
     set(CONFIG_FATAL_ERROR 1 PARENT_SCOPE)
-    message("\n\"${BRLCAD_SOURCE_DIR}/${filename}\" is out of date.  An updated version has been generated at \"${BRLCAD_BINARY_DIR}/${filename}.new\"\nTo clear this warning, replace \"${BRLCAD_SOURCE_DIR}/${filename}\" with \"${BRLCAD_BINARY_DIR}/${filename}.new\"\n")
+    message("\nERROR: \"${BRLCAD_SOURCE_DIR}/${filename}\" is out of date.  An updated version has been generated at \"${BRLCAD_BINARY_DIR}/${filename}.new\"\nTo clear this, replace \"${BRLCAD_SOURCE_DIR}/${filename}\" with \"${BRLCAD_BINARY_DIR}/${filename}.new\" or find the source of the difference.\n")
   endif(NOT "${OLD_STR}" STREQUAL "${NEW_STR}")
 endfunction(DIFF_FILE filename)
 
@@ -3727,7 +3725,7 @@ file(APPEND "${CMAKE_BINARY_DIR}/configure.new" "${CONFIG_SUFFIX}")
 DIFF_FILE(configure)
 
 if(CONFIG_FATAL_ERROR)
-  message(FATAL_ERROR "Configure haulted.")
+  message(FATAL_ERROR "Configure haulted because INSTALL and/or configure script are out of date.")
 endif(CONFIG_FATAL_ERROR)
 
 
