@@ -104,7 +104,7 @@ jobs:
             -S .
             -G Ninja
             -B build
-            -D CMAKE_BUILD_TYPE=$ENV{BUILD_TYPE}
+            -D CMAKE_BUILD_TYPE=Release
             -D CMAKE_VERBOSE_DISTCHECK=ON
           RESULT_VARIABLE result
         )
@@ -141,7 +141,7 @@ jobs:
 
         if ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --config Release --target ALL_BUILD
+             COMMAND cmake --build build --config Release
              COMMAND cmake --build build --config Release --target check
              RESULT_VARIABLE result
            )
