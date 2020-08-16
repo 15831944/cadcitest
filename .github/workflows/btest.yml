@@ -68,6 +68,7 @@ jobs:
     #
   steps:
     - uses: actions/checkout@v1
+
     - uses: ashutoshvarma/setup-ninja@master
 
     - name: Configure
