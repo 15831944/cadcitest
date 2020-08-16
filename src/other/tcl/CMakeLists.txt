@@ -61,6 +61,7 @@ set(TCL_VERSION "${TCL_VERSION_MAJOR}.${TCL_VERSION_MINOR}.${TCL_VERSION_PATCH}"
 # For Windows, we need the Resource Compiler language
 if (WIN32)
   enable_language(RC)
+  set(CMAKE_RC_FLAGS "")
 endif (WIN32)
 
 #-----------------------------------------------------------------------------
