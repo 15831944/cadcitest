@@ -66,8 +66,14 @@ jobs:
     #  so the script recognizes when it is in that environment and
     #  operates accordingly.
     #
-    steps:
+  steps:
     - uses: actions/checkout@v1
+
+    - name: Setup Ninja
+      uses: ashutoshvarma/setup-ninja@master
+      with:
+        # ninja version to download. Default: 1.10.0
+        version: 1.10.0
 
     - name: Configure
       shell: cmake -P {0}
@@ -75,10 +81,10 @@ jobs:
         set(ENV{CC} ${{ matrix.config.cc }})
         set(ENV{CXX} ${{ matrix.config.cxx }})
 
-        if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
+          if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
           execute_process(
-            COMMAND "${{ matrix.config.environment_script }}" && set
-            OUTPUT_FILE environment_script_output.txt
+          COMMAND "${{ matrix.config.environment_script }}" && set
+          OUTPUT_FILE environment_script_output.txt
           )
           file(STRINGS environment_script_output.txt output_lines)
           foreach(line IN LISTS output_lines)
@@ -97,6 +103,7 @@ jobs:
         execute_process(
           COMMAND cmake
             -S .
+            -G Ninja
             -B build
             -D CMAKE_BUILD_TYPE=$ENV{BUILD_TYPE}
             -D CMAKE_VERBOSE_DISTCHECK=ON
