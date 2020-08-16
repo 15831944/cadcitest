@@ -66,8 +66,14 @@ jobs:
     #  so the script recognizes when it is in that environment and
     #  operates accordingly.
     #
-  steps:
+    steps:
     - uses: actions/checkout@v1
+
+    - name: Setup Ninja
+      uses: ashutoshvarma/setup-ninja@master
+      with:
+        # ninja version to download. Default: 1.10.0
+        version: 1.10.0
 
     - name: Configure
       shell: cmake -P {0}
