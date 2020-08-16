@@ -61,7 +61,6 @@ set(TCL_VERSION "${TCL_VERSION_MAJOR}.${TCL_VERSION_MINOR}.${TCL_VERSION_PATCH}"
 # For Windows, we need the Resource Compiler language
 if (WIN32)
   enable_language(RC)
-  set(CMAKE_RC_FLAGS "")
 endif (WIN32)
 
 #-----------------------------------------------------------------------------
@@ -1215,6 +1214,8 @@ set(TCL_WIN_SRCS
   win/tclMainUNICODE.c
   )
 
+set_source_files_properties(win/tcl.rc PROPERTEIS COMPILE_FLAGS "")
+set_source_files_properties(win/tcl.rc PROPERTEIS COMPILE_OPTIONS "")
 set_property(SOURCE win/tclWinInit.c APPEND PROPERTY COMPILE_DEFINITIONS TCL_LIBRARY="${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}tcl${TCL_VERSION_MAJOR}.${TCL_VERSION_MINOR}${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set_property(SOURCE win/tclWinInit.c APPEND PROPERTY COMPILE_DEFINITIONS TCL_PACKAGE_PATH="${CMAKE_INSTALL_PREFIX}/lib")
 set_property(SOURCE win/tclMainUNICODE.c APPEND PROPERTY COMPILE_DEFINITIONS TCL_UNICODE)
