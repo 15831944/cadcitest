@@ -66,6 +66,10 @@ jobs:
     #  so the script recognizes when it is in that environment and
     #  operates accordingly.
     #
+    #  We use https://github.com/marketplace/actions/install-ninja-build-tool
+    #  to set up and use the Ninja build tool on the runner, rather than using
+    #  make or msbuild.
+    #
     steps:
     - uses: actions/checkout@v1
     - uses: seanmiddleditch/gha-setup-ninja@master
