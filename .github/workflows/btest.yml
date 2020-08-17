@@ -66,13 +66,8 @@ jobs:
     #  so the script recognizes when it is in that environment and
     #  operates accordingly.
     #
-    #  We use https://github.com/marketplace/actions/install-ninja-build-tool
-    #  to set up and use the Ninja build tool on the runner, rather than using
-    #  make or msbuild.
-    #
     steps:
     - uses: actions/checkout@v1
-    - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Configure
       shell: cmake -P {0}
@@ -102,7 +97,6 @@ jobs:
         execute_process(
           COMMAND cmake
             -S .
-            -G Ninja
             -B build
             -D CMAKE_BUILD_TYPE=Release
             -D CMAKE_VERBOSE_DISTCHECK=ON
@@ -141,13 +135,14 @@ jobs:
 
         if ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --config Release
+             COMMAND cmake --build build --config Release --target ALL_BUILD
              COMMAND cmake --build build --config Release --target check
              RESULT_VARIABLE result
            )
         else ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --config Release --target distcheck
+             COMMAND cmake --build build --config Release --target all
+             COMMAND cmake --build build --config Release --target check
              RESULT_VARIABLE result
            )
         endif ("${{ runner.os }}" STREQUAL "Windows")
