@@ -46,6 +46,14 @@ set(MGED_SOURCES
   wdb_obj.c
   )
 
+if (HAVE_WINDOWS_H)
+  # To associate an icon with the application for Windows (needed
+  # for the WiX installer) we must use an rc file.
+  enable_language(RC)
+  set(MGED_SOURCES ${MGED_SOURCES} mged.rc)
+endif (HAVE_WINDOWS_H)
+
+
 set(mged_libs libtclcad libged libwdb libdm libnmg ${ITCL_LIBRARY} ${ITK_LIBRARY} ${WS2_32_LIBRARY} ${OPENGL32_LIBRARY})
 if(TARGET libtermio)
   set(mged_libs ${mged_libs} libtermio)
@@ -74,13 +82,21 @@ if (BRLCAD_ENABLE_TCL)
   BRLCAD_INCLUDE_DIRS(MGED_INCLUDE_DIRS)
 
   BRLCAD_ADDEXEC(mged "${MGED_SOURCES}" "${mged_libs}")
-  ADD_TARGET_DEPS(mged Tkhtml Tktable itcl_pkgIndex itk_pkgIndex dm-ogl dm-wgl)
+  ADD_TARGET_DEPS(mged Tkhtml Tktable itcl_pkgIndex itk_pkgIndex dm_plugins)
 
   # mged depends on the creation/installation of all the
   # tclscripts.
   foreach(item ${tclindex_target_list})
     add_dependencies(mged ${item})
   endforeach(item ${tclindex_target_list})
+
+  # MGED is one of the programs that gets a start menu entry
+  set_property(INSTALL "${BIN_DIR}/$<TARGET_FILE_NAME:mged>"
+    PROPERTY CPACK_START_MENU_SHORTCUTS "MGED ${BRLCAD_VERSION}"
+    )
+  set_property(INSTALL "${BIN_DIR}/$<TARGET_FILE_NAME:mged>"
+    PROPERTY CPACK_DESKTOP_SHORTCUTS "MGED ${BRLCAD_VERSION}"
+    )
 
 else (BRLCAD_ENABLE_TCL)
 
@@ -115,6 +131,8 @@ set(mged_ignore_files
   scroll.h
   sedit.h
   titles.h
+  mged.ico
+  mged.rc
   )
 CMAKEFILES(${mged_ignore_files})
 

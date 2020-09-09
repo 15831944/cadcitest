@@ -50,7 +50,7 @@ jobs:
           }
         - {
             name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
-            os: ubuntu-latest,
+            os: ubuntu-20.04,
             cc: "gcc", cxx: "g++"
           }
         - {
@@ -71,12 +71,9 @@ jobs:
     #  so the script recognizes when it is in that environment and
     #  operates accordingly.
     #
-    #  We use https://github.com/marketplace/actions/install-ninja-build-tool
-    #  to set up and use the Ninja build tool on the runner, rather than using
-    #  make or msbuild.
-    #
     steps:
     - uses: actions/checkout@v1
+    - uses: lukka/get-cmake@latest
     - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Configure
@@ -104,15 +101,28 @@ jobs:
         endif()
         set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
 
+        if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
+        execute_process(
+          COMMAND cmake
+            -S .
+            -B build
+            -D ENABLE_ALL=ON
+            -D CMAKE_BUILD_TYPE=Release
+            -D CMAKE_VERBOSE_DISTCHECK=ON
+          RESULT_VARIABLE result
+        )
+        else()
         execute_process(
           COMMAND cmake
             -S .
             -G Ninja
             -B build
-            -D CMAKE_BUILD_TYPE=$ENV{BUILD_TYPE}
+            -D ENABLE_ALL=ON
+            -D CMAKE_BUILD_TYPE=Release
             -D CMAKE_VERBOSE_DISTCHECK=ON
           RESULT_VARIABLE result
         )
+        endif()
         if (NOT result EQUAL 0)
           message(FATAL_ERROR "Bad exit status")
         endif()
@@ -146,13 +156,14 @@ jobs:
 
         if ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --config Release --target ALL_BUILD
-             COMMAND cmake --build build --config Release --target check
+             COMMAND cmake --build build -j 1 --config Release --target ALL_BUILD
+             COMMAND cmake --build build -j 1 --config Release --target check
              RESULT_VARIABLE result
            )
         else ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --config Release --target distcheck
+             COMMAND cmake --build build --verbose --config Release --target all
+             COMMAND cmake --build build --verbose --config Release --target check
              RESULT_VARIABLE result
            )
         endif ("${{ runner.os }}" STREQUAL "Windows")

@@ -31,6 +31,11 @@ jobs:
     #  Define a matrix of the operating system and compiler combinations
     #  we want to build against.
     #
+    #  Note that for Windows the vcvars64.bat script is important - that
+    #  is what sets up environment variables to make sure we get the 64
+    #  bit version of the compiler and libraries.  See:
+    #  https://docs.microsoft.com/en-us/cpp/build/building-on-the-command-line
+    #
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     strategy:
@@ -45,7 +50,7 @@ jobs:
           }
         - {
             name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
-            os: ubuntu-latest,
+            os: ubuntu-20.04,
             cc: "gcc", cxx: "g++"
           }
         - {
@@ -68,6 +73,8 @@ jobs:
     #
     steps:
     - uses: actions/checkout@v1
+    - uses: lukka/get-cmake@latest
+    - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Configure
       shell: cmake -P {0}
@@ -94,10 +101,12 @@ jobs:
         endif()
         set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
 
-        execute_process(
+         execute_process(
           COMMAND cmake
             -S .
+            -G Ninja
             -B build
+            -D ENABLE_ALL=ON
             -D CMAKE_BUILD_TYPE=Release
             -D CMAKE_VERBOSE_DISTCHECK=ON
           RESULT_VARIABLE result
@@ -135,14 +144,14 @@ jobs:
 
         if ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --config Release --target ALL_BUILD
-             COMMAND cmake --build build --config Release --target check
+             COMMAND cmake --build build -j 1 --config Release --target ALL_BUILD
+             COMMAND cmake --build build -j 1 --config Release --target check
              RESULT_VARIABLE result
            )
         else ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --config Release --target all
-             COMMAND cmake --build build --config Release --target check
+             COMMAND cmake --build build --verbose --config Release --target all
+             COMMAND cmake --build build --verbose --config Release --target check
              RESULT_VARIABLE result
            )
         endif ("${{ runner.os }}" STREQUAL "Windows")
