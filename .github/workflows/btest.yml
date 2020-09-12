@@ -42,17 +42,17 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - {
-            name: "Windows Latest MSVC", artifact: "Windows-MSVC.tar.xz",
-            os: windows-latest,
-            cc: "cl", cxx: "cl",
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-          }
-        - {
-            name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
-            os: ubuntu-20.04,
-            cc: "gcc", cxx: "g++"
-          }
+    #   - {
+    #       name: "Windows Latest MSVC", artifact: "Windows-MSVC.tar.xz",
+    #       os: windows-latest,
+    #       cc: "cl", cxx: "cl",
+    #       environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+    #     }
+    #   - {
+    #       name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
+    #       os: ubuntu-20.04,
+    #       cc: "gcc", cxx: "g++"
+    #     }
         - {
             name: "macOS Latest Clang", artifact: "macOS.tar.xz",
             os: macos-latest,
@@ -150,8 +150,8 @@ jobs:
            )
         else ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
-             COMMAND cmake --build build --verbose --config Release --target all
-             COMMAND cmake --build build --verbose --config Release --target check
+             COMMAND cmake --build build --verbose --config Release --target distcheck-full
+             #COMMAND cmake --build build --verbose --config Release --target check
              RESULT_VARIABLE result
            )
         endif ("${{ runner.os }}" STREQUAL "Windows")
