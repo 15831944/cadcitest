@@ -19,7 +19,6 @@
 #
 #  TODO - figure out if we can generate actual release binaries from the
 #  artifacts of these builds.
-#
 
 name: BRL-CAD
 
