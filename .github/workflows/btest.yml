@@ -162,6 +162,7 @@ jobs:
            )
         else ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
+             COMMAND sync
              COMMAND cmake --build build --verbose --config Release --target all
              COMMAND cmake --build build --verbose --config Release --target check
              RESULT_VARIABLE result
