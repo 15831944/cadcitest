@@ -72,8 +72,9 @@ jobs:
     #  operates accordingly.
     #
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - uses: lukka/get-cmake@latest
+    - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Configure
       shell: cmake -P {0}
@@ -114,6 +115,7 @@ jobs:
         execute_process(
           COMMAND cmake
             -S .
+            -G Ninja
             -B build
             -D ENABLE_ALL=ON
             -D CMAKE_BUILD_TYPE=Release
@@ -159,20 +161,13 @@ jobs:
              RESULT_VARIABLE result
            )
         else ("${{ runner.os }}" STREQUAL "Windows")
-
            execute_process(
-             COMMAND sync
-             COMMAND cmake --build build -j 4 --verbose --config Release --target all
-             COMMAND cmake --build build -j 4 --verbose --config Release --target check
+             COMMAND cmake --build build -j 1 --verbose --config Release --target all
+             COMMAND cmake --build build -j 1 --verbose --config Release --target check
              RESULT_VARIABLE result
            )
         endif ("${{ runner.os }}" STREQUAL "Windows")
         if (NOT result EQUAL 0)
-          if (NOT "${{ runner.os }}" STREQUAL "Windows")
-           execute_process(
-             COMMAND nm build/misc/tools/lemon/CMakeFiles/lemon.dir/lemon.c.o
-           )
-          endif (NOT "${{ runner.os }}" STREQUAL "Windows")
           message(FATAL_ERROR "Bad exit status")
         endif()
 
