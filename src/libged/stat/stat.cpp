@@ -26,13 +26,16 @@
 
 #include "common.h"
 
+#include <set>
 #include <sstream>
+
 extern "C" {
 #include "fort.h"
 #include "../alphanum.h"
 }
 
 #include "bu/opt.h"
+#include "bu/ptbl.h"
 #include "bu/sort.h"
 #include "bu/units.h"
 #include "bu/vls.h"
@@ -549,9 +552,18 @@ ged_stat_core(struct ged *gedp, int argc, const char *argv[])
 	int s_flags = 0;
 	s_flags |= DB_SEARCH_RETURN_UNIQ_DP;
 	(void)db_search(&sobjs, s_flags, bu_vls_cstr(&search_filter), 0, NULL, dbip, NULL);
+
+	// If we're not allowed *any* objects according to the filters, there's no point in
+	// doing any more work - just print the header and exit.
+	if (!BU_PTBL_LEN(&sobjs)) {
+	    bu_vls_printf(gedp->ged_result_str, "%s\n", ft_to_string(table));
+	    ft_destroy_table(table);
+	    bu_ptbl_free(&sobjs);
+	    return GED_OK;
+	}
     }
 
-    struct bu_ptbl objs = BU_PTBL_INIT_ZERO;
+    std::set<struct directory *> udp;
 
     for (int i = 0; i < argc; i++) {
 
@@ -568,13 +580,19 @@ ged_stat_core(struct ged *gedp, int argc, const char *argv[])
 		    continue;
 		}
 	    }
-	    bu_ptbl_ins_unique(&objs,  (long *)dp);
+	    udp.insert(dp);
 	}
 
 	bu_free(paths, "dp array");
     }
 
     // If we have any sorting enabled, do that
+    struct bu_ptbl objs = BU_PTBL_INIT_ZERO;
+    std::set<struct directory *>::iterator o_it;
+    for (o_it = udp.begin(); o_it != udp.end(); o_it++) {
+	struct directory *dp = *o_it;
+	bu_ptbl_ins(&objs,  (long *)dp);
+    }
     dpath_sort((void *)objs.buffer, BU_PTBL_LEN(&objs), bu_vls_cstr(&sort_str), gedp);
 
     for (size_t j = 0; j < BU_PTBL_LEN(&objs); j++) {
