@@ -74,7 +74,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - uses: lukka/get-cmake@latest
-    - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Configure
       shell: cmake -P {0}
@@ -115,7 +114,6 @@ jobs:
         execute_process(
           COMMAND cmake
             -S .
-            -G Ninja
             -B build
             -D ENABLE_ALL=ON
             -D CMAKE_BUILD_TYPE=Release
@@ -161,14 +159,11 @@ jobs:
              RESULT_VARIABLE result
            )
         else ("${{ runner.os }}" STREQUAL "Windows")
-           execute_process(
-             COMMAND cat build/build.ninja
-           )
 
            execute_process(
              COMMAND sync
-             COMMAND cmake --build build --verbose --config Release --target all
-             COMMAND cmake --build build --verbose --config Release --target check
+             COMMAND cmake --build build -j 4 --verbose --config Release --target all
+             COMMAND cmake --build build -j 4 --verbose --config Release --target check
              RESULT_VARIABLE result
            )
         endif ("${{ runner.os }}" STREQUAL "Windows")
