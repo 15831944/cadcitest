@@ -179,22 +179,32 @@ jobs:
         set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
 
         if ("${{ runner.os }}" STREQUAL "Windows")
-           execute_process(
-             COMMAND cmake --build build -j 1 --config Release --target ALL_BUILD
-             COMMAND cmake --build build -j 1 --config Release --target check
-             COMMAND cmake --build build -j 1 --verbose --config Release --target PACKAGE
-             RESULT_VARIABLE result
-           )
+           set(BCNT 0)
+           set(result 1)
+           while(result AND ${BCNT} LESS 4)
+             execute_process(
+               COMMAND cmake --build build -j 1 --config Release --target ALL_BUILD
+               COMMAND cmake --build build -j 1 --config Release --target check
+               COMMAND cmake --build build -j 1 --verbose --config Release --target PACKAGE
+               RESULT_VARIABLE result
+             )
+             math(EXPR BCNT "${BCNT}+1")
+           endwhile()
            # Try Write-VolumeCache for Windows
            execute_process(COMMAND powershell Write-VolumeCache C)
            execute_process(COMMAND powershell Write-VolumeCache D)
         else ("${{ runner.os }}" STREQUAL "Windows")
-           execute_process(
-             COMMAND cmake --build build -j 1 --verbose --config Release --target all
-             COMMAND cmake --build build -j 1 --verbose --config Release --target check
-             COMMAND cmake --build build -j 1 --verbose --config Release --target package
-             RESULT_VARIABLE result
-           )
+           set(BCNT 0)
+           set(result 1)
+           while(result AND ${BCNT} LESS 4)
+             execute_process(
+               COMMAND cmake --build build -j 1 --verbose --config Release --target all
+               COMMAND cmake --build build -j 1 --verbose --config Release --target check
+               COMMAND cmake --build build -j 1 --verbose --config Release --target package
+               RESULT_VARIABLE result
+             )
+             math(EXPR BCNT "${BCNT}+1")
+           endwhile()
            # On platforms where we have it, make sure the files are in place with a sync
            execute_process(COMMAND sync)
         endif ("${{ runner.os }}" STREQUAL "Windows")
