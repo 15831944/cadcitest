@@ -18,7 +18,10 @@
 #  comprehensive and heaver test runs.
 #
 #  TODO - figure out if we can generate actual release binaries from the
-#  artifacts of these builds.
+#  artifacts of these builds.  When we do, we'll want to also incorporate
+#  some sort of periodic cleanup so we don't burn too much storage space
+#  with each build - see, for example:
+#  https://poweruser.blog/storage-housekeeping-on-github-actions-e2997b5b23d1?gi=f134f9f8b336
 #
 
 name: BRL-CAD
@@ -39,7 +42,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         config:
         - {
@@ -170,4 +173,31 @@ jobs:
         if (NOT result EQUAL 0)
           message(FATAL_ERROR "Bad exit status")
         endif()
+
+    - name: Package
+      shell: cmake -P {0}
+      run: |
+        if ("${{ runner.os }}" STREQUAL "Windows")
+           execute_process(
+             COMMAND cmake --build build -j 1 --config Release --target PACKAGE
+             COMMAND cmake -E make_directory package
+             COMMAND cmake -E copy BRL-CAD* package/
+             RESULT_VARIABLE result
+           )
+        else ("${{ runner.os }}" STREQUAL "Windows")
+           execute_process(
+             COMMAND cmake --build build -j 1 --verbose --config Release --target package
+             COMMAND cmake -E make_directory package
+             COMMAND cmake -E copy BRL-CAD* package/
+             RESULT_VARIABLE result
+           )
+        endif ("${{ runner.os }}" STREQUAL "Windows")
+        if (NOT result EQUAL 0)
+          message(FATAL_ERROR "Bad exit status")
+        endif()
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: BRL-CAD
+        path: ${{ github.workspace }}/package/*
 
