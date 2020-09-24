@@ -189,7 +189,7 @@ jobs:
     - name: Package
       shell: cmake -P {0}
       run: |
-        string(REPLACE "\\" "/" gw_path ${{ github.workspace }})
+        file(TO_CMAKE_PATH "$ENV{GITHUB_WORKSPACE}" gw_path)
         message("gw_path: ${gw_path}")
         # https://cmake.org/pipermail/cmake/2007-July/015471.html
         file(MAKE_DIRECTORY "${gw_path}/package")
