@@ -181,14 +181,16 @@ jobs:
            execute_process(
              COMMAND cmake --build build -j 1 --config Release --target PACKAGE
              COMMAND cmake -E make_directory package
-             COMMAND cmake -E copy BRL-CAD* package/
+             COMMAND dir
+             COMMAND move BRL-CAD* package/
              RESULT_VARIABLE result
            )
         else ("${{ runner.os }}" STREQUAL "Windows")
            execute_process(
              COMMAND cmake --build build -j 1 --verbose --config Release --target package
              COMMAND cmake -E make_directory package
-             COMMAND cmake -E copy BRL-CAD* package/
+             COMMAND ls
+             COMMAND mv BRL-CAD* package/
              RESULT_VARIABLE result
            )
         endif ("${{ runner.os }}" STREQUAL "Windows")
