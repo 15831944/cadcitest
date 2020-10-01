@@ -673,21 +673,6 @@ if(BRLCAD_OPENNURBS_BUILD)
   BRLCAD_MANAGE_FILES(openNURBS_headers ${INCLUDE_DIR}/openNURBS)
 endif(BRLCAD_OPENNURBS_BUILD)
 
-# Screened Poisson Reconstruction Library
-set(spsr_DESCRIPTION "
-Option for enabling and disabling compilation of the Screened Poisson
-Surface Reconstruction library provided with BRL-CAD's source code.
-Default is AUTO, responsive to the toplevel BRLCAD_BUNDLED_LIBS option
-and testing first for a system version if BRLCAD_BUNDLED_LIBS is also AUTO.
-")
-THIRD_PARTY(libspsr SPSR SPSR spsr_DESCRIPTION ALIASES
-  ENABLE_SPSR FLAGS NOSYS)
-if(BRLCAD_SPSR_BUILD)
-  SetTargetFolder(PoissonRecon "Third Party Executables")
-  SetTargetFolder(SurfaceTrimmer "Third Party Executables")
-  SetTargetFolder(SPSR "Third Party Libraries")
-  SetTargetFolder(SPSR-static "Third Party Libraries")
-endif(BRLCAD_SPSR_BUILD)
 
 if(BRLCAD_ENABLE_BINARY_ATTRIBUTES)
 #=== LIBBSON ==================================================
@@ -895,6 +880,18 @@ mark_as_advanced(GDIAM_INCLUDE_DIRS)
 #endif(BRLCAD_LEVEL2)
 
 # Poly2Tri CDT library
+# Note - this really should be embedded as part of libbg - it is simple, can be
+# compiled as part of libbg with a few source adjustments, and there is an API
+# for this feature exposed by libbg.  The only reason it is still maintained as
+# a separate library is the fast cdt feature of libbrep, which is using this
+# API directly instead of going through libbg.  Care will have to be taken when
+# making that shift, and it may even be that we'll discover a need to adjust the
+# libbg API in doing so to avoid performance issues.  We should eventually
+# address those issues though, if for no other reason than to discourage other
+# direct uses of this API instead of bg_nested_polygon_triangulate.
+#
+# May also want to investigate https://github.com/MetricPanda/fast-poly2tri, but
+# the removal of Steiner point insertion would probably need to be addressed...
 add_subdirectory(poly2tri)
 include("${CMAKE_CURRENT_SOURCE_DIR}/poly2tri.dist")
 CMAKEFILES_IN_DIR(poly2tri_ignore_files poly2tri)
