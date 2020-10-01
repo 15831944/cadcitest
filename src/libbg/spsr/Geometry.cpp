@@ -39,10 +39,6 @@ DAMAGE.
 #  pragma clang diagnostic ignored "-Wfloat-equal"
 #endif
 
-#ifdef MACOS_X
-#  undef _XOPEN_SOURCE
-#endif
-
 #include "Geometry.h"
 #include <stdio.h>
 #include <string.h>

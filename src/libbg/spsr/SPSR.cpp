@@ -58,33 +58,21 @@ DAMAGE.
 #  pragma clang diagnostic ignored "-Wreturn-type"
 #endif
 
-#ifdef MACOS_X
-#  undef _XOPEN_SOURCE
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <float.h>
 #include "SPSR.h"
 #include <iostream>
-#ifdef _WIN32
-#include <Windows.h>
-#include <Psapi.h>
-#endif // _WIN32
 #include "MarchingCubes.h"
 #include "Octree.h"
 #include "SparseMatrix.h"
 #include "PlyVertexMini.h"
 #include "PPolynomial.h"
-#include "MemoryUsage.h"
-#ifdef _OPENMP
-#include "omp.h"
-#endif // _OPENMP
-void DumpOutput( const char* format , ... ) {}
-void DumpOutput2( char* str , const char* format , ... ) {}
 #include "MultiGridOctreeData.h"
 
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic pop
+#endif
+#if defined(__clang__)
+#  pragma clang diagnostic pop
+#endif
 
 extern "C" int
 spsr_surface_build(int **faces, int *num_faces, double **points, int *num_pnts,
@@ -98,13 +86,12 @@ spsr_surface_build(int **faces, int *num_faces, double **points, int *num_pnts,
     Octree< double > tree;
     tree.threads = opts->thread_cnt;
     OctNode< TreeNodeData >::SetAllocator( MEMORY_ALLOCATOR_BLOCK_SIZE );
-    double maxMemoryUsage;
     Octree< double >::PointInfo* pointInfo = new Octree< double >::PointInfo();
     Octree< double >::NormalInfo* normalInfo = new Octree< double >::NormalInfo();
     std::vector< double >* kernelDensityWeights = new std::vector< double >();
     std::vector< double >* centerWeights = new std::vector< double >();
     PointStream< float >* pointStream = new CVertexPointStream< float >( cnt, verts );
-    int pointCount = tree.SetTree< float >(pointStream , opts->mindepth, opts->depth, opts->fulldepth, opts->kerneldepth,
+    tree.SetTree< float >(pointStream , opts->mindepth, opts->depth, opts->fulldepth, opts->kerneldepth,
 	    opts->samples_per_node, opts->scale, 0, 0, opts->pointweight, opts->adaptiveexponent, *pointInfo,
 	    *normalInfo , *kernelDensityWeights , *centerWeights , opts->boundarytype, xForm , 0);
     kernelDensityWeights->clear();
@@ -157,13 +144,6 @@ spsr_surface_build(int **faces, int *num_faces, double **points, int *num_pnts,
     Reset< double>();
     return 0;
 }
-
-#if defined(__GNUC__) && !defined(__clang__)
-#  pragma GCC diagnostic pop
-#endif
-#if defined(__clang__)
-#  pragma clang diagnostic pop
-#endif
 
 // Local Variables:
 // tab-width: 8

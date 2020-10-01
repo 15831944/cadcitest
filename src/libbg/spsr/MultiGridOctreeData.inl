@@ -27,7 +27,6 @@ DAMAGE.
 */
 
 #include "Octree.h"
-#include "MemoryUsage.h"
 #include "PointStream.h"
 #include "MAT.h"
 
@@ -53,14 +52,6 @@ TreeNodeData::~TreeNodeData( void ) { }
 // Octree //
 ////////////
 template< class Real > double Octree< Real >::maxMemoryUsage=0;
-
-template< class Real >
-double Octree< Real >::MemoryUsage(void)
-{
-	double mem = double( MemoryInfo::Usage() ) / (1<<20);
-	if( mem>maxMemoryUsage ) maxMemoryUsage=mem;
-	return mem;
-}
 
 template< class Real >
 Octree< Real >::Octree( void )
@@ -1673,7 +1664,6 @@ Pointer( Real ) Octree< Real >::SolveSystem( PointInfo& pointInfo , Pointer( Rea
 	std::vector< Real > metSolution( _sNodes.nodeCount[ _sNodes.maxDepth-1 ] , 0 );
 	for( int d=_minDepth ; d<_sNodes.maxDepth ; d++ )
 	{
-		DumpOutput( "Depth[%d/%d]: %d\n" , _boundaryType==0 ? d-1 : d , _boundaryType==0 ? _sNodes.maxDepth-2 : _sNodes.maxDepth-1 , _sNodes.nodeCount[d+1]-_sNodes.nodeCount[d] );
 		if( d==_minDepth )
 			_SolveSystemCG( pointInfo , d , integrator , _sNodes , solution , constraints , GetPointer( metSolution ) , _sNodes.nodeCount[_minDepth+1]-_sNodes.nodeCount[_minDepth] , true , showResidual, NULL , NULL , NULL );
 		else

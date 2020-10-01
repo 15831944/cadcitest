@@ -27,7 +27,6 @@ DAMAGE.
 */
 
 #include "Octree.h"
-#include "MemoryUsage.h"
 #include "MAT.h"
 
 

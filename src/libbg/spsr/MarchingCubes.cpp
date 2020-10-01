@@ -43,10 +43,6 @@ DAMAGE.
 #  pragma clang diagnostic ignored "-Wconstant-logical-operand"
 #endif
 
-#ifdef MACOS_X
-#  undef _XOPEN_SOURCE
-#endif
-
 #include "MarchingCubes.h"
 
 ////////////

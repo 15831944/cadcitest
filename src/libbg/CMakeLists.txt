@@ -8,6 +8,47 @@ set(BG_INCLUDE_DIRS
   )
 BRLCAD_LIB_INCLUDE_DIRS(bg BG_INCLUDE_DIRS "")
 
+set(SPSR_srcs
+  spsr/Allocator.h
+  spsr/Array.h
+  spsr/Array.inl
+  spsr/BinaryNode.h
+  spsr/BSplineData.h
+  spsr/BSplineData.inl
+  spsr/cvertex.h
+  spsr/Factor.cpp
+  spsr/Factor.h
+  spsr/FunctionData.h
+  spsr/FunctionData.inl
+  spsr/Geometry.cpp
+  spsr/Geometry.h
+  spsr/Geometry.inl
+  spsr/Hash.h
+  spsr/MarchingCubes.cpp
+  spsr/MarchingCubes.h
+  spsr/MAT.h
+  spsr/MAT.inl
+  spsr/MultiGridOctreeData.h
+  spsr/MultiGridOctreeData.inl
+  spsr/MultiGridOctreeData.IsoSurface.inl
+  spsr/MultiGridOctreeData.SortedTreeNodes.inl
+  spsr/Octree.h
+  spsr/Octree.inl
+  spsr/PlyVertexMini.h
+  spsr/PointStream.h
+  spsr/PointStream.inl
+  spsr/Polynomial.h
+  spsr/Polynomial.inl
+  spsr/PPolynomial.h
+  spsr/PPolynomial.inl
+  spsr/SparseMatrix.h
+  spsr/SparseMatrix.inl
+  spsr/SPSR.cpp
+  spsr/SPSR.h
+  spsr/Vector.h
+  spsr/Vector.inl
+  )
+
 set(LIBBG_SOURCES
   aabb_ray.c
   chull.c
@@ -23,10 +64,7 @@ set(LIBBG_SOURCES
   polygon_triangulate.cpp
   polygon_point_in.c
   spsr.c
-  spsr/Factor.cpp
-  spsr/Geometry.cpp
-  spsr/MarchingCubes.cpp
-  spsr/SPSR.cpp
+  ${SPSR_srcs}
   tri_pt.c
   tri_ray.c
   tri_tri.c
@@ -57,6 +95,7 @@ set(bg_ignore
   delaunator.hpp
   earcut.hpp
   pointgen.c
+  spsr/LICENSE
   )
 
 CMAKEFILES(${bg_ignore})
@@ -68,3 +107,4 @@ CMAKEFILES(CMakeLists.txt)
 # indent-tabs-mode: t
 # End:
 # ex: shiftwidth=2 tabstop=8
+
