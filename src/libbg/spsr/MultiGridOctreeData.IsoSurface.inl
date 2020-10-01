@@ -720,7 +720,8 @@ void Octree< Real >::SetXSliceIsoEdges( int depth , int slab , std::vector< Slab
 						fe.count = MarchingSquares::AddEdgeIndices( _mcIndex , isoEdges );
 						for( int j=0 ; j<fe.count ; j++ ) for( int k=0 ; k<2 ; k++ )
 						{
-							int _o , _x;
+							int _o = 0;
+							int _x = 0;
 							Square::FactorEdgeIndex( isoEdges[2*j+k] , _o , _x );
 							if( _o==1 ) // Cross-edge
 							{

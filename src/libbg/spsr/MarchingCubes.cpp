@@ -945,7 +945,7 @@ unsigned char MarchingCubes::GetFaceIndex( unsigned char mcIndex , int faceIndex
 {
 	int i,j,x,y,z;
 	unsigned char idx=0;
-	int v[2][2];
+	int v[2][2] = {{0,0},{0,0}};
 	Cube::FactorFaceIndex(faceIndex,x,y,z);
 	if		(x<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=mcIndex&(1<<MarchingCubes::cornerMap[Cube::CornerIndex(0,i,j)]);}}}
 	else if	(x>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=mcIndex&(1<<MarchingCubes::cornerMap[Cube::CornerIndex(1,i,j)]);}}}
