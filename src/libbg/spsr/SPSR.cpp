@@ -58,6 +58,10 @@ DAMAGE.
 #  pragma clang diagnostic ignored "-Wreturn-type"
 #endif
 
+#ifdef MACOS_X
+#  undef _XOPEN_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

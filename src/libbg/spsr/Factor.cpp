@@ -39,6 +39,10 @@ DAMAGE.
 #  pragma clang diagnostic ignored "-Wfloat-equal"
 #endif
 
+#ifdef MACOS_X
+#  undef _XOPEN_SOURCE
+#endif
+
 //////////////////////
 // Polynomial Roots //
 //////////////////////
