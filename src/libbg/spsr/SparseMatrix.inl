@@ -490,7 +490,8 @@ void SparseSymmetricMatrix<T>::Multiply( const Vector<T2>& In , Vector<T2>& Out 
 #ifdef WIN32
 #ifndef _AtomicIncrement_
 #define _AtomicIncrement_
-#include <WinBase.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 inline void AtomicIncrement( volatile float* ptr , float addend )
 {
 	float newValue = *ptr;
