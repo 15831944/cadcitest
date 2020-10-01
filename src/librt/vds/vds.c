@@ -1618,13 +1618,13 @@ static vdsNode *readNode(FILE *f, vdsNodeDataReader getdata)
 
     node = (vdsNode *) calloc(1, sizeof(vdsNode));
     node->status = Inactive;
-    fread(&node->bound, sizeof(vdsBoundingVolume), 1, f);
-    fread(&node->coord, sizeof(vdsVec3), 1, f);
-    fread(&numchildren, sizeof(numchildren), 1, f);
+    (void)fread(&node->bound, sizeof(vdsBoundingVolume), 1, f);
+    (void)fread(&node->coord, sizeof(vdsVec3), 1, f);
+    (void)fread(&numchildren, sizeof(numchildren), 1, f);
     /* if numchildren is 0, set node->children NULL, otherwise to non-NULL */
     node->children = (numchildren == 0 ? NULL : (vdsNode *) 0x1);
     /* Read sibling pointer (actually we just care if it's NULL or not) */
-    fread(&node->sibling, sizeof(node->sibling), 1, f);
+    (void)fread(&node->sibling, sizeof(node->sibling), 1, f);
     /*
      * We can read and write the triangles directly to the binary file, at
      * the expense of re-running vdsComputeTriNodes() afterwards.  Also,
@@ -1632,14 +1632,14 @@ static vdsNode *readNode(FILE *f, vdsNodeDataReader getdata)
      * that we are locked to a particular architecture/compiler's memory
      * alignment...not very portable.
      */
-    fread(&numsubtris, sizeof(numsubtris), 1, f);
+    (void)fread(&numsubtris, sizeof(numsubtris), 1, f);
     node->nsubtris = numsubtris;
     node = (vdsNode *) realloc(node, sizeof(vdsNode) +
 	    numsubtris * sizeof(vdsTri));
-    fread(&node->subtris[0], sizeof(vdsTri), numsubtris, f);
+    (void)fread(&node->subtris[0], sizeof(vdsTri), numsubtris, f);
     /* Now get the associated node data if user has provided a function */
     if (getdata == NULL) {
-	fread(&node->data, sizeof(vdsNodeData), 1, f);
+	(void)fread(&node->data, sizeof(vdsNodeData), 1, f);
     } else {
 	node->data = getdata(f);
     }
