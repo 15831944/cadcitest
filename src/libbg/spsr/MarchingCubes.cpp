@@ -36,7 +36,6 @@ DAMAGE.
 #if defined(__GNUC__) && !defined(__clang__)
 #  pragma GCC diagnostic ignored "-Wfloat-equal"
 #  pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#  pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 #if defined(__clang__)
 #  pragma clang diagnostic ignored "-Wfloat-equal"
@@ -82,7 +81,8 @@ void Square::FactorEdgeIndex(int idx,int& orientation,int& i){
 	};
 }
 void Square::EdgeCorners(int idx,int& c1,int& c2){
-	int orientation,i;
+	int orientation = 0;
+	int i = 0;
 	FactorEdgeIndex(idx,orientation,i);
 	switch(orientation){
 		case 0:

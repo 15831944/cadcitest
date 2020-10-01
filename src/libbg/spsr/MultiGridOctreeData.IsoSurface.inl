@@ -895,7 +895,8 @@ bool Octree< Real >::GetIsoVertex( ConstPointer( Real ) kernelDensityWeights , R
 	x0 = sValues.cornerValues[idx[c0]] , x1 = sValues.cornerValues[idx[c1]];
 	if( sValues.cornerNormals ) n0 = sValues.cornerNormals[idx[c0]] , n1 = sValues.cornerNormals[idx[c1]];
 
-	int o , y;
+	int o = 0;
+	int y = 0;
 	Square::FactorEdgeIndex( edgeIndex , o , y );
 
 	Point3D< Real > c;
