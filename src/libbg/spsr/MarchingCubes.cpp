@@ -36,6 +36,7 @@ DAMAGE.
 #if defined(__GNUC__) && !defined(__clang__)
 #  pragma GCC diagnostic ignored "-Wfloat-equal"
 #  pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#  pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 #if defined(__clang__)
 #  pragma clang diagnostic ignored "-Wfloat-equal"
