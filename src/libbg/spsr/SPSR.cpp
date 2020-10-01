@@ -102,7 +102,7 @@ spsr_surface_build(int **faces, int *num_faces, double **points, int *num_pnts,
     Pointer( double ) solution = tree.SolveSystem( *pointInfo , constraints , 0 , opts->iters , opts->maxsolvedepth , opts->cgdepth , float(opts->cssolveraccuracy) );
     delete pointInfo;
     FreePointer(constraints);
-    CoredFileMeshData< PlyVertex <float> > mesh;
+    CoredVectorMeshData< PlyVertex <float> > mesh;
     double isoValue = tree.GetIsoValue( solution , *centerWeights );
     centerWeights->clear();
     delete centerWeights;
