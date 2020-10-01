@@ -46,6 +46,7 @@ DAMAGE.
 #  pragma GCC diagnostic ignored "-Wreturn-type"
 #endif
 #if defined(__clang__)
+#  pragma clang diagnostic ignored "-Wunknown-warning-option"
 #  pragma clang diagnostic ignored "-Wfloat-equal"
 #  pragma clang diagnostic ignored "-Wshadow"
 #  pragma clang diagnostic ignored "-Wunused-parameter"
