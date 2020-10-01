@@ -124,6 +124,7 @@ jobs:
             -D BRLCAD_ENABLE_STEP=OFF
             -D BRLCAD_EXTRADOCS=OFF
             -D BUILD_STATIC_LIBS=OFF
+            -D BRLCAD_ENABLE_TARGETS=1
            RESULT_VARIABLE result
         )
         if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
