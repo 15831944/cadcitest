@@ -51,7 +51,6 @@ TreeNodeData::~TreeNodeData( void ) { }
 ////////////
 // Octree //
 ////////////
-template< class Real > double Octree< Real >::maxMemoryUsage=0;
 
 template< class Real >
 Octree< Real >::Octree( void )
@@ -600,7 +599,6 @@ int Octree< Real >::SetTree( PointStream< PointReal >* pointStream , int minDept
 	constraintWeight *= Real( pointWeightSum );
 	constraintWeight /= cnt;
 
-	MemoryUsage( );
 	if( _constrainValues )
 		// Set the average position and scale the weights
 		for( TreeOctNode* node=tree.nextNode() ; node ; node=tree.nextNode(node) )
@@ -635,7 +633,6 @@ int Octree< Real >::SetTree( PointStream< PointReal >* pointStream , int minDept
 		if( idx<0 ) centerWeights[ node->nodeData.nodeIndex ] = 0;
 		else        centerWeights[ node->nodeData.nodeIndex ] = Real( Length( normalInfo.normals[ idx ] ) );
 	}
-	MemoryUsage();
 	{
 		std::vector< int > indexMap;
 		if( makeComplete ) MakeComplete( &indexMap );
@@ -677,7 +674,6 @@ void Octree< Real >::MakeComplete( std::vector< int >* map )
 {
 	tree.setFullDepth( tree.maxDepth() );
 	refineBoundary( map );
-	MemoryUsage();
 }
 template< class Real >
 void Octree< Real >::ClipTree( const NormalInfo& normalInfo )
@@ -690,7 +686,6 @@ void Octree< Real >::ClipTree( const NormalInfo& normalInfo )
 			for( int i=0 ; i<Cube::CORNERS && !hasNormals ; i++ ) hasNormals = HasNormals( &temp->children[i] , normalInfo );
 			if( !hasNormals ) temp->children=NULL;
 		}
-	MemoryUsage();
 }
 
 template< class Real >
@@ -1708,8 +1703,6 @@ int Octree< Real >::_SolveSystemGS( PointInfo& pointInfo , int depth , const typ
 	if( coarseToFine ) metSolution    = metSolutionConstraints;	// This stores the up-sampled solution up to depth-2
 	else               metConstraints = metSolutionConstraints; // This stores the down-sampled constraints up to depth
 
-	double _maxMemoryUsage = maxMemoryUsage;
-	maxMemoryUsage = 0;
 	Vector< Real > X , B;
 	int slices = 1<<depth;
 	std::vector< int > offsets( slices+1 , 0 );
@@ -1837,9 +1830,6 @@ int Octree< Real >::_SolveSystemGS( PointInfo& pointInfo , int depth , const typ
 		}
 	}
 
-	MemoryUsage();
-	maxMemoryUsage = std::max< double >( maxMemoryUsage , _maxMemoryUsage );
-
 	return iters;
 }
 template< class Real >
@@ -1849,8 +1839,6 @@ int Octree< Real >::_SolveSystemCG( PointInfo& pointInfo , int depth , const typ
 	Pointer( Real ) metConstraints = NullPointer< Real >();
 	if( coarseToFine ) metSolution    = metSolutionConstraints;	// This stores the up-sampled solution up to depth-2
 	else               metConstraints = metSolutionConstraints; // This stores the down-sampled constraints up to depth
-	double _maxMemoryUsage = maxMemoryUsage;
-	maxMemoryUsage = 0;
 	int iter = 0;
 	Vector< Real > X , B;
 	SparseSymmetricMatrix< Real > M;
@@ -1923,8 +1911,6 @@ int Octree< Real >::_SolveSystemCG( PointInfo& pointInfo , int depth , const typ
 		}
 	}
 
-	MemoryUsage();
-	maxMemoryUsage = std::max< double >( maxMemoryUsage , _maxMemoryUsage );
 	return iter;
 }
 template< class Real >
@@ -1958,7 +1944,6 @@ Pointer( Real ) Octree< Real >::SetLaplacianConstraints( const NormalInfo& norma
 	Pointer( Real ) _constraints = AllocPointer< Real >( _sNodes.nodeCount[maxDepth] );
 	if( !_constraints ) fprintf( stderr , "[ERROR] Failed to allocate _constraints: %d * %zu\n" , _sNodes.nodeCount[maxDepth] , sizeof( Real ) ) , exit( 0 );
 	memset( _constraints , 0 , sizeof(Real)*_sNodes.nodeCount[maxDepth] );
-	MemoryUsage();
 
 	for( int d=maxDepth ; d>=(_boundaryType==0?2:0) ; d-- )
 	{
@@ -2060,7 +2045,6 @@ Pointer( Real ) Octree< Real >::SetLaplacianConstraints( const NormalInfo& norma
 					}
 			}
 		}
-		MemoryUsage();
 	}
 
 	// Fine-to-coarse down-sampling of constraints
@@ -2146,7 +2130,6 @@ Pointer( Real ) Octree< Real >::SetLaplacianConstraints( const NormalInfo& norma
 				constraints[ node->nodeData.nodeIndex ] += constraint;
 		}
 	}
-	MemoryUsage();
 	return constraints;
 }
 template< class Real >

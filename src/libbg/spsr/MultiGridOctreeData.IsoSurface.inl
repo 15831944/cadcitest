@@ -145,7 +145,6 @@ void Octree< Real >::GetMCIsoSurface( ConstPointer( Real ) kernelDensityWeights 
 	std::vector< Real > coarseSolution( _sNodes.nodeCount[maxDepth] , 0 );
 	for( int i=_sNodes.nodeCount[_minDepth] ; i<_sNodes.nodeCount[maxDepth] ; i++ ) coarseSolution[i] = solution[i];
 	for( int d=_minDepth ; d<maxDepth ; d++ ) UpSample( d , _sNodes , ( ConstPointer( Real ) )GetPointer( coarseSolution ) + _sNodes.nodeCount[d-1] , GetPointer( coarseSolution ) + _sNodes.nodeCount[d] );
-	MemoryUsage();
 
 	typename TreeOctNode::ConstNeighborKey3 neighborKey;
 	neighborKey.set( maxDepth );
@@ -219,7 +218,6 @@ void Octree< Real >::GetMCIsoSurface( ConstPointer( Real ) kernelDensityWeights 
 			if( o&1 ) break;
 		}
 	}
-	MemoryUsage();
 }
 
 template< class Real >
