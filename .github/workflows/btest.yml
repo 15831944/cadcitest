@@ -124,7 +124,6 @@ jobs:
             -D BRLCAD_ENABLE_STEP=OFF
             -D BRLCAD_EXTRADOCS=OFF
             -D BUILD_STATIC_LIBS=OFF
-            -D BRLCAD_ENABLE_TARGETS=1
            RESULT_VARIABLE result
         )
         if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
@@ -189,7 +188,7 @@ jobs:
            set(BCNT 0)
            set(result 1)
            while(result AND ${BCNT} LESS 4)
-             execute_process(COMMAND cmake --build build --config Release --target libbg RESULT_VARIABLE result)
+             execute_process(COMMAND cmake --build build --config Release --target all RESULT_VARIABLE result)
              if (NOT ${result})
                execute_process(COMMAND sync)
                execute_process(COMMAND cmake --build build --config Release --target check RESULT_VARIABLE result)
