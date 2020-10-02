@@ -215,14 +215,14 @@ main(int argc, char *argv[])
     if ((sf1.st_size - f1_skip) != (sf2.st_size - f2_skip)) {
 	bu_log("WARNING: Different image sizes detected\n");
 	if (print_bytes) {
-	    bu_log("\t%s: %7zu bytes (%8zu bytes, skipping %7zu)\n",
+	    bu_log("\t%s: %7lu bytes (%8zu bytes, skipping %7zu)\n",
 		   argv[0], sf1.st_size - f1_skip, sf1.st_size, f1_skip);
-	    bu_log("\t%s: %7zu bytes (%8zu bytes, skipping %7zu)\n",
+	    bu_log("\t%s: %7lu bytes (%8zu bytes, skipping %7zu)\n",
 		   argv[1], sf2.st_size - f2_skip, sf2.st_size, f2_skip);
 	} else {
-	    bu_log("\t%s: %7zu pixels (%8zu bytes, skipping %7zu)\n",
+	    bu_log("\t%s: %7lu pixels (%8zu bytes, skipping %7zu)\n",
 		   argv[0], (sf1.st_size - f1_skip)/3, sf1.st_size, f1_skip);
-	    bu_log("\t%s: %7zu pixels (%8zu bytes, skipping %7zu)\n",
+	    bu_log("\t%s: %7lu pixels (%8zu bytes, skipping %7zu)\n",
 		   argv[1], (sf2.st_size - f2_skip)/3, sf2.st_size, f2_skip);
 	}
 	bu_exit(1, "ERROR: Cannot pixcmp due to different images sizes (unimplemented).\n");
