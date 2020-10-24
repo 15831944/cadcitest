@@ -13,6 +13,8 @@ THIRD_PARTY(regex REGEX regex
 
 if (BRLCAD_REGEX_BUILD)
 
+  message("build regex")
+
   set(REGEX_VERSION "1.0.4")
   if (MSVC)
     set(REGEX_BASENAME regex_brl)
