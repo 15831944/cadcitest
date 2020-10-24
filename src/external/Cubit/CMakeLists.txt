@@ -1,6 +1,6 @@
 if(NOT DEFINED BRLCAD_BUILDTEST_EXTERNALS)
   # Minimum required version of CMake
-  cmake_minimum_required(VERSION 3.1.3)
+  cmake_minimum_required(VERSION 3.12)
 
   # Set CMake project name
   project(G2SAT)
@@ -11,8 +11,8 @@ else(NOT DEFINED BRLCAD_BUILDTEST_EXTERNALS)
     "${CMAKE_CURRENT_BINARY_DIR}/../../../include"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../include"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/other/openNURBS"
-    "${ZLIB_INCLUDE_DIRS}"
-    "${REGEX_INCLUDE_DIRS}"
+    ${ZLIB_INCLUDE_DIRS}
+    ${REGEX_INCLUDE_DIRS}
     )
 
   # The build shims aren't so great at mocking the initialization

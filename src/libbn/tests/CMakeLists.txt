@@ -34,6 +34,7 @@ endforeach(srcfile ${bn_test_srcs})
 # Generate bn_test.c file and bnild it
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../..)
 configure_file(bn_test.c.in "${CMAKE_CURRENT_BINARY_DIR}/bn_test.c" @ONLY)
+DISTCLEAN("${CMAKE_CURRENT_BINARY_DIR}/bn_test.c")
 BRLCAD_ADDEXEC(bn_test "${CMAKE_CURRENT_BINARY_DIR}/bn_test.c" libbn TEST)
 
 # Housekeeping for included source files
@@ -46,6 +47,11 @@ BRLCAD_ADDEXEC(bntester bntester.c "libbu;libbn" TEST)
 
 # WIP - needs to become real test
 BRLCAD_ADDEXEC(bn_randsph randsph.c "libbu;libbn" TEST)
+
+# This test program is being kept separate because the plot3 logic really
+# should move, and when it does it will be easier to move the test if it
+# is not tied into the bn_test target
+BRLCAD_ADDEXEC(bn_plot3 plot3.c "libbu;libbn" TEST)
 
 #
 #  ************ list.c tests *************
@@ -1137,10 +1143,15 @@ add_test(NAME bn_vlist_cmd_cnt_15 COMMAND bn_test vlist 15)
 add_test(NAME bn_vlist_cmd_cnt_45 COMMAND bn_test vlist 45)
 add_test(NAME bn_vlist_cmd_cnt_500 COMMAND bn_test vlist 500)
 
-
-CMAKEFILES(poly_cubic_roots.c poly_quartic_roots.c)
-CMAKEFILES(bntester.dat)
-CMAKEFILES(CMakeLists.txt)
+CMAKEFILES(
+  CMakeLists.txt
+  bntester.dat
+  bn_test.c.in
+  poly_cubic_roots.c
+  poly_quartic_roots.c
+  valid.plot3
+  invalid.plot3
+  )
 
 # Local Variables:
 # tab-width: 8
