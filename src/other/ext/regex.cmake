@@ -13,8 +13,6 @@ THIRD_PARTY(regex REGEX regex
 
 if (BRLCAD_REGEX_BUILD)
 
-  message("build regex")
-
   set(REGEX_VERSION "1.0.4")
   if (MSVC)
     set(REGEX_BASENAME regex_brl)
@@ -59,6 +57,7 @@ if (BRLCAD_REGEX_BUILD)
 
   set(REGEX_LIBRARIES regex CACHE STRING "Building bundled libregex" FORCE)
   set(REGEX_INCLUDE_DIRS "${CMAKE_BINARY_ROOT}/${INCLUDE_DIR}" CACHE STRING "Directory containing regex headers." FORCE)
+  message("REGEX_LIBRARIES: ${REGEX_LIBRARIES}")
 
   SetTargetFolder(REGEX_BLD "Third Party Libraries")
   SetTargetFolder(regex "Third Party Libraries")
