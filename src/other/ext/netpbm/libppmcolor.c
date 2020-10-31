@@ -9,8 +9,10 @@
 ** implied warranty.
 */
 
-#define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
-#define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
+#ifndef _WIN32
+#  define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
+#  define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
+#endif
 
 #include <assert.h>
 #include <stdlib.h>
