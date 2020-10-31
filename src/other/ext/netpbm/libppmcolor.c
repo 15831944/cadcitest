@@ -9,7 +9,7 @@
 ** implied warranty.
 */
 
-#ifndef _WIN32
+#ifndef _APPLE_
 #  define _BSD_SOURCE 1      /* Make sure strdup() is in string.h */
 #  define _XOPEN_SOURCE 500  /* Make sure strdup() is in string.h */
 #endif
