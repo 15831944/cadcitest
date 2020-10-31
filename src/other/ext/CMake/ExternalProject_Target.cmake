@@ -139,11 +139,15 @@ function(ET_target_props etarg REL_DIR LINK_TARGET)
       string(REPLACE "${CMAKE_SHARED_LIBRARY_SUFFIX}" ".lib" IMPLIB_FILE "${LINK_TARGET}")
       string(REPLACE "${SHARED_DIR}" "${LIB_DIR}" REL_DIR "${REL_DIR}")
       set_target_properties(${etarg} PROPERTIES
-	IMPORTED_IMPLIB_NOCONFIG "${CMAKE_BINARY_DIR}/${REL_DIR}/${IMPLIB_FILE}"
+	IMPORTED_IMPLIB "${CMAKE_BINARY_DIR}/${REL_DIR}/${IMPLIB_FILE}"
 	)
     endif(ET_SHARED AND MSVC)
 
   else(NOT CMAKE_CONFIGURATION_TYPES)
+
+    # TODO - see if we need to set any DLL import/export information onto these
+    # targets to replace information previously passed in the CMake build targets
+    # on Windows...
 
     # If no config is set for multiconfig, default to Debug
     set_target_properties(${etarg} PROPERTIES

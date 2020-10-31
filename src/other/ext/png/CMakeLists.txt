@@ -59,10 +59,6 @@ option(PNG_SHARED "Build shared lib" ON)
 option(PNG_STATIC "Build static lib" ${BUILD_STATIC_LIBS})
 option(PNG_TESTS  "Build libpng tests" ON)
 
-message("BUILD_STATIC_LIBS: ${BUILD_STATIC_LIBS}")
-message("PNG_STATIC: ${PNG_STATIC}")
-
-
 # Many more configuration options could be added here
 option(PNG_FRAMEWORK "Build OS X framework" OFF)
 option(PNG_DEBUG "Build with debug output" OFF)
