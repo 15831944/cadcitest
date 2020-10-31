@@ -232,6 +232,7 @@ if(MSVC)
       message(FATAL_ERROR "Could not find vcvars bat file in ${COMPILER_DIR}")
     endif(NOT EXISTS "${VCVARS_BAT}")
   endif(NOT EXISTS "${VCVARS_BAT}")
+  set(VCVARS_BAT "cmd.exe /u /c /d ${VCVARS_BAT}")
 endif(MSVC)
 
 # TODO - need to set these based on the feature flags...
