@@ -171,6 +171,7 @@ jobs:
            set(BCNT 0)
            set(result 1)
            while(result AND ${BCNT} LESS 4)
+             execute_process(COMMAND ls build/extinstall/regex/lib)
              execute_process(COMMAND cmake --build build -j 1 --config Release --target all RESULT_VARIABLE result)
              if (NOT ${result})
                execute_process(COMMAND powershell Write-VolumeCache C)
