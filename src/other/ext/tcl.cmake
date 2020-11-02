@@ -76,10 +76,11 @@ if (BRLCAD_TCL_BUILD)
     ExternalProject_Add(TCL_BLD
       URL "${CMAKE_CURRENT_SOURCE_DIR}/tcl"
       BUILD_ALWAYS ${EXTERNAL_BUILD_UPDATE} ${LOG_OPTS}
-      CONFIGURE_COMMAND ""
+      CONFIGURE_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/tclbuild.bat ${TCL_SRC_DIR}/win
+      COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/tclinstall.bat ${TCL_SRC_DIR}/win
       BINARY_DIR ${TCL_SRC_DIR}/win
-      BUILD_COMMAND ${VCVARS_BAT} & exit 0 && nmake -f makefile.vc INSTALLDIR=${TCL_INSTDIR} SUFX=
-      INSTALL_COMMAND ${VCVARS_BAT} & exit 0 && nmake -f makefile.vc install INSTALLDIR=${TCL_INSTDIR} SUFX=
+      BUILD_COMMAND tclbuild.bat ${TCL_INSTDIR}
+      INSTALL_COMMAND tclinstall.bat ${TCL_INSTDIR}
       )
     set(TCL_APPINIT)
 
