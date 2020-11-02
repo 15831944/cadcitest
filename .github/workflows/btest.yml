@@ -49,18 +49,18 @@ jobs:
             name: "Windows Latest MSVC", artifact: "Windows-MSVC.tar.xz",
             os: windows-latest,
             cc: "cl", cxx: "cl",
-            #environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           }
-       #- {
-       #    name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
-       #    os: ubuntu-20.04,
-       #    cc: "gcc", cxx: "g++"
-       #  }
-       #- {
-       #    name: "macOS Latest Clang", artifact: "macOS.tar.xz",
-       #    os: macos-latest,
-       #    cc: "clang", cxx: "clang++"
-       #  }
+        - {
+            name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
+            os: ubuntu-20.04,
+            cc: "gcc", cxx: "g++"
+          }
+        - {
+            name: "macOS Latest Clang", artifact: "macOS.tar.xz",
+            os: macos-latest,
+            cc: "clang", cxx: "clang++"
+          }
 
     #
     #  For each platform, we need to checkout the git repository,
@@ -93,19 +93,17 @@ jobs:
         set(ENV{CC} ${{ matrix.config.cc }})
         set(ENV{CXX} ${{ matrix.config.cxx }})
 
-         #if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
-         #execute_process(
-         #COMMAND "${{ matrix.config.environment_script }}" && set
-         #OUTPUT_FILE environment_script_output.txt
-         #)
-         #file(READ environment_script_output.txt ESOUT)
-         #message("ESOUT: ${ESOUT}")
-         #file(STRINGS environment_script_output.txt output_lines)
-         #foreach(line IN LISTS output_lines)
-         #  if (line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
-         #    set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
-         #  endif()
-         #endforeach()
+          if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
+          execute_process(
+          COMMAND "${{ matrix.config.environment_script }}" && set
+          OUTPUT_FILE environment_script_output.txt
+          )
+          file(STRINGS environment_script_output.txt output_lines)
+          foreach(line IN LISTS output_lines)
+            if (line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
+              set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
+            endif()
+          endforeach()
         endif()
 
         set(path_separator ":")
@@ -128,8 +126,7 @@ jobs:
             -D BUILD_STATIC_LIBS=OFF
            RESULT_VARIABLE result
         )
-        #if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
-        if ("${{ runner.os }}" STREQUAL "Windows")
+        if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
           # Try Write-VolumeCache for Windows
           execute_process(COMMAND powershell Write-VolumeCache C)
           execute_process(COMMAND powershell Write-VolumeCache D)
@@ -172,16 +169,16 @@ jobs:
            set(BCNT 0)
            set(result 1)
            while(result AND ${BCNT} LESS 4)
-             execute_process(COMMAND cmake --build build -j 1 --config Release --target all RESULT_VARIABLE result)
+             execute_process(COMMAND cmake --build build --config Release --target all RESULT_VARIABLE result)
              if (NOT ${result})
                execute_process(COMMAND powershell Write-VolumeCache C)
                execute_process(COMMAND powershell Write-VolumeCache D)
-               execute_process(COMMAND cmake --build build -j 1 --config Release --target check RESULT_VARIABLE result)
+               execute_process(COMMAND cmake --build build --config Release --target check RESULT_VARIABLE result)
              endif()
              if (NOT ${result})
                execute_process(COMMAND powershell Write-VolumeCache C)
                execute_process(COMMAND powershell Write-VolumeCache D)
-               execute_process(COMMAND cmake --build build -j 1 --config Release --target package RESULT_VARIABLE result)
+               execute_process(COMMAND cmake --build build --config Release --target package RESULT_VARIABLE result)
              endif()
              math(EXPR BCNT "${BCNT}+1")
            endwhile()
@@ -191,8 +188,6 @@ jobs:
            set(BCNT 0)
            set(result 1)
            while(result AND ${BCNT} LESS 4)
-             execute_process(COMMAND otool -l build/bin/asc2g)
-             execute_process(COMMAND otool -l build/lib/libitcl3.4.dylib)
              execute_process(COMMAND cmake --build build --config Release --target all RESULT_VARIABLE result)
              if (NOT ${result})
                execute_process(COMMAND sync)
