@@ -100,7 +100,7 @@ jobs:
           )
           file(READ environment_script_output.txt file_full)
           message("file: ${file_full}")
-          string(REPLACE ";" "\n" NLINES "${file_full}")
+          string(REPLACE "\\$" "" NLINES "${file_full}")
           file(WRITE environment_script_output.txt "${NLINES}")
           file(READ environment_script_output.txt file_full)
           message("file edited: ${file_full}")
