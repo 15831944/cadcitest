@@ -76,9 +76,9 @@ if (BRLCAD_TCL_BUILD)
     ExternalProject_Add(TCL_BLD
       URL "${CMAKE_CURRENT_SOURCE_DIR}/tcl"
       BUILD_ALWAYS ${EXTERNAL_BUILD_UPDATE} ${LOG_OPTS}
-      CONFIGURE_COMMAND "set DevEnvDir=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE;set VSINSTALLDIR=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise"
+      CONFIGURE_COMMAND ""
       BINARY_DIR ${TCL_SRC_DIR}/win
-      BUILD_COMMAND ${VCVARS_BAT} && nmake -f makefile.vc INSTALLDIR=${TCL_INSTDIR} SUFX=
+      BUILD_COMMAND SET && ${VCVARS_BAT} && SET && nmake -f makefile.vc INSTALLDIR=${TCL_INSTDIR} SUFX=
       INSTALL_COMMAND ${VCVARS_BAT} && nmake -f makefile.vc install INSTALLDIR=${TCL_INSTDIR} SUFX=
       )
     set(TCL_APPINIT)
