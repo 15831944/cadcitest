@@ -45,17 +45,17 @@ jobs:
       fail-fast: true
       matrix:
         config:
-        - {
-            name: "Windows Latest MSVC", artifact: "Windows-MSVC.tar.xz",
-            os: windows-latest,
-            cc: "cl", cxx: "cl",
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-          }
-        - {
-            name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
-            os: ubuntu-20.04,
-            cc: "gcc", cxx: "g++"
-          }
+       #- {
+       #    name: "Windows Latest MSVC", artifact: "Windows-MSVC.tar.xz",
+       #    os: windows-latest,
+       #    cc: "cl", cxx: "cl",
+       #    environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+       #  }
+       #- {
+       #    name: "Ubuntu Latest GCC", artifact: "Linux.tar.xz",
+       #    os: ubuntu-20.04,
+       #    cc: "gcc", cxx: "g++"
+       #  }
         - {
             name: "macOS Latest Clang", artifact: "macOS.tar.xz",
             os: macos-latest,
@@ -188,6 +188,8 @@ jobs:
            set(BCNT 0)
            set(result 1)
            while(result AND ${BCNT} LESS 4)
+             execute_process(COMMAND otool -l build/bin/asc2g)
+             execute_process(COMMAND find ./build/lib -type f)
              execute_process(COMMAND cmake --build build --config Release --target all RESULT_VARIABLE result)
              if (NOT ${result})
                execute_process(COMMAND sync)
