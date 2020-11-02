@@ -100,6 +100,7 @@ jobs:
           )
           file(STRINGS environment_script_output.txt output_lines)
           foreach(line IN LISTS output_lines)
+            message("LINE: ${line}")
             if (line MATCHES "^([a-zA-Z0-9_-]+)=(.*)$")
               message("${CMAKE_MATCH_1}: ${CMAKE_MATCH_2}")
               set(ENV{${CMAKE_MATCH_1}} "${CMAKE_MATCH_2}")
