@@ -58,6 +58,12 @@ if (BRLCAD_ENABLE_TCL)
 
   if (BUILD_ITCL)
 
+    # If we're building ITCL, it's path setup must take into account the
+    # subdirectory in which we are storing the library.
+    relative_rpath(RELPATH SUFFIX itcl3)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}${RELPATH}")
+    ext_build_rpath(SUFFIX itcl3)
+
     set(BRLCAD_ITCL_BUILD "ON" CACHE STRING "Enable Itcl build" FORCE)
 
     set(ITCL_SRC_DIR "${CMAKE_CURRENT_BINARY_DIR}/ITCL_BLD-prefix/src/ITCL_BLD")
@@ -134,6 +140,11 @@ if (BRLCAD_ENABLE_TCL)
     endif (TARGET tcl_stage)
 
     SetTargetFolder(ITCL_BLD "Third Party Libraries")
+
+    # Restore default rpath settings
+    relative_rpath(RELPATH)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}${RELPATH}")
+    ext_build_rpath()
 
   else (BUILD_ITCL)
 
