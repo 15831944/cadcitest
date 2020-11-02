@@ -94,6 +94,7 @@ jobs:
         set(ENV{CXX} ${{ matrix.config.cxx }})
 
         if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
+          set(ENV{VSCMD_DEBUG} 3)
           execute_process(
           COMMAND "${{ matrix.config.environment_script }}" && set
           OUTPUT_FILE environment_script_output.txt
