@@ -1,3 +1,5 @@
+#include "sc_cf.h"
+
 #include <sc_memmgr.h>
 #include <stdlib.h>
 #include <stdio.h>
