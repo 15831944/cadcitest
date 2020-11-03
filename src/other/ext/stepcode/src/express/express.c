@@ -85,6 +85,9 @@
 #include "expscan.h"
 #include "parse_data.h"
 
+extern void SCANcleanup( void );
+extern void parserInitState();
+
 void * ParseAlloc( void * ( *mallocProc )( size_t ) );
 void ParseFree( void * parser, void ( *freeProc )( void * ) );
 void Parse( void * parser, int tokenID, YYSTYPE data, parse_data_t parseData );
