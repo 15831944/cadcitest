@@ -39,7 +39,13 @@ jobs:
           powershell Write-VolumeCache D
 
       - name: Build
-        run: cmake --build build --config Release --target all
+        run: cmake --build build --config Release --target package
+
+      - name: Upload Package
+        uses: actions/upload-artifact@v2
+        with:
+          name: BRLCAD_Windows
+          path: ${{ github.workspace }}/build/BRL-CAD*exe
 
   linux:
     name: Ubuntu Latest GCC
@@ -64,7 +70,13 @@ jobs:
       - name: Build
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cmake --build build --config Release --target all
+          cmake --build build --config Release --target package
+
+      - name: Upload Package
+        uses: actions/upload-artifact@v2
+        with:
+          name: BRLCAD_Linux
+          path: ${{ github.workspace }}/build/BRL-CAD*gz
 
   osx:
     name: macOS Latest Clang
@@ -91,6 +103,12 @@ jobs:
       - name: Build
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cd build && ninja -j1 --verbose
-          #cmake --build build --config Release --target all
+          cmake --build build --config Release --target package
+
+      - name: Upload Package
+        uses: actions/upload-artifact@v2
+        with:
+          name: BRLCAD_OSX
+          path: ${{ github.workspace }}/build/BRL-CAD*gz
+
 
