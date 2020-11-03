@@ -213,6 +213,7 @@ endif (NOT pcnt)
 # With MSVC, some of the non-CMake subbuilds are going to need the vcvars bat
 # file to set up the environment.
 if(MSVC)
+
   get_filename_component(COMPILER_DIR "${CMAKE_C_COMPILER}" DIRECTORY)
   get_filename_component(COMPILER_ROOT "${COMPILER_DIR}" NAME)
   set(VCVARS_BAT "${COMPILER_DIR}/vcvars${COMPILER_ROOT}.bat")
@@ -232,6 +233,7 @@ if(MSVC)
       message(FATAL_ERROR "Could not find vcvars bat file in ${COMPILER_DIR}")
     endif(NOT EXISTS "${VCVARS_BAT}")
   endif(NOT EXISTS "${VCVARS_BAT}")
+
 endif(MSVC)
 
 # TODO - need to set these based on the feature flags...
