@@ -2059,9 +2059,9 @@ verbose_add_subdirectory("" sh)
 verbose_add_subdirectory("" misc)
 if(NOT BRLCAD_ENABLE_TARGETS OR "${BRLCAD_ENABLE_TARGETS}" GREATER 2)
   verbose_add_subdirectory("" doc)
-  verbose_add_subdirectory("" db)
+  #verbose_add_subdirectory("" db)
   verbose_add_subdirectory("" bench)
-  verbose_add_subdirectory("" regress)
+  #verbose_add_subdirectory("" regress)
 endif(NOT BRLCAD_ENABLE_TARGETS OR "${BRLCAD_ENABLE_TARGETS}" GREATER 2)
 
 # Restore BRL-CAD configurations, if necessary
