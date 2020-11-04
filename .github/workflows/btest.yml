@@ -34,81 +34,81 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S . -B build -G Ninja -D CMAKE_C_COMPILER="cl.exe" -D CMAKE_CXX_COMPILER="cl.exe" -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Debug
+          cmake -S . -B build -G Ninja -D CMAKE_C_COMPILER="cl.exe" -D CMAKE_CXX_COMPILER="cl.exe" -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
           powershell Write-VolumeCache C
           powershell Write-VolumeCache D
 
       - name: Build
-        run: cmake --build build --config Debug --target package
+        run: cmake --build build --config Release --target package
 
       - name: Upload Package
         uses: actions/upload-artifact@v2
         with:
           name: BRLCAD_Windows
-          path: ${{ github.workspace }}/build/BRL-CAD*zip
+          path: ${{ github.workspace }}/build/BRL-CAD*exe
 
-# linux:
-#   name: Ubuntu Latest GCC
-#   runs-on: ubuntu-20.04
-#   strategy:
-#     fail-fast: true
-#   steps:
-#     - name: Setup - CMake
-#       uses: lukka/get-cmake@latest
+  linux:
+    name: Ubuntu Latest GCC
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Setup - CMake
+        uses: lukka/get-cmake@latest
 
-#     - name: Setup - Ninja
-#       uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Setup - Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
 
-#     - name: Checkout
-#       uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-#     - name: Configure
-#       run: |
-#         export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-#         cmake -S . -G Ninja -B build -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
+      - name: Configure
+        run: |
+          export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
+          cmake -S . -G Ninja -B build -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
 
-#     - name: Build
-#       run: |
-#         export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-#         cmake --build build --config Release --target package
+      - name: Build
+        run: |
+          export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
+          cmake --build build --config Release --target package
 
-#     - name: Upload Package
-#       uses: actions/upload-artifact@v2
-#       with:
-#         name: BRLCAD_Linux
-#         path: ${{ github.workspace }}/build/BRL-CAD*gz
+      - name: Upload Package
+        uses: actions/upload-artifact@v2
+        with:
+          name: BRLCAD_Linux
+          path: ${{ github.workspace }}/build/BRL-CAD*gz
 
-# osx:
-#   name: macOS Latest Clang
-#   runs-on: macos-latest
-#   strategy:
-#     fail-fast: true
-#   steps:
-#     - name: Setup - CMake
-#       uses: lukka/get-cmake@latest
+  osx:
+    name: macOS Latest Clang
+    runs-on: macos-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Setup - CMake
+        uses: lukka/get-cmake@latest
 
-#     - name: Setup - Ninja
-#       uses: seanmiddleditch/gha-setup-ninja@master
+      - name: Setup - Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
 
-#     - name: Checkout
-#       uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-#     - name: Configure
-#       run: |
-#         export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-#         export CC=clang
-#         export CXX=clang++
-#         cmake -S . -G Ninja -B build -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
+      - name: Configure
+        run: |
+          export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
+          export CC=clang
+          export CXX=clang++
+          cmake -S . -G Ninja -B build -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
 
-#     - name: Build
-#       run: |
-#         export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-#         cmake --build build --config Release --target package
+      - name: Build
+        run: |
+          export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
+          cmake --build build --config Release --target package
 
-#     - name: Upload Package
-#       uses: actions/upload-artifact@v2
-#       with:
-#         name: BRLCAD_OSX
-#         path: ${{ github.workspace }}/build/BRL-CAD*gz
+      - name: Upload Package
+        uses: actions/upload-artifact@v2
+        with:
+          name: BRLCAD_OSX
+          path: ${{ github.workspace }}/build/BRL-CAD*gz
 
 
