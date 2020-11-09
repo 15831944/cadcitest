@@ -40,8 +40,7 @@ jobs:
           powershell Write-VolumeCache D
 
       - name: Build
-        #run: cmake --build build --config Release --target package
-        run: ninja -j1 --verbose
+        run: cmake --build build --config Release --target package
 
       - name: Upload Package
         uses: actions/upload-artifact@v2
