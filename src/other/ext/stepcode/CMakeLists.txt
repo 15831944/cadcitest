@@ -91,29 +91,33 @@ include_directories(
   )
 
 add_compile_options(
+  /GS
+  /W3
+  /Zc:wchar_t
   /Zi
   /Gm-
-  /Od
-  /Ob0
+  /O2
+  /Ob2
   /Zc:inline
   /fp:precise
   /Zc:forScope
   /RTC1
   /GR
   /Gd
-  /MDd
+  /MD
+  /WX-
   /EHsc
   )
 
 add_definitions(
-  -DWIN32
-  -D_WINDOWS
-  -D__WIN32__
-  -D_CRT_SECURE_NO_WARNINGS
-  -D_CRT_NONSTDC_NO_WARNINGS
-  -D_WINDLL
-  -D_MBCS
-  -DHAVE_DECL_FSEEKO
+  /D "WIN32"
+  /D "_WINDOWS"
+  /D "__WIN32__"
+  /D "_CRT_SECURE_NO_WARNINGS"
+  /D "_CRT_NONSTDC_NO_WARNINGS"
+  /D "_WINDLL"
+  /D "_MBCS"
+  /D "HAVE_DECL_FSEEKO"
   )
 
 
