@@ -34,13 +34,14 @@ jobs:
 
       - name: Configure
         run: |
-          #cmake -S . -B build -D CMAKE_C_COMPILER="cl.exe" -D CMAKE_CXX_COMPILER="cl.exe" -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
-          cmake -S . -B build -G Ninja -D CMAKE_C_COMPILER="cl.exe" -D CMAKE_CXX_COMPILER="cl.exe" -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -D CMAKE_C_COMPILER="cl.exe" -D CMAKE_CXX_COMPILER="cl.exe" -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
+          #cmake -S . -B build -G Ninja -D CMAKE_C_COMPILER="cl.exe" -D CMAKE_CXX_COMPILER="cl.exe" -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
           powershell Write-VolumeCache C
           powershell Write-VolumeCache D
 
       - name: Build
-        run: cd build && ninja -j1 -v STEPCODE_BLD && cd src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && ninja clean && ninja -j1 -v
+         run: cd build && msbuild -t:STEPCODE_BLD -v:diag
+        #run: cd build && ninja -j1 -v STEPCODE_BLD && cd src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && ninja clean && ninja -j1 -v
         #run: cmake --build build --config Release --target package
 
 #     - name: Upload Package
