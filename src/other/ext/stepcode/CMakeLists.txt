@@ -91,18 +91,18 @@ include_directories(
   )
 
 add_compile_options(
-  Zi
-  Gm-
-  Od
-  Ob0
-  Zc:inline
-  fp:precise
-  Zc:forScope
-  RTC1
-  GR
-  Gd
-  MDd
-  EHsc
+  /Zi
+  /Gm-
+  /Od
+  /Ob0
+  /Zc:inline
+  /fp:precise
+  /Zc:forScope
+  /RTC1
+  /GR
+  /Gd
+  /MDd
+  /EHsc
   )
 
 add_definitions(
