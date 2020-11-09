@@ -41,8 +41,7 @@ jobs:
 
       - name: Build
         #run: cd build && ninja -j1 -v STEPCODE_BLD && cd src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && ninja clean && ninja -j1 -v
-        run: cd src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && msbuild ALL-BUILD.vcxproj -v:diag
-        # && cmake --build build --config Release --target package
+        run: cmake --build build --config Release --target STEPCODE_BLD && cd src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && msbuild ALL-BUILD.vcxproj -v:diag
         #run: msbuild BRLCAD.proj -t:STEPCODE_BLD -v:diag
 
 #     - name: Upload Package
