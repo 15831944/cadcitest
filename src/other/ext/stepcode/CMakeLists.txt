@@ -101,7 +101,6 @@ add_compile_options(
   /Zc:inline
   /fp:precise
   /Zc:forScope
-  /RTC1
   /GR
   /Gd
   /MD
