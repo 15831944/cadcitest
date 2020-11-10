@@ -90,36 +90,6 @@ include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}/include/stepcode
   )
 
-add_compile_options(
-  /GS
-  /W3
-  /Zc:wchar_t
-  /Zi
-  /Gm-
-  /O2
-  /Ob2
-  /Zc:inline
-  /fp:precise
-  /Zc:forScope
-  /GR
-  /Gd
-  /MD
-  /WX-
-  /EHsc
-  )
-
-add_definitions(
-  /D "WIN32"
-  /D "_WINDOWS"
-  /D "__WIN32__"
-  /D "_CRT_SECURE_NO_WARNINGS"
-  /D "_CRT_NONSTDC_NO_WARNINGS"
-  /D "_WINDLL"
-  /D "_MBCS"
-  /D "HAVE_DECL_FSEEKO"
-  )
-
-
 add_subdirectory(src)
 
 # Get install rules for headers and data files
