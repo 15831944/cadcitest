@@ -24,7 +24,11 @@ endif(NOT DEFINED EXTPROJ_VERBOSE)
 # cmake -E copy follows symlinks to get the final file, which is not what we
 # want in this situation.  To avoid this, we create a copy script which uses
 # file(COPY) and run that script with cmake -P
-file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake" "get_filename_component(DDIR \${DEST} DIRECTORY)\nfile(COPY \${SRC} DESTINATION \${DDIR})")
+file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake" "
+get_filename_component(DNAME \"\${DEST}\" NAME)
+string(REGEX REPLACE \"\${DNAME}$\" \"\" DDIR \"\${DEST}\")
+file(COPY \"\${SRC}\" DESTINATION \"\${DDIR}\")
+")
 
 # When staging files in the build directory, we have to be aware of multiple
 # configurations.  This is done post-ExternalProject build, at the parent build
@@ -38,14 +42,14 @@ function(fcfgcpy outvar extproj root ofile dir tfile)
   if (CMAKE_CONFIGURATION_TYPES)
     add_custom_command(
       OUTPUT "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${rdir}/${tfile}"
-      COMMAND ${CMAKE_COMMAND} -DSRC="${root}/${rdir}/${ofile}" -DDEST="${CMAKE_BINARY_DIR}/$<CONFIG>/${rdir}/${tfile}" -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
+      COMMAND ${CMAKE_COMMAND} -DSRC=${root}/${rdir}/${ofile} -DDEST=${CMAKE_BINARY_DIR}/$<CONFIG>/${rdir}/${tfile} -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
       DEPENDS ${extproj}
       )
     set(TOUT ${TOUT} "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${rdir}/${tfile}")
   else (CMAKE_CONFIGURATION_TYPES)
     add_custom_command(
       OUTPUT "${CMAKE_BINARY_DIR}/${rdir}/${tfile}"
-      COMMAND ${CMAKE_COMMAND} -DSRC="${root}/${rdir}/${ofile}" -DDEST="${CMAKE_BINARY_DIR}/${rdir}/${tfile}" -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
+      COMMAND ${CMAKE_COMMAND} -DSRC=${root}/${rdir}/${ofile} -DDEST=${CMAKE_BINARY_DIR}/${rdir}/${tfile} -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
       DEPENDS ${extproj}
       )
     set(TOUT ${TOUT} "${CMAKE_BINARY_DIR}/${rdir}/${tfile}")
