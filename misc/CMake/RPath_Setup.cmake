@@ -67,6 +67,8 @@ function(relative_rpath outvar)
 
   set(${outvar} "${RELATIVE_RPATH}" PARENT_SCOPE)
 
+  message("RPATH: ${RELATIVE_RPATH}")
+
 endfunction(relative_rpath)
 
 # Set (or restore) a standard BRL-CAD setting for CMAKE_BUILD_RPATH.
