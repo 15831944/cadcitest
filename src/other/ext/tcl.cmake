@@ -351,6 +351,7 @@ if (BRLCAD_TCL_BUILD)
 
   # Anything building against the stub will want the headers, etc. in place
   add_dependencies(tclstub tcl_stage)
+  add_dependencies(tclsh_exe tcl_stage)
 
   set(TCL_LIBRARY tcl CACHE STRING "Building bundled tcl" FORCE)
   set(TCL_LIBRARIES tcl CACHE STRING "Building bundled tcl" FORCE)
