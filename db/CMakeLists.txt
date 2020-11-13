@@ -101,7 +101,7 @@ function(ADD_G_TARGET in_model folder)
     if (BRLCAD_ENABLE_STEP)
       add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file}
-	COMMAND step-g -O ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file} ${CMAKE_CURRENT_SOURCE_DIR}/${in_model} > ${log_file} 2>&1
+	COMMAND step-g -O ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file} ${CMAKE_CURRENT_SOURCE_DIR}/${in_model} 2>&1
 	DEPENDS step-g ${CMAKE_CURRENT_SOURCE_DIR}/${in_model}
 	)
     else (BRLCAD_ENABLE_STEP)
