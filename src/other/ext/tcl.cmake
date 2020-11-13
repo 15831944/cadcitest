@@ -52,6 +52,19 @@ if (BRLCAD_TCL_BUILD)
 
   if (NOT MSVC)
 
+    # Bundled Tcl is a poison pill for the odd_pathnames distcheck test
+    set(BRLCAD_DISABLE_ODD_PATHNAMES_TEST ON CACHE BOOL "Bundled disable by Tcl of distcheck-odd_pathnames")
+    mark_as_advanced(BRLCAD_DISABLE_ODD_PATHNAMES_TEST)
+
+    # Check for spaces in the source and build directories - those won't work
+    # reliably with the Tcl autotools based build.
+    if ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".* .*")
+      message(FATAL_ERROR "Bundled Tcl enabled, but the path \"${CMAKE_CURRENT_SOURCE_DIR}\" contains spaces.  On this platform, Tcl uses autotools to build; paths with spaces are not supported.  To continue relocate your source directory to a path that does not use spaces.")
+    endif ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".* .*")
+    if ("${CMAKE_CURRENT_BINARY_DIR}" MATCHES ".* .*")
+      message(FATAL_ERROR "Bundled Tcl enabled, but the path \"${CMAKE_CURRENT_BINARY_DIR}\" contains spaces.  On this platform, Tcl uses autotools to build; paths with spaces are not supported.  To continue you must select a build directory with a path that does not use spaces.")
+    endif ("${CMAKE_CURRENT_BINARY_DIR}" MATCHES ".* .*")
+
     set(TCL_BASENAME libtcl${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
     set(TCL_STUBNAME libtclstub${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
     set(TCL_EXECNAME tclsh${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
@@ -362,6 +375,11 @@ if (BRLCAD_TCL_BUILD)
 
   SetTargetFolder(TCL_BLD "Third Party Libraries")
   SetTargetFolder(tcl "Third Party Libraries")
+
+else (BRLCAD_TCL_BUILD)
+
+  set(BRLCAD_DISABLE_ODD_PATHNAMES_FLAGS "${BRLCAD_DISABLE_ODD_PATHNAMES_FLAGS} -DBRLCAD_TCL=SYSTEM" CACHE STRING "Options to pass to odd_pathnames distcheck")
+  mark_as_advanced(BRLCAD_DISABLE_ODD_PATHNAMES_FLAGS)
 
 endif (BRLCAD_TCL_BUILD)
 
