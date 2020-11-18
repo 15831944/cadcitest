@@ -75,7 +75,8 @@ function(ADD_G_TARGET in_model folder)
       if(APPLE)
       add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file}
-	COMMAND otool -l ${CMAKE_BINARY_DIR}/bin/asc2g 
+	COMMAND otool -l ${CMAKE_BINARY_DIR}/lib/libtcl8.6.dylib
+	COMMAND otool -l ${CMAKE_BINARY_DIR}/bin/asc2g
 	COMMAND asc2g "${CMAKE_CURRENT_SOURCE_DIR}/${in_model}" ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file}
 	DEPENDS asc2g "${CMAKE_CURRENT_SOURCE_DIR}/${in_model}"
 	)
