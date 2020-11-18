@@ -98,7 +98,7 @@ int main(int argc, const char **argv)
     std::string tbl_runtimedir_new  = std::string("\"") + std::string(CMAKE_INSTALL_PREFIX) + std::string(sep) + std::string(LIB_DIR) + std::string(TKTABLE_RUNTIME_DIR) + std::string("\"");
     strings.push_back(tbl_runtimedir_new);
 
-    std::regex dylib_dir_regex("${DYLIB_INSTALL_DIR}");
+    std::regex dylib_dir_regex("[$][{]DYLIB_INSTALL_DIR[}]");
     regexes.push_back(dylib_dir_regex);
     std::string dylib_dir_new  = std::string("@rpath");
     strings.push_back(dylib_dir_new);
