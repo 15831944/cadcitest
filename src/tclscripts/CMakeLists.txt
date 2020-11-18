@@ -36,11 +36,20 @@ macro(general_tcl_index_BUILD cmd outfile targetdir)
 
     # command that builds the index when the dependency is resolved
     set(tclindex_outdir "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${DATA_DIR}/${targetdir}")
+    if (APPLE)
+    add_custom_command(
+      OUTPUT ${tclindex_outdir}/${outfile}
+      COMMAND otool -l ${CMAKE_BINARY_DIR}/bin/btclsh
+      COMMAND btclsh ${CMAKE_BINARY_DIR}/CMakeTmp/${cmd}.tcl ${tclindex_outdir} >> ${CMAKE_CURRENT_BINARY_DIR}/${cmd}_index_gen.log 2>&1
+      DEPENDS btclsh ${data_target_list} ${tcl_files}
+      )
+    else (APPLE)
     add_custom_command(
       OUTPUT ${tclindex_outdir}/${outfile}
       COMMAND btclsh ${CMAKE_BINARY_DIR}/CMakeTmp/${cmd}.tcl ${tclindex_outdir} >> ${CMAKE_CURRENT_BINARY_DIR}/${cmd}_index_gen.log 2>&1
       DEPENDS btclsh ${data_target_list} ${tcl_files}
       )
+    endif (APPLE)
 
     # Install logic for index file.
     if(CMAKE_CONFIGURATION_TYPES)
