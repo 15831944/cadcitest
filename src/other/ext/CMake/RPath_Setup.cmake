@@ -60,11 +60,11 @@ function(relative_rpath outvar)
   if (R_LEN)
     string(LENGTH "${RELATIVE_RPATH}" CURR_LEN)
     while("${CURR_LEN}" LESS "${R_LEN}")
-      if (APPLE)
-	set(RELATIVE_RPATH "${RELATIVE_RPATH};")
-      else (APPLE)
+      #if (APPLE)
+      #	set(RELATIVE_RPATH "${RELATIVE_RPATH};")
+      #else (APPLE)
 	set(RELATIVE_RPATH "${RELATIVE_RPATH}:")
-      endif (APPLE)
+      #endif (APPLE)
       string(LENGTH "${RELATIVE_RPATH}" CURR_LEN)
     endwhile("${CURR_LEN}" LESS "${R_LEN}")
   endif (R_LEN)
@@ -85,6 +85,10 @@ function(std_build_rpath)
 
   # Done - let the parent know what the answers are
   set(CMAKE_BUILD_RPATH "${CMAKE_BUILD_RPATH}" PARENT_SCOPE)
+
+  # Set the final install rpath
+  relative_rpath(RELPATH)
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}${RELPATH}" PARENT_SCOPE)
 
 endfunction(std_build_rpath)
 
@@ -209,16 +213,20 @@ function(ext_build_rpath)
   # outputs of our own build.
   string(LENGTH "${BUILD_RPATH}" CURR_LEN)
   while("${CURR_LEN}" LESS "${LLEN}")
-    if (APPLE)
-      set(BUILD_RPATH "${BUILD_RPATH};")
-    else (APPLE)
+    #if (APPLE)
+    #  set(BUILD_RPATH "${BUILD_RPATH};")
+    #else (APPLE)
       set(BUILD_RPATH "${BUILD_RPATH}:")
-    endif (APPLE)
+    #endif (APPLE)
     string(LENGTH "${BUILD_RPATH}" CURR_LEN)
   endwhile("${CURR_LEN}" LESS "${LLEN}")
 
   # Done - let the parent know what the answers are
   set(CMAKE_BUILD_RPATH "${BUILD_RPATH}" PARENT_SCOPE)
+
+  # Set the final install rpath
+  relative_rpath(RELPATH)
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}${RELPATH}" PARENT_SCOPE)
 
 endfunction(ext_build_rpath)
 
