@@ -9,6 +9,9 @@
 ## M4sh Initialization.  ##
 ## --------------------- ##
 
+
+LDFLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
+
 CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
 LD_SEARCH_FLAGS=${CC_SEARCH_FLAGS}
 
