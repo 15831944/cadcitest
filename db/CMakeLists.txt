@@ -75,9 +75,7 @@ function(ADD_G_TARGET in_model folder)
       add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file}
 	COMMAND ls -R ${CMAKE_BINARY_DIR}/lib
-	COMMAND ${CMAKE_COMMAND} -E echo "gdal\n"
 	COMMAND otool -l ${CMAKE_BINARY_DIR}/lib/libgdal.dylib
-	COMMAND ${CMAKE_COMMAND} -E echo "tclsh\n"
 	COMMAND otool -l ${CMAKE_BINARY_DIR}/bin/tclsh8.6
 	COMMAND asc2g "${CMAKE_CURRENT_SOURCE_DIR}/${in_model}" ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file}
 	DEPENDS asc2g "${CMAKE_CURRENT_SOURCE_DIR}/${in_model}"
