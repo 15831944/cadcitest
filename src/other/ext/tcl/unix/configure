@@ -6356,6 +6356,7 @@ fi
 
     # Step 0.d: Disable -rpath support?
 
+echo "6 $CC_SEARCH_FLAGS"
     echo "$as_me:$LINENO: checking if rpath support is requested" >&5
 echo $ECHO_N "checking if rpath support is requested... $ECHO_C" >&6
     # Check whether --enable-rpath or --disable-rpath was given.
@@ -6368,6 +6369,7 @@ fi;
     echo "$as_me:$LINENO: result: $doRpath" >&5
 echo "${ECHO_T}$doRpath" >&6
 
+echo "7 $CC_SEARCH_FLAGS"
     # Step 1: set the variable "system" to hold the name and version number
     # for the system.
 
@@ -7556,6 +7558,7 @@ fi
 	    esac
 	    ;;
 	Darwin-*)
+echo "8 $CC_SEARCH_FLAGS"
 	    CFLAGS_OPTIMIZE="-Os"
 	    SHLIB_CFLAGS="-fno-common"
 	    # To avoid discrepancies between what headers configure sees during
@@ -9002,6 +9005,7 @@ cat >>confdefs.h <<\_ACEOF
 #define MP_PREC 4
 _ACEOF
 
+echo "9 $CC_SEARCH_FLAGS"
 
 #--------------------------------------------------------------------
 #	Detect what compiler flags to set for 64-bit support.
@@ -17948,6 +17952,7 @@ fi
 #	(mostly older ones), use the old BSD-style FIONBIO approach instead.
 #--------------------------------------------------------------------
 
+echo "10 $CC_SEARCH_FLAGS"
 
 
 for ac_header in sys/ioctl.h
