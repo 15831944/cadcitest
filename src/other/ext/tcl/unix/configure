@@ -20067,6 +20067,9 @@ if test "$no_create" != yes; then
   $ac_cs_success || { (exit 1); exit 1; }
 fi
 
+
+CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
+LD_SEARCH_FLAGS=${CC_SEARCH_FLAGS}
 echo ${CC_SEARCH_FLAGS}
 echo ${LD_SEARCH_FLAGS}
 
