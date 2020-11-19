@@ -107,7 +107,7 @@ jobs:
       - name: Build
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cd build && ninja -j1 --verbose
+          cd build && ninja -j1 TCL_BLD --verbose
           #cmake --build build --config Release --target package
 
 #     - name: Upload Package
