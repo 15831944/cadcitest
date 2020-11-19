@@ -9,6 +9,9 @@
 ## M4sh Initialization.  ##
 ## --------------------- ##
 
+CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
+LD_SEARCH_FLAGS=${CC_SEARCH_FLAGS}
+
 # Be Bourne compatible
 if test -n "${ZSH_VERSION+set}" && (emulate sh) >/dev/null 2>&1; then
   emulate sh
