@@ -20068,8 +20068,10 @@ if test "$no_create" != yes; then
 fi
 
 
-CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
-LD_SEARCH_FLAGS=${CC_SEARCH_FLAGS}
+if test "`uname -s`" = "Darwin"; then
+  CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
+  LD_SEARCH_FLAGS=${CC_SEARCH_FLAGS}
+fi
 echo ${CC_SEARCH_FLAGS}
 echo ${LD_SEARCH_FLAGS}
 
