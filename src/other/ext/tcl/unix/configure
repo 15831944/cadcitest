@@ -7559,6 +7559,14 @@ fi
 	    CFLAGS="`echo " ${CFLAGS}" | \
 		awk 'BEGIN {FS=" +-";ORS=" "}; {for (i=2;i<=NF;i++) \
 		if (!($i~/^(isysroot|mmacosx-version-min)/)) print "-"$i}'`"
+
+
+	    if test $doRpath = yes; then
+
+		CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
+		LD_SEARCH_FLAGS='-rpath ${LIB_RUNTIME_DIR}'
+            fi
+
 	    if test $do64bit = yes; then
 
 		case `arch` in
