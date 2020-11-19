@@ -7559,14 +7559,6 @@ fi
 	    CFLAGS="`echo " ${CFLAGS}" | \
 		awk 'BEGIN {FS=" +-";ORS=" "}; {for (i=2;i<=NF;i++) \
 		if (!($i~/^(isysroot|mmacosx-version-min)/)) print "-"$i}'`"
-
-
-	    if test $doRpath = yes; then
-
-		CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
-		LD_SEARCH_FLAGS='-rpath ${LIB_RUNTIME_DIR}'
-            fi
-
 	    if test $do64bit = yes; then
 
 		case `arch` in
@@ -20067,11 +20059,6 @@ if test "$no_create" != yes; then
   $ac_cs_success || { (exit 1); exit 1; }
 fi
 
-
-if test "`uname -s`" = "Darwin"; then
-  CC_SEARCH_FLAGS='-Wl,-rpath,${LIB_RUNTIME_DIR}'
-  LD_SEARCH_FLAGS=${CC_SEARCH_FLAGS}
-fi
 echo ${CC_SEARCH_FLAGS}
 echo ${LD_SEARCH_FLAGS}
 
