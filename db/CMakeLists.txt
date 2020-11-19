@@ -74,9 +74,6 @@ function(ADD_G_TARGET in_model folder)
     if (BRLCAD_ENABLE_TCL)
       add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file}
-	COMMAND ls -R ${CMAKE_BINARY_DIR}/lib
-	COMMAND otool -l ${CMAKE_BINARY_DIR}/lib/libgdal.dylib
-	COMMAND otool -l ${CMAKE_BINARY_DIR}/bin/tclsh8.6
 	COMMAND asc2g "${CMAKE_CURRENT_SOURCE_DIR}/${in_model}" ${CMAKE_CURRENT_BUILD_DIR_SCRIPT}/${output_file}
 	DEPENDS asc2g "${CMAKE_CURRENT_SOURCE_DIR}/${in_model}"
 	)
