@@ -20059,4 +20059,6 @@ if test "$no_create" != yes; then
   $ac_cs_success || { (exit 1); exit 1; }
 fi
 
+echo ${CC_SEARCH_FLAGS}
+echo ${LD_SEARCH_FLAGS}
 
