@@ -107,7 +107,8 @@ jobs:
       - name: Build
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cmake --build build --config Release --target package
+          cd build && ninja -j1 --verbose
+          #cmake --build build --config Release --target package
 
 #     - name: Upload Package
 #       uses: actions/upload-artifact@v2
