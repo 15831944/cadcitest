@@ -336,6 +336,20 @@ function(ExternalProject_Target etype etarg extproj extroot fname)
       set(SHARED_DIR ${LIB_DIR})
     endif (MSVC)
 
+    # We can't always rely on rpath being present from 3rd party OSX builds, but we do need
+    # it for CMake and there is a Mac tool that can add it for us.
+    if (APPLE)
+      execute_process(COMMAND otool -l ${extroot}/${fname} OUTPUT_VARIABLE OTOOL_OUT)
+      message("\n\n${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname} OTOOL_OUT: ${OTOOL_OUT}\n")
+      if (OTOOL_OUT)
+	if (NOT "${OTOOL_OUT}" MATCHES "LC_RPATH")
+	  execute_process(COMMAND install_name_tool -add_rpath "${CMAKE_BUILD_RPATH}" ${extroot}/${fname})
+	  execute_process(COMMAND otool -l ${extroot}/${fname} OUTPUT_VARIABLE OTOOL_OUT2)
+	  message("OTOOL_OUT2: ${OTOOL_OUT2}")
+	endif (NOT "${OTOOL_OUT}" MATCHES "LC_RPATH")
+      endif (OTOOL_OUT)
+    endif (APPLE)
+
     fcfgcpy(TOUT ${extproj} ${extroot} ${fname} ${SHARED_DIR} ${fname})
 
     # On Windows, we need both a .dll and a .lib file to use a shared library for compilation
@@ -344,26 +358,13 @@ function(ExternalProject_Target etype etarg extproj extroot fname)
       fcfgcpy(TOUT ${extproj} ${extroot} ${IMPLIB_FILE} ${LIB_DIR} ${IMPLIB_FILE})
     endif (MSVC)
 
+
     # Because we're using LINK_TARGET here rather than fname, we need to take any relative
     # directories specified in fname and ppend them to SHARED_DIR. (For other cases we are
     # just feeding fname directly, so there are no such concerns.  TODO - should we just
     # require relative dirs on all the symlinks instead?
     get_filename_component(LDIR "${fname}" DIRECTORY)
     ET_target_props(${etarg} "${SHARED_DIR}/${LDIR}" ${LINK_TARGET} SHARED LINK_TARGET_DEBUG "${LINK_TARGET_DEBUG}")
-
-    # We can't always rely on rpath being present from 3rd party OSX builds, but we do need
-    # it for CMake and there is a Mac tool that can add it for us.
-    if (APPLE)
-      execute_process(COMMAND otool -l "${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname}" OUTPUT_VARIABLE OTOOL_OUT)
-      message("\n\n${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname} OTOOL_OUT: ${OTOOL_OUT}\n")
-      if (OTOOL_OUT)
-	if (NOT "${OTOOL_OUT}" MATCHES "LC_RPATH")
-	  execute_process(COMMAND install_name_tool -add_rpath "${CMAKE_BUILD_RPATH}" "${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname}")
-	  execute_process(COMMAND otool -l "${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname}" OUTPUT_VARIABLE OTOOL_OUT2)
-	  message("OTOOL_OUT2: ${OTOOL_OUT2}")
-	endif (NOT "${OTOOL_OUT}" MATCHES "LC_RPATH")
-      endif (OTOOL_OUT)
-    endif (APPLE)
 
     install(FILES "${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname}" DESTINATION ${SHARED_DIR}/${E_SUBDIR})
     if (MSVC)
@@ -422,24 +423,23 @@ function(ExternalProject_Target etype etarg extproj extroot fname)
 
     add_executable(${etarg} IMPORTED GLOBAL)
 
-    fcfgcpy(TOUT ${extproj} ${extroot} ${fname} ${BIN_DIR} ${fname})
-
-    ET_target_props(${etarg} "${BIN_DIR}" ${fname})
-
     # We can't always rely on rpath being present from 3rd party OSX builds, but we do need
     # it for CMake and there is a Mac tool that can add it for us.
     if (APPLE)
-      execute_process(COMMAND otool -l "${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname}" OUTPUT_VARIABLE OTOOL_OUT)
+      execute_process(COMMAND otool -l ${extroot}/${fname} OUTPUT_VARIABLE OTOOL_OUT)
       message("\n\n${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname} OTOOL_OUT: ${OTOOL_OUT}\n")
       if (OTOOL_OUT)
 	if (NOT "${OTOOL_OUT}" MATCHES "LC_RPATH")
-	  execute_process(COMMAND install_name_tool -add_rpath "${CMAKE_BUILD_RPATH}" "${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname}")
-	  execute_process(COMMAND otool -l "${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname}" OUTPUT_VARIABLE OTOOL_OUT2)
+	  execute_process(COMMAND install_name_tool -add_rpath "${CMAKE_BUILD_RPATH}" ${extroot}/${fname})
+	  execute_process(COMMAND otool -l ${extroot}/${fname} OUTPUT_VARIABLE OTOOL_OUT2)
 	  message("OTOOL_OUT2: ${OTOOL_OUT2}")
 	endif (NOT "${OTOOL_OUT}" MATCHES "LC_RPATH")
       endif (OTOOL_OUT)
     endif (APPLE)
 
+    fcfgcpy(TOUT ${extproj} ${extroot} ${fname} ${BIN_DIR} ${fname})
+
+    ET_target_props(${etarg} "${BIN_DIR}" ${fname})
 
     install(PROGRAMS "${CMAKE_BINARY_ROOT}/${BIN_DIR}/${fname}" DESTINATION ${BIN_DIR}/${E_SUBDIR})
 
