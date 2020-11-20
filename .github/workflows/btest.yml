@@ -108,7 +108,7 @@ jobs:
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
           #cd build && ninja -j1 tcl_stage --verbose
-          cmake --build build --config Release --target package
+          cmake --build build -j 1 --config Release --target package
 
 #     - name: Upload Package
 #       uses: actions/upload-artifact@v2
