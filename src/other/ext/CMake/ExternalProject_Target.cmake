@@ -31,12 +31,13 @@ file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake" "
 if(\"\${FTYPE}\" STREQUAL \"EXEC\" OR \"\${FTYPE}\" STREQUAL \"SHARED\")
   if(APPLE)
     set(CMAKE_BUILD_RPATH \"${CMAKE_BUILD_RPATH}\")
-    execute_process(COMMAND chmod u+w \"\${SRC}\")
     execute_process(COMMAND otool -l \"\${SRC}\" RESULT_VARIABLE ORET OUTPUT_VARIABLE OTOOL_OUT ERROR_VARIABLE OTOOL_OUT)
     message(\"\${SRC} OTOOL_OUT: \${OTOOL_OUT}\\n\")
     if (NOT ORET)
       if (NOT \"\${OTOOL_OUT}\" MATCHES \".*LC_RPATH.*\")
+	execute_process(COMMAND chmod u+w \"\${SRC}\")
 	execute_process(COMMAND install_name_tool -add_rpath \"\${CMAKE_BUILD_RPATH}\" \"\${SRC}\")
+	execute_process(COMMAND chmod u-w \"\${SRC}\")
 	execute_process(COMMAND otool -l \"\${SRC}\" OUTPUT_VARIABLE OTOOL_OUT2)
 	message(\"OTOOL_OUT2: \${OTOOL_OUT2}\")
       endif ()
@@ -62,6 +63,7 @@ function(fcfgcpy ftype outvar extproj root ofile dir tfile)
   if (CMAKE_CONFIGURATION_TYPES)
     add_custom_command(
       OUTPUT "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${rdir}/${tfile}"
+      COMMAND ls -lR ${CMAKE_BINARY_DIR}
       COMMAND ${CMAKE_COMMAND} -DFTYPE=${ftype} -DSRC=${root}/${rdir}/${ofile} -DDEST=${CMAKE_BINARY_DIR}/$<CONFIG>/${rdir}/${tfile} -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
       DEPENDS ${extproj}
       )
@@ -270,10 +272,8 @@ function(ET_RPath OFILE)
   # Note - proper quoting for install(CODE) is extremely important for CPack, see
   # https://stackoverflow.com/a/48487133
   install(CODE "
-  execute_program(COMMAND ls -lR ${CMAKE_BINARY_DIR})
   message(\"OLD_RPATH: ${CMAKE_BUILD_RPATH}\")
   message(\"NEW_RPATH: ${NEW_RPATH}\")
-  execute_process(COMMAND ls -l \${CMAKE_INSTALL_PREFIX}/${OFILE})
   execute_process(COMMAND otool -l \${CMAKE_INSTALL_PREFIX}/${OFILE})
   file(RPATH_CHANGE
     FILE \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OFILE}\"
