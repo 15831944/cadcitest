@@ -270,8 +270,10 @@ function(ET_RPath OFILE)
   # Note - proper quoting for install(CODE) is extremely important for CPack, see
   # https://stackoverflow.com/a/48487133
   install(CODE "
+  execute_program(COMMAND ls -lR ${CMAKE_BINARY_DIR})
   message(\"OLD_RPATH: ${CMAKE_BUILD_RPATH}\")
   message(\"NEW_RPATH: ${NEW_RPATH}\")
+  execute_process(COMMAND ls -l \${CMAKE_INSTALL_PREFIX}/${OFILE})
   execute_process(COMMAND otool -l \${CMAKE_INSTALL_PREFIX}/${OFILE})
   file(RPATH_CHANGE
     FILE \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OFILE}\"
