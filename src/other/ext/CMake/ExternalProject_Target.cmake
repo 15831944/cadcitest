@@ -275,7 +275,9 @@ function(ET_RPath OFILE)
   message(\"OLD_RPATH: ${CMAKE_BUILD_RPATH}\")
   message(\"NEW_RPATH: ${NEW_RPATH}\")
   execute_process(COMMAND otool -l \${CMAKE_INSTALL_PREFIX}/${OFILE})
+  execute_process(COMMAND ls -l \${CMAKE_INSTALL_PREFIX}/${OFILE})
   execute_process(COMMAND chmod u+w \${CMAKE_INSTALL_PREFIX}/${OFILE})
+  execute_process(COMMAND ls -l \${CMAKE_INSTALL_PREFIX}/${OFILE})
   file(RPATH_CHANGE
     FILE \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OFILE}\"
     OLD_RPATH \"${CMAKE_BUILD_RPATH}\"
