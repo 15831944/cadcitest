@@ -43,7 +43,9 @@ jobs:
         #run: cd build && ninja -j1 -v STEPCODE_BLD && cd src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && ninja clean && ninja -j1 -v
         #run: cd build && ninja -j1 -v
         #run: cmake --build build --config Release --target STEPCODE_BLD && cd build/src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && msbuild ALL_BUILD.vcxproj -t:clean && msbuild ALL_BUILD.vcxproj -v:diag
-        run: cmake --build build --config Release --target package
+        run: |
+          cmake --build build --config Release --target package
+          cmake --build build --config Release --target check
 
       - name: Upload Package
         uses: actions/upload-artifact@v2
@@ -75,6 +77,7 @@ jobs:
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
           cmake --build build --config Release --target package
+          cmake --build build --config Release --target check
 
       - name: Upload Package
         uses: actions/upload-artifact@v2
@@ -109,6 +112,7 @@ jobs:
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
           #cd build && ninja -j1 tcl_stage --verbose
           cmake --build build --config Release --target package
+          cmake --build build --config Release --target check
 
       - name: Upload Package
         uses: actions/upload-artifact@v2
