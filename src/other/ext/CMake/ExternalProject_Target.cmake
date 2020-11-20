@@ -24,10 +24,27 @@ endif(NOT DEFINED EXTPROJ_VERBOSE)
 # cmake -E copy follows symlinks to get the final file, which is not what we
 # want in this situation.  To avoid this, we create a copy script which uses
 # file(COPY) and run that script with cmake -P
+# We can't always rely on rpath being present from 3rd party OSX builds, but we do need
+# it for CMake and there is a Mac tool that can add it for us - as part of the copy
+# process, check if if is set and if not, set it.
 file(WRITE "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake" "
 get_filename_component(DNAME \"\${DEST}\" NAME)
 string(REGEX REPLACE \"\${DNAME}$\" \"\" DDIR \"\${DEST}\")
 file(COPY \"\${SRC}\" DESTINATION \"\${DDIR}\")
+if(\"\${FTYPE}\" STREQUAL \"EXEC\" OR \"\${FTYPE}\" STREQUAL \"SHARED\")
+  if(APPLE)
+    set(CMAKE_BUILD_RPATH \"${CMAKE_BUILD_RPATH}\")
+    execute_process(COMMAND otool -l \"\${DEST}\" OUTPUT_VARIABLE OTOOL_OUT)
+    message(\"\n\n${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname} OTOOL_OUT: ${OTOOL_OUT}\n\")
+    if (OTOOL_OUT)
+      if (NOT \"\${OTOOL_OUT}\" MATCHES \"LC_RPATH\")
+	execute_process(COMMAND install_name_tool -add_rpath \"\${CMAKE_BUILD_RPATH}\" \"\${DEST}\")
+	execute_process(COMMAND otool -l ${extroot}/${LIB_DIR}/${fname} OUTPUT_VARIABLE OTOOL_OUT2)
+	message(\"OTOOL_OUT2: ${OTOOL_OUT2}\")
+      endif ()
+    endif (OTOOL_OUT)
+  endif(APPLE)
+endif()
 ")
 
 # When staging files in the build directory, we have to be aware of multiple
@@ -37,19 +54,19 @@ file(COPY \"\${SRC}\" DESTINATION \"\${DDIR}\")
 # path.  This is key, because it allows the add_custom_command to be aware that
 # it needs to execute the correct copy command for a current configuration at build
 # time.
-function(fcfgcpy outvar extproj root ofile dir tfile)
+function(fcfgcpy ftype outvar extproj root ofile dir tfile)
   string(REPLACE "${CMAKE_BINARY_DIR}/" "" rdir "${dir}")
   if (CMAKE_CONFIGURATION_TYPES)
     add_custom_command(
       OUTPUT "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${rdir}/${tfile}"
-      COMMAND ${CMAKE_COMMAND} -DSRC=${root}/${rdir}/${ofile} -DDEST=${CMAKE_BINARY_DIR}/$<CONFIG>/${rdir}/${tfile} -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
+      COMMAND ${CMAKE_COMMAND} -DFTYPE=${ftype} -DSRC=${root}/${rdir}/${ofile} -DDEST=${CMAKE_BINARY_DIR}/$<CONFIG>/${rdir}/${tfile} -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
       DEPENDS ${extproj}
       )
     set(TOUT ${TOUT} "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${rdir}/${tfile}")
   else (CMAKE_CONFIGURATION_TYPES)
     add_custom_command(
       OUTPUT "${CMAKE_BINARY_DIR}/${rdir}/${tfile}"
-      COMMAND ${CMAKE_COMMAND} -DSRC=${root}/${rdir}/${ofile} -DDEST=${CMAKE_BINARY_DIR}/${rdir}/${tfile} -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
+      COMMAND ${CMAKE_COMMAND} -DFTYPE=${ftype} -DSRC=${root}/${rdir}/${ofile} -DDEST=${CMAKE_BINARY_DIR}/${rdir}/${tfile} -P "${CMAKE_BINARY_DIR}/CMakeFiles/cp.cmake"
       DEPENDS ${extproj}
       )
     set(TOUT ${TOUT} "${CMAKE_BINARY_DIR}/${rdir}/${tfile}")
@@ -88,7 +105,7 @@ function(ExternalProject_ByProducts etarg extproj extroot dir)
   foreach (bpf ${E_UNPARSED_ARGUMENTS})
 
     unset(TOUT)
-    fcfgcpy(TOUT ${extproj} ${extroot} ${bpf} "${dir}" ${bpf})
+    fcfgcpy(FILE TOUT ${extproj} ${extroot} ${bpf} "${dir}" ${bpf})
     set(ALL_TOUT ${ALL_TOUT} ${TOUT})
 
     if (NOT E_NOINSTALL)
@@ -336,26 +353,12 @@ function(ExternalProject_Target etype etarg extproj extroot fname)
       set(SHARED_DIR ${LIB_DIR})
     endif (MSVC)
 
-    # We can't always rely on rpath being present from 3rd party OSX builds, but we do need
-    # it for CMake and there is a Mac tool that can add it for us.
-    if (APPLE)
-      execute_process(COMMAND otool -l ${extroot}/${LIB_DIR}/${fname} OUTPUT_VARIABLE OTOOL_OUT)
-      message("\n\n${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${fname} OTOOL_OUT: ${OTOOL_OUT}\n")
-      if (OTOOL_OUT)
-	if (NOT "${OTOOL_OUT}" MATCHES "LC_RPATH")
-	  execute_process(COMMAND install_name_tool -add_rpath "${CMAKE_BUILD_RPATH}" ${extroot}/${LIB_DIR}/${fname})
-	  execute_process(COMMAND otool -l ${extroot}/${LIB_DIR}/${fname} OUTPUT_VARIABLE OTOOL_OUT2)
-	  message("OTOOL_OUT2: ${OTOOL_OUT2}")
-	endif (NOT "${OTOOL_OUT}" MATCHES "LC_RPATH")
-      endif (OTOOL_OUT)
-    endif (APPLE)
-
-    fcfgcpy(TOUT ${extproj} ${extroot} ${fname} ${SHARED_DIR} ${fname})
+    fcfgcpy(SHARED TOUT ${extproj} ${extroot} ${fname} ${SHARED_DIR} ${fname})
 
     # On Windows, we need both a .dll and a .lib file to use a shared library for compilation
     if (MSVC)
       string(REPLACE "${CMAKE_SHARED_LIBRARY_SUFFIX}" ".lib" IMPLIB_FILE "${fname}")
-      fcfgcpy(TOUT ${extproj} ${extroot} ${IMPLIB_FILE} ${LIB_DIR} ${IMPLIB_FILE})
+      fcfgcpy(FILE TOUT ${extproj} ${extroot} ${IMPLIB_FILE} ${LIB_DIR} ${IMPLIB_FILE})
     endif (MSVC)
 
 
@@ -384,7 +387,7 @@ function(ExternalProject_Target etype etarg extproj extroot fname)
 
       # Add install rules for any symlinks the caller has listed
       foreach(slink ${E_SYMLINKS})
-	fcfgcpy(TOUT ${extproj} ${extroot} ${slink} ${SHARED_DIR} ${slink})
+	fcfgcpy(FILE TOUT ${extproj} ${extroot} ${slink} ${SHARED_DIR} ${slink})
 	install(FILES "${CMAKE_BINARY_ROOT}/${SHARED_DIR}/${slink}" DESTINATION ${SHARED_DIR}/${E_SUBDIR})
       endforeach(slink ${E_SYMLINKS})
 
@@ -397,7 +400,7 @@ function(ExternalProject_Target etype etarg extproj extroot fname)
 
     add_library(${etarg} STATIC IMPORTED GLOBAL)
 
-    fcfgcpy(TOUT ${extproj} ${extroot} ${fname} ${LIB_DIR} ${fname})
+    fcfgcpy(FILE TOUT ${extproj} ${extroot} ${fname} ${LIB_DIR} ${fname})
 
     ET_target_props(${etarg} "${LIB_DIR}" ${fname} STATIC LINK_TARGET_DEBUG "${LINK_TARGET_DEBUG}")
     install(FILES "${CMAKE_BINARY_ROOT}/${LIB_DIR}/${fname}" DESTINATION ${LIB_DIR}/${E_SUBDIR})
@@ -410,7 +413,7 @@ function(ExternalProject_Target etype etarg extproj extroot fname)
 
       # Add install rules for any symlinks the caller has listed
       foreach(slink ${E_SYMLINKS})
-	fcfgcpy(TOUT ${extproj} ${extroot} ${slink} ${LIB_DIR} ${slink})
+	fcfgcpy(FILE TOUT ${extproj} ${extroot} ${slink} ${LIB_DIR} ${slink})
 	install(FILES "${CMAKE_BINARY_ROOT}/${LIB_DIR}/${slink}" DESTINATION ${LIB_DIR})
       endforeach(slink ${E_SYMLINKS})
 
@@ -437,7 +440,7 @@ function(ExternalProject_Target etype etarg extproj extroot fname)
       endif (OTOOL_OUT)
     endif (APPLE)
 
-    fcfgcpy(TOUT ${extproj} ${extroot} ${fname} ${BIN_DIR} ${fname})
+    fcfgcpy(EXEC TOUT ${extproj} ${extroot} ${fname} ${BIN_DIR} ${fname})
 
     ET_target_props(${etarg} "${BIN_DIR}" ${fname})
 
