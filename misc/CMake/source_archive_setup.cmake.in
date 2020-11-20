@@ -50,6 +50,8 @@ function(FIND_ALL_DIRS seed_dir)
   endforeach(content_file ${dir_contents})
 endfunction(FIND_ALL_DIRS)
 
+execute_process(COMMAND ls -lR @CMAKE_BINARY_DIR@)
+
 if(NOT EXISTS "@CMAKE_BINARY_DIR@/CMakeTmp/create_builddir_source_archive.done")
   file(GLOB_RECURSE pre_existing_files "@CMAKE_BINARY_DIR@/source_archive_contents/*")
   file(STRINGS "@CMAKE_BINARY_DIR@/cmakefiles.cmake" source_tree_files_raw)
