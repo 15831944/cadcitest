@@ -38,10 +38,6 @@ macro(general_tcl_index_BUILD cmd outfile targetdir)
     set(tclindex_outdir "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${DATA_DIR}/${targetdir}")
     add_custom_command(
       OUTPUT ${tclindex_outdir}/${outfile}
-      COMMAND otool -l ${CMAKE_BINARY_DIR}/lib/libz_brl.1.2.11.dylib
-      COMMAND otool -l ${CMAKE_BINARY_DIR}/lib/libregex_brl.1.0.4.dylib
-      COMMAND otool -l ${CMAKE_BINARY_DIR}/bin/tclsh8.6
-      COMMAND otool -l ${CMAKE_BINARY_DIR}/bin/btclsh
       COMMAND btclsh ${CMAKE_BINARY_DIR}/CMakeTmp/${cmd}.tcl ${tclindex_outdir} >> ${CMAKE_CURRENT_BINARY_DIR}/${cmd}_index_gen.log 2>&1
       DEPENDS btclsh ${data_target_list} ${tcl_files}
       )
