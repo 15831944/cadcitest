@@ -110,10 +110,10 @@ jobs:
           #cd build && ninja -j1 tcl_stage --verbose
           cmake --build build -j 1 --config Release --target package
 
-#     - name: Upload Package
-#       uses: actions/upload-artifact@v2
-#       with:
-#         name: BRLCAD_OSX
-#         path: ${{ github.workspace }}/build/BRL-CAD*gz
+      - name: Upload Package
+        uses: actions/upload-artifact@v2
+        with:
+          name: BRLCAD_OSX
+          path: ${{ github.workspace }}/build/BRL-CAD*gz
 
 
