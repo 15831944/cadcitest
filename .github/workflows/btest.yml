@@ -50,7 +50,7 @@ jobs:
 #         name: BRLCAD_Windows
 #         path: ${{ github.workspace }}/build/BRL-CAD*exe
 
-  linux:
+# linux:
 #   name: Ubuntu Latest GCC
 #   runs-on: ubuntu-20.04
 #   strategy:
