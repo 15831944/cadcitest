@@ -528,8 +528,8 @@ endif(NOT CMAKE_BUILD_FLAGS_CACHED_CMAKE_DEFAULT)
 CLEAR_BUILD_FLAGS()
 
 # Since this isn't src/other or misc/tools, we want the standards set.
-set(CMAKE_C_FLAGS "${C_STANDARD_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CXX_STANDARD_FLAGS}")
+set(CMAKE_C_FLAGS "${C_STANDARD_FLAGS} /ShowIncludes")
+set(CMAKE_CXX_FLAGS "${CXX_STANDARD_FLAGS} /ShowIncludes")
 
 # try to use -pipe to speed up the compiles
 CHECK_C_FLAG(pipe)
