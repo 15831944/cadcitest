@@ -11,6 +11,7 @@ endif(BRLCAD_ENABLE_BINARY_ATTRIBUTES)
 # locally used but not needed by users of the library
 set(BU_LOCAL_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/y2038
+  ${REGEX_INCLUDE_DIRS}
   )
 if (UUID_INCLUDE_DIR)
   set(BU_LOCAL_INCLUDE_DIRS ${BU_LOCAL_INCLUDE_DIRS} ${UUID_INCLUDE_DIR})
@@ -41,8 +42,6 @@ if(HAVE_FPIC)
   set_property(SOURCE y2038/time64.c APPEND PROPERTY COMPILE_FLAGS "-fPIC")
 endif(HAVE_FPIC)
 
-set_property(SOURCE fort.c APPEND PROPERTY COMPILE_FLAGS "-g -ggdb -O0")
-
 set(LIBBU_SOURCES
   y2038/time64.c
   affinity.c
@@ -63,7 +62,6 @@ set(LIBBU_SOURCES
   ctype.c
   dir.c
   dirent.c
-  damlevlim.cpp
   datetime.c
   dylib.c
   encode.c
@@ -73,7 +71,6 @@ set(LIBBU_SOURCES
   fchmod.c
   fgets.c
   file.c
-  fort.c
   fnmatch.c
   getcwd.c
   gethostname.c
@@ -120,7 +117,6 @@ set(LIBBU_SOURCES
   str.c
   tc.c
   tcllist.c
-  tbl.c
   temp.c
   thread.cpp
   units.c
@@ -145,7 +141,7 @@ else(NOT CMAKE_CXX_STANDARD EQUAL 98)
   CMAKEFILES(parallel_cpp11thread.cpp)
 endif(NOT CMAKE_CXX_STANDARD EQUAL 98)
 
-BRLCAD_ADDLIB(libbu "${LIBBU_SOURCES}" "${Foundation_LIBRARIES};Threads::Threads;${DL_LIBRARY};${WINSOCK_LIB};${PSAPI_LIB};${BSON_LIBRARIES};${UUID_LIBRARIES};${M_LIBRARY}")
+BRLCAD_ADDLIB(libbu "${LIBBU_SOURCES}" "${Foundation_LIBRARIES};${CMAKE_THREAD_LIBS_INIT};${DL_LIBRARY};${WINSOCK_LIB};${PSAPI_LIB};${BSON_LIBRARIES};${UUID_LIBRARIES};${REGEX_LIBRARIES};${M_LIBRARY}")
 set_target_properties(libbu PROPERTIES VERSION 20.0.1 SOVERSION 20)
 
 # Define a pre-build test for libbu to check the semaphores in BRL-CAD's headers for
@@ -176,7 +172,6 @@ set(bu_ignore_files
   CMakeLists.txt
   bitv.h
   charclass.h
-  fort.h
   mime.cmake
   parallel.h
   process.h

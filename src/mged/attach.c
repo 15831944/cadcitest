@@ -68,7 +68,7 @@ static fastf_t windowbounds[6] = { XMIN, XMAX, YMIN, YMAX, (int)GED_MIN, (int)GE
 void set_curr_dm(struct mged_dm *nc)
 {
     mged_curr_dm = nc;
-    if (nc != MGED_DM_NULL && nc->dm_view_state) {
+    if (nc != MGED_DM_NULL) {
 	GEDP->ged_gvp = nc->dm_view_state->vs_gvp;
 	GEDP->ged_gvp->gv_grid = *nc->dm_grid_state; /* struct copy */
     } else {
@@ -155,6 +155,7 @@ int
 release(char *name, int need_close)
 {
     struct mged_dm *save_dm_list = MGED_DM_NULL;
+    struct bu_vls *cpathname = dm_get_pathname(DMP);
     struct bu_vls *pathname = NULL;
 
     if (name != NULL) {
@@ -165,9 +166,6 @@ release(char *name, int need_close)
 
 	for (size_t i = 0; i < BU_PTBL_LEN(&active_dm_set); i++) {
 	    struct mged_dm *m_dmp = (struct mged_dm *)BU_PTBL_GET(&active_dm_set, i);
-	    if (!m_dmp || !m_dmp->dm_dmp)
-		continue;
-
 	    pathname = dm_get_pathname(m_dmp->dm_dmp);
 	    if (!BU_STR_EQUAL(name, bu_vls_cstr(pathname)))
 		continue;
@@ -185,7 +183,7 @@ release(char *name, int need_close)
 	    Tcl_AppendResult(INTERP, "release: ", name, " not found\n", (char *)NULL);
 	    return TCL_ERROR;
 	}
-    } else if (DMP && BU_STR_EQUAL("nu", bu_vls_cstr(dm_get_pathname(DMP))))
+    } else if (BU_STR_EQUAL("nu", bu_vls_cstr(cpathname)))
 	return TCL_OK;  /* Ignore */
 
     if (fbp) {
@@ -496,59 +494,54 @@ mged_attach(const char *wp_name, int argc, const char *argv[])
 }
 
 
-#define MAX_ATTACH_RETRIES 100
-
 void
 get_attached(void)
 {
-    char *tok;
-    int inflimit = MAX_ATTACH_RETRIES;
+    int inflimit = 1000;
     int ret;
-    struct bu_vls avail_types = BU_VLS_INIT_ZERO;
-    struct bu_vls wanted_type = BU_VLS_INIT_ZERO;
-    struct bu_vls prompt = BU_VLS_INIT_ZERO;
+    struct bu_vls type = BU_VLS_INIT_ZERO;
 
-    const char *DELIM = " ";
+    struct bu_vls type_msg = BU_VLS_INIT_ZERO;
+    struct bu_vls dm_types = BU_VLS_INIT_ZERO;
+    dm_list_types(&dm_types, " ");
+    char **dms = (char **)bu_calloc(bu_vls_strlen(&dm_types), sizeof(char *), "dm name array");
+    int nargc = bu_argv_from_string(dms, bu_vls_strlen(&dm_types), bu_vls_addr(&dm_types));
 
-    dm_list_types(&avail_types, DELIM);
-
-    bu_vls_sprintf(&prompt, "attach (nu");
-    for (tok = strtok(bu_vls_addr(&avail_types), " "); tok; tok = strtok(NULL, " ")) {
-	if (BU_STR_EQUAL(tok, "nu"))
+    bu_vls_sprintf(&type_msg, "attach (nu");
+    for (int i = 0; i < nargc; i++) {
+	if (BU_STR_EQUAL(dms[i], "nu"))
 	    continue;
-	if (BU_STR_EQUAL(tok, "plot"))
+	if (BU_STR_EQUAL(dms[i], "plot"))
 	    continue;
-	if (BU_STR_EQUAL(tok, "postscript"))
+	if (BU_STR_EQUAL(dms[i], "postscript"))
 	    continue;
-	bu_vls_printf(&prompt, " %s", tok);
+	bu_vls_printf(&type_msg, " %s", dms[i]);
     }
-    bu_vls_printf(&prompt, ")[nu]? ");
-
-    bu_vls_free(&avail_types);
+    bu_vls_printf(&type_msg, ")[nu]? ");
+    bu_free(dms, "array");
+    bu_vls_free(&dm_types);
 
     while (inflimit > 0) {
-	bu_log("%s", bu_vls_cstr(&prompt));
+	bu_log("%s", bu_vls_cstr(&type_msg));
 
-	ret = bu_vls_gets(&wanted_type, stdin);
+	ret = bu_vls_gets(&type, stdin);
 	if (ret < 0) {
 	    /* handle EOF */
 	    bu_log("\n");
-	    bu_vls_free(&wanted_type);
-	    bu_vls_free(&prompt);
+	    bu_vls_free(&type);
 	    return;
 	}
 
-	if (bu_vls_strlen(&wanted_type) == 0 || BU_STR_EQUAL(bu_vls_addr(&wanted_type), "nu")) {
+	if (bu_vls_strlen(&type) == 0 || BU_STR_EQUAL(bu_vls_addr(&type), "nu")) {
 	    /* Nothing more to do. */
-	    bu_vls_free(&wanted_type);
-	    bu_vls_free(&prompt);
+	    bu_vls_free(&type);
 	    return;
 	}
 
 	/* trim whitespace before comparisons (but not before checking empty) */
-	bu_vls_trimspace(&wanted_type);
+	bu_vls_trimspace(&type);
 
-	if (dm_valid_type(bu_vls_cstr(&wanted_type), NULL)) {
+	if (dm_valid_type(bu_vls_cstr(&type), NULL)) {
 	    break;
 	}
 
@@ -556,23 +549,23 @@ get_attached(void)
 	inflimit--;
     }
 
-    bu_vls_free(&prompt);
+    bu_vls_free(&type_msg);
 
     if (inflimit <= 0) {
 	bu_log("\nInfinite loop protection, attach aborted!\n");
-	bu_vls_free(&wanted_type);
+	bu_vls_free(&type);
 	return;
     }
 
-    bu_log("Starting an %s display manager\n", bu_vls_cstr(&wanted_type));
+    bu_log("Starting an %s display manager\n", bu_vls_cstr(&type));
 
     int argc = 1;
     const char *argv[3];
     argv[0] = "";
     argv[1] = "";
     argv[2] = (char *)NULL;
-    (void)mged_attach(bu_vls_cstr(&wanted_type), argc, argv);
-    bu_vls_free(&wanted_type);
+    (void)mged_attach(bu_vls_cstr(&type), argc, argv);
+    bu_vls_free(&type);
 }
 
 

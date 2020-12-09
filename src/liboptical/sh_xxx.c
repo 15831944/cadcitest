@@ -35,7 +35,9 @@
  *	edit the xxx_render function to do the actual rendering
  *
  * If you are building a dynamically loaded shader, compile this into a
- * shared library called "shadername.so" or "libshadername.so".
+ * shared library called "shadername.so".  If you have a number of shaders
+ * for you are adding, you can create a single library called "shaders.so"
+ * which contains all of your DSO shaders.
  *
  * RT will look in the following locations for DSO shaders:
  *		./

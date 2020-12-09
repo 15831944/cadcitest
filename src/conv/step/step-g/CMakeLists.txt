@@ -2,13 +2,10 @@ set(AP203_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${OPENNURBS_INCLUDE_DIRS}
-  ${STEPCODE_INCLUDE_DIRS}
   )
 BRLCAD_INCLUDE_DIRS(AP203_INCLUDE_DIRS)
 
-link_directories(${CMAKE_BINARY_DIR}/${LIB_DIR})
-
-set(STEP_SCHEMA_FILE ${CMAKE_SOURCE_DIR}/src/other/stepcode/data/ap203/ap203.exp)
+set(STEP_SCHEMA_FILE ${STEPCODE_DIR}/data/ap203/ap203.exp)
 add_definitions(-DAP203)
 #set(STEP_SCHEMA_FILE ${STEPCODE_DIR}/data/ap203e2/ap203e2_mim_lf.exp)
 #add_definitions(-DAP203e2)
@@ -236,7 +233,6 @@ set(stepg_SOURCES
   VolumeUnit.cpp
   step-g.cpp
   )
-CMAKEFILES(${stepg_SOURCES})
 
 set(stepg_HDRS
   AdvancedBrepShapeRepresentation.h
@@ -456,31 +452,29 @@ set(stepg_HDRS
   )
 CMAKEFILES(${stepg_HDRS})
 
-if (BRLCAD_ENABLE_STEP)
-  set(stepg_LIBS
-    libwdb
-    librt
-    libbu
-    libbrep
-    steputils
-    stepeditor
-    stepdai
-    stepcore
-    ${OPENNURBS_LIBRARIES}
-    )
+set(stepg_LIBS
+  libwdb
+  librt
+  libbu
+  libbrep
+  steputils
+  stepeditor
+  stepdai
+  stepcore
+  ${OPENNURBS_LIBRARIES}
+  )
+list(APPEND stepg_LIBS ${stepg_LIBS})
 
-  BRLCAD_ADDEXEC(step-g "${stepg_SOURCES}" "${stepg_LIBS}" NO_STRICT)
-  add_dependencies(step-g step-express-${SCHEMA_NAME}-stepg)
-  set_property(TARGET step-g APPEND PROPERTY INCLUDE_DIRECTORIES "${stepg_SCHEMA_OUT_DIR}")
-  target_compile_definitions(step-g PRIVATE SC_SCHEMA_DLL_EXPORTS)
+BRLCAD_ADDEXEC(step-g "${stepg_SOURCES}" "${stepg_LIBS}" NO_STRICT)
+add_dependencies(step-g step-express-${SCHEMA_NAME}-stepg)
+set_property(TARGET step-g APPEND PROPERTY INCLUDE_DIRECTORIES "${stepg_SCHEMA_OUT_DIR}")
 
-  if(HIDE_INTERNAL_SYMBOLS)
-    set(SCIMPORTS SC_CORE_DLL_IMPORTS SC_DAI_DLL_IMPORTS SC_EDITOR_DLL_IMPORTS SC_UTILS_DLL_IMPORTS ON_DLL_IMPORTS)
-    foreach(scp ${SCIMPORTS})
-      set_property(TARGET step-g APPEND PROPERTY COMPILE_DEFINITIONS "${scp}")
-    endforeach(scp ${SCIMPORTS})
-  endif(HIDE_INTERNAL_SYMBOLS)
-endif (BRLCAD_ENABLE_STEP)
+if(HIDE_INTERNAL_SYMBOLS)
+  set(SCIMPORTS SC_CORE_DLL_IMPORTS SC_DAI_DLL_IMPORTS SC_EDITOR_DLL_IMPORTS SC_UTILS_DLL_IMPORTS ON_DLL_IMPORTS)
+  foreach(scp ${SCIMPORTS})
+    set_property(TARGET step-g APPEND PROPERTY COMPILE_DEFINITIONS "${scp}")
+  endforeach(scp ${SCIMPORTS})
+endif(HIDE_INTERNAL_SYMBOLS)
 
 CMAKEFILES(CMakeLists.txt)
 

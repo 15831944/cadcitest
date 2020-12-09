@@ -43,40 +43,29 @@
 #include "bu/exit.h"
 
 
-static void
-rgb_diff(int c1, int c2, FILE *output, size_t *offmany, size_t *off1, size_t *matching)
-{
-    int i;
-
-    if (!output)
-	output = stdout;
-    if (!offmany || !off1 || !matching)
-	return;
-
-    if (c1 != c2) {
-	i = c1 - c2;
-	if (i < 0)
-	    i = -i;
-	if (i > 1) {
-	    putc(0xFF, output);
-	    (*offmany)++;
-	} else {
-	    putc(0xC0, output);
-	    (*off1)++;
-	}
-    } else {
-	putc(0, output);
-	(*matching)++;
-    }
-}
-
+#define RGB_DIFF(c1, c2) \
+    do { \
+	if (c1 != c2) { \
+	    if ((i = c1 - c2) < 0) i = -i; \
+	    if (i > 1) { \
+		putc(0xFF, stdout); \
+		offmany++; \
+	    } else { \
+		putc(0xC0, stdout); \
+		off1++; \
+	    } \
+	} else { \
+	    putc(0, stdout); \
+	    matching++; \
+	} \
+    } while (0)
 
 int
 main(int argc, char *argv[])
 {
-    size_t matching = 0;
-    size_t off1 = 0;
-    size_t offmany = 0;
+    long matching = 0;
+    long off1 = 0;
+    long offmany = 0;
 
     FILE *f1, *f2;
     struct stat sf1, sf2;
@@ -123,9 +112,10 @@ main(int argc, char *argv[])
 	if (feof(f1) || feof(f2)) break;
 
 	if (r1 != r2 || g1 != g2 || b1 != b2) {
-	    rgb_diff(r1, r2, stdout, &offmany, &off1, &matching);
-	    rgb_diff(g1, g2, stdout, &offmany, &off1, &matching);
-	    rgb_diff(b1, b2, stdout, &offmany, &off1, &matching);
+	    int i;
+	    RGB_DIFF(r1, r2);
+	    RGB_DIFF(g1, g2);
+	    RGB_DIFF(b1, b2);
 	} else {
 	    /* Common case: equal.  Give B&W NTSC average of 0.35 R +
 	     * 0.55 G + 0.10 B, calculated in fixed-point, output at
@@ -133,8 +123,7 @@ main(int argc, char *argv[])
 	     */
 	    long i;
 	    i = ((22937 * r1 + 36044 * g1 + 6553 * b1)>>17);
-	    if (i < 0)
-		i = 0;
+	    if (i < 0) i = 0;
 	    i /= 2;
 	    putc(i, stdout);
 	    putc(i, stdout);
@@ -143,7 +132,7 @@ main(int argc, char *argv[])
 	}
     }
     fprintf(stderr,
-	    "pixdiff bytes: %7zu matching, %7zu off by 1, %7zu off by many\n",
+	    "pixdiff bytes: %7ld matching, %7ld off by 1, %7ld off by many\n",
 	    matching, off1, offmany);
 
     return 0;

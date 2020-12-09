@@ -42,13 +42,13 @@
 #include <stdexcept>
 
 /* GDAL headers */
-#include "gdal.h"
-#include "gdalwarper.h"
-#include "gdal_utils.h"
-#include "cpl_conv.h"
-#include "cpl_string.h"
-#include "cpl_multiproc.h"
-#include "ogr_spatialref.h"
+#include <gdal.h>
+#include <gdalwarper.h>
+#include <gdal_utils.h>
+#include <cpl_conv.h>
+#include <cpl_string.h>
+#include <cpl_multiproc.h>
+#include <ogr_spatialref.h>
 #include "vrtdataset.h"
 
 #include "bu/app.h"
@@ -430,7 +430,7 @@ gdal_read_free_opts(void *options_data)
 extern "C"
 {
     struct gcv_filter gcv_conv_gdal_read =
-    {"GDAL Reader", GCV_FILTER_READ, -1, BU_MIME_UNKNOWN, gdal_can_read, gdal_read_create_opts, gdal_read_free_opts, gdal_read};
+    {"GDAL Reader", GCV_FILTER_READ, BU_MIME_MODEL_AUTO, gdal_can_read, gdal_read_create_opts, gdal_read_free_opts, gdal_read};
 
     static const struct gcv_filter * const filters[] = {&gcv_conv_gdal_read, NULL};
     const struct gcv_plugin gcv_plugin_info_s = { filters };

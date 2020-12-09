@@ -9,7 +9,7 @@
  * See the file "license.terms" for information on usage and redistribution
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
  *
- * RCS: @(#) $Id: tkMacOSXPrivate.h 75258 2020-04-02 21:41:04Z starseeker $
+ * RCS: @(#) $Id: tkMacOSXPrivate.h 77152 2020-09-14 12:21:05Z starseeker $
  */
 
 #ifndef _TKMACPRIV

@@ -42,7 +42,7 @@ __BEGIN_DECLS
 struct region_pair {
     struct bu_list l;
     union {
-	const char *name;
+	char *name;
 	struct region *r1;
     } r;
     struct region *r2;

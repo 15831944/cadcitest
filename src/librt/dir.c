@@ -139,8 +139,7 @@ rt_db_get_internal(
 	id = ID_COMBINATION;
     } else {
 	/* As a convenience to older ft_import4 routines */
-	if (mat == NULL)
-	    mat = bn_mat_identity;
+	if (mat == NULL) mat = bn_mat_identity;
 	id = rt_id_solid(&ext);
     }
 
@@ -173,7 +172,6 @@ rt_db_get_internal(
 
     return id;			/* OK */
 }
-
 
 int
 rt_db_put_internal(
@@ -216,7 +214,6 @@ rt_db_put_internal(
     return 0;			/* OK */
 }
 
-
 int
 rt_fwrite_internal(
     FILE *fp,
@@ -250,9 +247,9 @@ rt_fwrite_internal(
 	bu_free_external(&ext);
 	return -3;
     }
-
     bu_free_external(&ext);
     return 0;
+
 }
 
 
@@ -279,7 +276,6 @@ rt_db_free_internal(struct rt_db_internal *ip)
     }
     RT_DB_INTERNAL_INIT(ip);
 }
-
 
 int
 rt_db_lookup_internal (

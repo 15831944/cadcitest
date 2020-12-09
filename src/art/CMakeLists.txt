@@ -9,7 +9,7 @@ list(REMOVE_DUPLICATES ART_INCLUDE_DIRS)
 BRLCAD_INCLUDE_DIRS(ART_INCLUDE_DIRS)
 
 set(RT_STD_LIBS
-  Threads::Threads
+  ${CMAKE_THREAD_LIBS_INIT}
   librt
   libnmg
   libdm

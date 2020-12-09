@@ -27,7 +27,7 @@
 
 #include "tk.h"
 /* needed for TkWinGetHWND() */
-#include "tkWinInt.h"
+#include "TkWinInt.h"
 
 #undef VMIN		/* is used in vmath.h, too */
 

@@ -28,17 +28,25 @@
 
 # define SC_CURRENT_FUNCTION __PRETTY_FUNCTION__
 
-#elif defined(_MSC_VER) && _MSC_VER < 1900
+#elif defined(__FUNCSIG__)
 
-# define SC_CURRENT_FUNCTION __FUNCTION__
+# define SC_CURRENT_FUNCTION __FUNCSIG__
 
 #elif (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 600)) || (defined(__IBMCPP__) && (__IBMCPP__ >= 500))
 
 # define SC_CURRENT_FUNCTION __FUNCTION__
 
-#else // STDC
+#elif defined(__BORLANDC__) && (__BORLANDC__ >= 0x550)
+
+# define SC_CURRENT_FUNCTION __FUNC__
+
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901)
 
 # define SC_CURRENT_FUNCTION __func__
+
+#else
+
+# define SC_CURRENT_FUNCTION "(unknown)"
 
 #endif
 

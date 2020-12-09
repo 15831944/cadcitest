@@ -1,6 +1,4 @@
-if (TARGET libgcv_gdal)
-  BRLCAD_REGRESSION_TEST(regress-dem "gcv;libgcv_gdal" EXEC gcv)
-endif (TARGET libgcv_gdal)
+BRLCAD_REGRESSION_TEST(regress-dem "gcv;libgcv_gdal" EXEC gcv)
 
 DISTCLEAN(
   "${CMAKE_CURRENT_BINARY_DIR}/regress-dem.log"

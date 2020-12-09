@@ -21,8 +21,6 @@
  *
  * Evaluate NURBS booleans (union, intersection and difference).
  *
- * Additional documentation can be found in the "NURBS Boolean Evaluation
- * Development Guide" docbook article (bool_eval_development.html).
  */
 
 #include "common.h"
@@ -33,7 +31,6 @@
 #include <queue>
 #include <set>
 #include <map>
-#include <sstream>
 
 #include "bio.h"
 
@@ -46,14 +43,19 @@
 #include "brep/ray.h"
 #include "brep/util.h"
 
-#include "debug_plot.h"
 #include "brep_except.h"
-#include "brep_defines.h"
 
-DebugPlot *dplot = NULL;
 
 // Whether to output the debug messages about b-rep booleans.
 #define DEBUG_BREP_BOOLEAN 0
+
+// tol value used in ON_Intersect()s. We use a smaller tolerance than the
+// default one 0.001.
+#define INTERSECTION_TOL 1e-4
+
+// tol value used in ON_3dVector::IsParallelTo(). We use a smaller tolerance
+// than the default one ON_PI/180.
+#define ANGLE_TOL ON_PI/1800.0
 
 
 struct IntersectPoint {
@@ -102,7 +104,7 @@ struct SSICurve {
 };
 
 
-void
+HIDDEN void
 append_to_polycurve(ON_Curve *curve, ON_PolyCurve &polycurve);
 // We link the SSICurves that share an endpoint, and form this new structure,
 // which has many similar behaviors as ON_Curve, e.g. PointAt(), Reverse().
@@ -342,7 +344,7 @@ curve_t_compare(const IntersectPoint *p1, const IntersectPoint *p2)
 }
 
 
-void
+HIDDEN void
 append_to_polycurve(ON_Curve *curve, ON_PolyCurve &polycurve)
 {
     // use this function rather than ON_PolyCurve::Append() to avoid
@@ -3443,7 +3445,7 @@ get_face_intersection_curves(
 	std::set<int> *unused = i < face_count1 ? &unused1 : &unused2;
 	std::set<int> *intact = i < face_count1 ? &finalform1 : &finalform2;
 	int curr_index = i < face_count1 ? i : i - face_count1;
-	if (face.BoundingBox().MinimumDistanceTo(brep->BoundingBox()) > INTERSECTION_TOL) {
+	if (face.BoundingBox().MinimumDistanceTo(brep->BoundingBox()) > ON_ZERO_TOLERANCE) {
 	    switch (operation) {
 		case BOOLEAN_UNION:
 		    intact->insert(curr_index);
@@ -3481,8 +3483,8 @@ get_face_intersection_curves(
 		if (unused2.find(j) == unused2.end() &&  finalform2.find(j) == finalform2.end()) {
 		    // If the two faces don't interact according to their bounding boxes,
 		    // they won't be a source of events - otherwise, they must be checked.
-		    fastf_t face_dist = brep1->m_F[i].BoundingBox().MinimumDistanceTo(brep2->m_F[j].BoundingBox());
-		    if (face_dist <= INTERSECTION_TOL) {
+		    fastf_t disjoint = brep1->m_F[i].BoundingBox().MinimumDistanceTo(brep2->m_F[j].BoundingBox());
+		    if (!(disjoint > ON_ZERO_TOLERANCE)) {
 			intersection_candidates.insert(std::pair<int, int>(i, j));
 		    }
 		}
@@ -3561,10 +3563,6 @@ get_face_intersection_curves(
 		if (results <= 0) {
 		    continue;
 		}
-
-		dplot->SSX(events, brep1, brep1->m_F[i].m_si, brep2, brep2->m_F[j].m_si);
-		dplot->WriteLog();
-
 		ON_SimpleArray<ON_Curve *> face1_curves, face2_curves;
 		for (int k = 0; k < events.Count(); k++) {
 		    if (events[k].m_type == ON_SSX_EVENT::ssx_tangent ||
@@ -3592,8 +3590,6 @@ get_face_intersection_curves(
 			}
 		    }
 		}
-		dplot->ClippedFaceCurves(surf1, surf2, face1_curves, face2_curves);
-		dplot->WriteLog();
 
 		if (DEBUG_BREP_BOOLEAN) {
 		    // Look for coplanar faces
@@ -3607,6 +3603,7 @@ get_face_intersection_curves(
 		}
 
 	    }
+
 	}
     }
 
@@ -3697,7 +3694,6 @@ categorize_trimmed_faces(
 	    }
 
 	    splitted[j]->m_rev = false;
-	    splitted[j]->m_belong_to_final = TrimmedFace::NOT_BELONG;
 	    switch (face_location) {
 		case INSIDE_BREP:
 		    if (operation == BOOLEAN_INTERSECT ||
@@ -3802,8 +3798,6 @@ get_evaluated_faces(const ON_Brep *brep1, const ON_Brep *brep2, op_type operatio
     for (int i = 0; i < original_faces.Count(); i++) {
 	TrimmedFace *first = original_faces[i];
 	ON_ClassArray<LinkedCurve> linked_curves = link_curves(curves_array[i]);
-	dplot->LinkedCurves(first->m_face->SurfaceOf(), linked_curves);
-	dplot->WriteLog();
 
 	ON_SimpleArray<TrimmedFace *> splitted = split_trimmed_face(first, linked_curves);
 	trimmed_faces.Append(splitted);
@@ -3831,9 +3825,6 @@ get_evaluated_faces(const ON_Brep *brep1, const ON_Brep *brep2, op_type operatio
     }
 
     categorize_trimmed_faces(trimmed_faces, brep1, brep2, surf_tree1, surf_tree2, operation);
-
-    dplot->SplitFaces(trimmed_faces);
-    dplot->WriteLog();
 
     for (int i = 0; i < surf_tree1.Count(); i++) {
 	delete surf_tree1[i];
@@ -3923,14 +3914,6 @@ standardize_loop_orientations(ON_Brep *brep)
 int
 ON_Boolean(ON_Brep *evaluated_brep, const ON_Brep *brep1, const ON_Brep *brep2, op_type operation)
 {
-    static int calls = 0;
-    ++calls;
-    std::ostringstream prefix;
-    prefix << "bool" << calls;
-    dplot = new DebugPlot(prefix.str().c_str());
-    dplot->Surfaces(brep1, brep2);
-    dplot->WriteLog();
-
     ON_ClassArray<ON_SimpleArray<TrimmedFace *> > trimmed_faces;
     try {
 	/* Deal with the trivial cases up front */
@@ -3951,17 +3934,14 @@ ON_Boolean(ON_Brep *evaluated_brep, const ON_Brep *brep1, const ON_Brep *brep2, 
 	    }
 	    evaluated_brep->ShrinkSurfaces();
 	    evaluated_brep->Compact();
-	    dplot->WriteLog();
 	    return 0;
 	}
 	trimmed_faces = get_evaluated_faces(brep1, brep2, operation);
     } catch (InvalidBooleanOperation &e) {
 	bu_log("%s", e.what());
-	dplot->WriteLog();
 	return -1;
     } catch (GeometryGenerationError &e) {
 	bu_log("%s", e.what());
-	dplot->WriteLog();
 	return -1;
     }
 
@@ -4018,10 +3998,6 @@ ON_Boolean(ON_Brep *evaluated_brep, const ON_Brep *brep1, const ON_Brep *brep2, 
     if (ON_String(ws).Array()) {
 	bu_log("%s", ON_String(ws).Array());
     }
-
-    dplot->WriteLog();
-    delete dplot;
-    dplot = NULL;
 
     return 0;
 }

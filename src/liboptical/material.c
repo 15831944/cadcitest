@@ -72,13 +72,13 @@ mlib_add_shader(struct mfuncs **headp, struct mfuncs *mfp1)
  * up the shader named "material" in the table.
  */
 static struct mfuncs *
-try_load(const char *path, const char *material)
+try_load(const char *path, const char *material, const char *shader_name)
 {
-    char sym[MAXPATHLEN];
-    const char *dl_error_str;
-    struct mfuncs *mfp;
-    struct mfuncs *shader_mfuncs;
     void *handle;
+    struct mfuncs *shader_mfuncs;
+    struct mfuncs *mfp;
+    const char *dl_error_str;
+    char sym[MAXPATHLEN];
 
     if (! (handle = bu_dlopen(path, BU_RTLD_NOW))) {
 	if (OPTICAL_DEBUG&OPTICAL_DEBUG_MATERIAL)
@@ -89,7 +89,7 @@ try_load(const char *path, const char *material)
     }
 
     /* Find the {shader}_mfuncs symbol in the library */
-    snprintf(sym, MAXPATHLEN, "%s_mfuncs", material);
+    snprintf(sym, MAXPATHLEN, "%s_mfuncs", shader_name);
     shader_mfuncs = (struct mfuncs *)bu_dlsym((struct mfuncs *)handle, sym);
 
     dl_error_str=bu_dlerror();
@@ -101,28 +101,26 @@ try_load(const char *path, const char *material)
 	shader_mfuncs = (struct mfuncs *)bu_dlsym((struct mfuncs *)handle, "shader_mfuncs");
 	if ((dl_error_str=bu_dlerror()) != (char *)NULL) {
 	    /* didn't find anything appropriate, give up */
-	    if (OPTICAL_DEBUG&OPTICAL_DEBUG_MATERIAL)
-		bu_log("%s has no %s table, %s\n", material, sym, dl_error_str);
+	    if (OPTICAL_DEBUG&OPTICAL_DEBUG_MATERIAL) bu_log("%s has no %s table, %s\n", material, sym, dl_error_str);
 	    bu_dlclose(handle);
 	    return (struct mfuncs *)NULL;
 	}
     }
 
     if (OPTICAL_DEBUG&OPTICAL_DEBUG_MATERIAL)
-	bu_log("%s_mfuncs table found\n", material);
+	bu_log("%s_mfuncs table found\n", shader_name);
 
     /* make sure the shader we were looking for is in the mfuncs table */
     for (mfp = shader_mfuncs; mfp && mfp->mf_name != (char *)NULL; mfp++) {
 	RT_CK_MF(mfp);
 
-	if (BU_STR_EQUAL(mfp->mf_name, material)) {
+	if (BU_STR_EQUAL(mfp->mf_name, shader_name)) {
 	    bu_dlclose(handle);
 	    return shader_mfuncs; /* found it! */
 	}
     }
 
-    if (OPTICAL_DEBUG&OPTICAL_DEBUG_MATERIAL)
-	bu_log("shader '%s' not found in library\n", material);
+    if (OPTICAL_DEBUG&OPTICAL_DEBUG_MATERIAL) bu_log("shader '%s' not found in library\n", shader_name);
 
     /* found the library, but not the shader */
     bu_dlclose(handle);
@@ -133,71 +131,66 @@ try_load(const char *path, const char *material)
 struct mfuncs *
 load_dynamic_shader(const char *material)
 {
-    char libpath[MAXPATHLEN]; /* path to shader lib */
-    char mat_fname[MAXPATHLEN]; /* {material}.{EXT}, no path */
-    char mat_libfname[MAXPATHLEN]; /* lib{material}.{EXT}, no path */
     struct mfuncs *shader_mfuncs = (struct mfuncs *)NULL;
+    char libname[MAXPATHLEN];
+    char libpath[MAXPATHLEN];
+    char *cwd = (char *)NULL;
+    int old_optical_debug = OPTICAL_DEBUG;
+    char sh_name[128]; /* XXX constants are bogus */
 
-    if (OPTICAL_DEBUG&OPTICAL_DEBUG_MATERIAL)
-	bu_log("load_dynamic_shader(\"%s\")\n", material);
-
-    if (sizeof(mat_fname) <= strlen(material)) {
+    if (strlen(material) < sizeof(sh_name)) {
+	bu_strlcpy(sh_name, material, sizeof(sh_name));
+    } else {
 	bu_log("shader name too long \"%s\" %zu > %lu\n",
-	       material, strlen(material), sizeof(mat_fname));
+	       material, strlen(material), sizeof(sh_name));
 	return (struct mfuncs *)NULL;
     }
 
-    /* precalculate the potential file names, with+without lib prefix */
-    bu_dir(mat_fname, sizeof(mat_fname), material, BU_DIR_LIBEXT, NULL);
-    bu_strlcat(mat_libfname, "lib", sizeof(mat_libfname));
-    bu_strlcat(mat_libfname, mat_fname, sizeof(mat_libfname));
+    if (OPTICAL_DEBUG&OPTICAL_DEBUG_MATERIAL)
+	bu_log("load_dynamic_shader(\"%s\")\n", sh_name);
 
-    /* Look in current working directory for {material}.so */
-    bu_dir(libpath, sizeof(libpath), BU_DIR_CURR, mat_fname, NULL);
-    shader_mfuncs = try_load(libpath, material);
-    if (shader_mfuncs)
-	goto done;
+    cwd = getcwd((char *)NULL, (size_t)MAXPATHLEN);
 
-    /* Look in current working directory for lib{material}.so */
-    bu_dir(libpath, sizeof(libpath), BU_DIR_CURR, mat_libfname, NULL);
-    shader_mfuncs = try_load(libpath, material);
-    if (shader_mfuncs)
-	goto done;
+    if (cwd) {
+	/* Look in the current working directory for {sh_name}.so */
+	snprintf(libname, sizeof(libname), "%s/%s.so", cwd, sh_name);
+	if ((shader_mfuncs = try_load(libname, material, sh_name)))
+	    goto done;
 
-    /* Don't specify a path in order to look in system locations
-     * indicated by ld (e.g., $LD_LIBRARY_PATH) for {material}.so
+
+	/* Look in the current working directory for shaders.so */
+	snprintf(libname, sizeof(libname), "%s/shaders.so", cwd);
+	if ((shader_mfuncs = try_load(libname, material, sh_name)))
+	    goto done;
+
+    } else {
+	bu_log("Cannot get current working directory\n\tSkipping local shader load\n");
+    }
+
+    /* Look in the location indicated by $LD_LIBRARY_PATH for
+     * lib{sh_name}.so
      */
-    bu_strlcpy(libpath, mat_fname, sizeof(libpath));
-    shader_mfuncs = try_load(libpath, material);
-    if (shader_mfuncs)
+    snprintf(libname, sizeof(libname), "lib%s.so", sh_name);
+    if ((shader_mfuncs = try_load(libname, material, sh_name)))
 	goto done;
 
-    /* Don't specify a path in order to look in the system locations
-     * indicated by ld (e.g., $LD_LIBRARY_PATH) for lib{material}.so
-     */
-    bu_strlcpy(libpath, mat_libfname, sizeof(libpath));
-    shader_mfuncs = try_load(libpath, material);
-    if (shader_mfuncs)
-	goto done;
-
-    /* Look in installation library path for {material}.so */
-    bu_dir(libpath, sizeof(libpath), BU_DIR_LIB, mat_fname, NULL);
-    shader_mfuncs = try_load(libpath, material);
-    if (shader_mfuncs)
-	goto done;
-
-    /* Look in installation library path for lib{material}.so */
-    bu_dir(libpath, sizeof(libpath), BU_DIR_LIB, mat_libfname, NULL);
-    shader_mfuncs = try_load(libpath, material);
-    if (shader_mfuncs)
+    /* Look in BRL-CAD install dir under lib dir for lib{sh_name}.so */
+    snprintf(libpath, sizeof(libpath), "/lib/lib%s.so", sh_name);
+    bu_strlcpy(libname, bu_brlcad_root(libpath, 1), sizeof(libname));
+    if ((shader_mfuncs = try_load(libname, material, sh_name)))
 	goto done;
 
 done:
+    /* clean up memory allocated */
+    if (cwd) free(cwd);
+
     /* print appropriate log messages */
     if (shader_mfuncs)
-	bu_log("loaded shader [%s] from %s\n", material, libpath);
+	bu_log("loaded from %s\n", libname);
     else
-	bu_log("WARNING: shader [%s] not found\n", material);
+	bu_log("WARNING: shader [%s] not found\n", sh_name);
+
+    optical_debug = old_optical_debug;
 
     return shader_mfuncs;
 }
@@ -268,6 +261,7 @@ retry:
 	goto retry;
     }
 
+
     /* If we get here, then the shader was not found at all (either in
      * the compiled-in or dynamically loaded shader sets).  We set the
      * shader name to "default" (which should match an entry in the
@@ -286,7 +280,6 @@ retry:
     bu_vls_free(&params);
     bu_vls_free(&name);
     return -1;
-
 found:
     rp->reg_mfuncs = (char *)mfp;
     rp->reg_udata = (char *)0;

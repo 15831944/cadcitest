@@ -1,4 +1,3 @@
-from __future__ import print_function
 # Copyright (c) 2011, Thomas Paviot (tpaviot@gmail.com)
 # All rights reserved.
 
@@ -44,10 +43,10 @@ class Type(object):
         return self._scope
     
     def get_type(self):
-        if isinstance(self._typedef, str):
-            if self._scope is None:
+        if type(self._typedef) == str:
+            if self._scope == None:
                 raise AssertionError('No scope defined for this type')
-            elif self._typedef in vars(self._scope):
+            elif vars(self._scope).has_key(self._typedef):
                 return vars(self._scope)[self._typedef]
             else:
                 raise TypeError("Type '%s' is not defined in given scope"%self._typedef)
@@ -66,5 +65,5 @@ if __name__ == "__main__":
     class line:
         pass
     new_type = Type('lie',scp)
-    print(new_type.get_type())
+    print new_type.get_type()
     

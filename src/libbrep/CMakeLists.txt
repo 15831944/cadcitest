@@ -4,14 +4,14 @@ set(BREP_INCLUDE_DIRS
   ${BRLCAD_SOURCE_DIR}/include
   ${BU_INCLUDE_DIRS}
   ${BN_INCLUDE_DIRS}
-  ${POLY2TRI_INCLUDE_DIRS}
+  ${P2T_INCLUDE_DIR}
   ${OPENNURBS_INCLUDE_DIRS}
   )
 
 # locally used but not needed by users of the library
 set(BREP_LOCAL_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${REGEX_INCLUDE_DIRS}
+  ${REGEX_INCLUDE_DIR}
   ${BRLCAD_SOURCE_DIR}/src/other/Eigen
   )
 
@@ -33,7 +33,6 @@ set(LIBBREP_SOURCES
   cdt/mesh.cpp
   cdt/ovlps_simple.cpp
   cdt/tri_isect.cpp
-  debug_plot.cpp
   intersect.cpp
   tools/tools.cpp
   opennurbs_ext.cpp
@@ -49,7 +48,19 @@ set(LIBBREP_SOURCES
   tools/util.cpp
   )
 
-BRLCAD_ADDLIB(libbrep "${LIBBREP_SOURCES}" "libbg;libbn;libbu;${OPENNURBS_LIBRARIES};${POLY2TRI_LIBRARIES};${WINSOCK_LIB};${RPCRT_LIB};${STDCXX_LIBRARIES}")
+set(libbrep_ignored_files
+  tools/tools.h
+  brep_except.h
+  cdt/cdt.h
+  cdt/mesh.h
+  cdt/RTree.h
+  PullbackCurve.h
+  shape_recognition/shape_recognition.h
+  shape_recognition/torus.cpp
+  )
+CMAKEFILES(${libbrep_ignored_files})
+
+BRLCAD_ADDLIB(libbrep "${LIBBREP_SOURCES}" "libbg;libbn;libbu;${OPENNURBS_LIBRARIES};${P2T_LIBRARY};${WINSOCK_LIB};${RPCRT_LIB};${STDCXX_LIBRARIES}")
 set_target_properties(libbrep PROPERTIES VERSION 20.0.1 SOVERSION 20)
 
 if(HIDE_INTERNAL_SYMBOLS)
@@ -60,19 +71,7 @@ endif(HIDE_INTERNAL_SYMBOLS)
 
 add_subdirectory(tests)
 
-CMAKEFILES(
-  CMakeLists.txt
-  PullbackCurve.h
-  brep_defines.h
-  brep_except.h
-  cdt/RTree.h
-  cdt/cdt.h
-  cdt/mesh.h
-  debug_plot.h
-  shape_recognition/shape_recognition.h
-  shape_recognition/torus.cpp
-  tools/tools.h
-  )
+CMAKEFILES(CMakeLists.txt)
 
 # Local Variables:
 # tab-width: 8

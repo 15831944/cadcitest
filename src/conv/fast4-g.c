@@ -38,7 +38,6 @@
 #include "bu/app.h"
 #include "bu/debug.h"
 #include "bu/getopt.h"
-#include "bu/path.h"
 #include "rt/db4.h"
 #include "vmath.h"
 #include "nmg.h"
@@ -2840,12 +2839,8 @@ main(int argc, char **argv)
     rewind(fpin);
 
     /* Make an ID record if no vehicle card was found */
-    if (!vehicle[0]) {
-	struct bu_vls fname = BU_VLS_INIT_ZERO;
-	bu_path_component(&fname, argv[bu_optind], BU_PATH_BASENAME);
-	mk_id_units(fpout, bu_vls_cstr(&fname), "in");
-	bu_vls_free(&fname);
-    }
+    if (!vehicle[0])
+	mk_id_units(fpout, argv[bu_optind], "in");
 
     if (!quiet)
 	bu_log("Building components....\n");

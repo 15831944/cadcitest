@@ -1,5 +1,5 @@
 # Minimum required version of CMake
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.1.3)
 
 # Set CMake project name
 project(RE2C)
@@ -48,7 +48,6 @@ CHECK_TYPE_SIZE(long SIZEOF_LONG)
 CHECK_TYPE_SIZE(short SIZEOF_SHORT)
 
 configure_file(config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-DISTCLEAN("${CMAKE_CURRENT_BINARY_DIR}/config.h")
 add_definitions(-DHAVE_CONFIG_H)
 
 set(re2c_common_SRCS
@@ -131,7 +130,6 @@ if(NOT RE2C_SKIP_INSTALL)
 endif(NOT RE2C_SKIP_INSTALL)
 
 configure_file(README.in ${CMAKE_CURRENT_BINARY_DIR}/README)
-DISTCLEAN("${CMAKE_CURRENT_BINARY_DIR}/README")
 
 # Local Variables:
 # tab-width: 8
