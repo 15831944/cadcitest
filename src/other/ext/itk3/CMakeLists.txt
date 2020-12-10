@@ -86,15 +86,6 @@ add_definitions(-DSTDC_HEADERS=1)
 # We're building Itk
 add_definitions(-DBUILD_itk)
 
-# We want to check /usr/local by default, so add it if it exists.  (We need
-# this to find X11 headers on FreeBSD, for example...)
-if (IS_DIRECTORY /usr/local)
-  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} /usr/local)
-  if (IS_DIRECTORY /usr/local/include)
-    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} /usr/local/include)
-  endif (IS_DIRECTORY /usr/local/include)
-endif (IS_DIRECTORY /usr/local)
-
 #--------------------------------------------------------------------
 # We need to enable the threading macros found in tcl.h and tclInt.h.
 # The use of the threading features is determined by the core the
@@ -148,11 +139,9 @@ Tcl_Check_Include_File(sys/wait.h USE)
 Tcl_Check_Include_File(unistd.h)
 Tcl_Check_Include_File(values.h USE)
 
-# TODO - for now, we need X11 on both *nix and Mac platforms.
-# Eventually we'll need to re-enable support for Aqua on Mac...
-if(NOT WIN32)
+if(TK_GRAPHICS_SYSTEM STREQUAL "x11")
   find_package(X11)
-endif()
+endif(TK_GRAPHICS_SYSTEM STREQUAL "x11")
 
 set(ITK_SRCS
   generic/itkStubInit.c

@@ -45,19 +45,8 @@ function(ITCL_TEST bvar)
 	set(${bvar} 1 PARENT_SCOPE)
       endif ("${BRLCAD_ITCL}" STREQUAL "SYSTEM")
     else (ITCL_TEST_FAILED)
-      # We have Itcl 3, but that's not enough by itself - we may need to build
-      # Itk, and for that to work find_package has to also be able to locate Itcl.
-      find_package(ITCL)
-      if(ITCL_FOUND)
-	set(${bvar} 0 PARENT_SCOPE)
-      else(ITCL_FOUND)
-	if ("${BRLCAD_ITCL}" STREQUAL "SYSTEM")
-	  # Test failed, but user has specified system - this is fatal.
-	  message(FATAL_ERROR "System-installed Itcl3 specified, but package is not installed in such a way that find_package(ITCL) can locate its components.")
-	else ("${BRLCAD_ITCL}" STREQUAL "SYSTEM")
-	  set(${bvar} 1 PARENT_SCOPE)
-	endif ("${BRLCAD_ITCL}" STREQUAL "SYSTEM")
-      endif(ITCL_FOUND)
+      # We have Itcl 3 - no need to build.
+      set(${bvar} 0 PARENT_SCOPE)
     endif (ITCL_TEST_FAILED)
 
   endif (NOT "${BRLCAD_ITCL}" STREQUAL "BUNDLED")
@@ -81,7 +70,7 @@ if (BRLCAD_ENABLE_TCL)
 
     set(ITCL_MAJOR_VERSION 3)
     set(ITCL_MINOR_VERSION 4)
-    set(ITCL_VERSION ${ITCL_MAJOR_VERSION}.${ITCL_MINOR_VERSION} CACHE STRING "Itcl version")
+    set(ITCL_VERSION ${ITCL_MAJOR_VERSION}.${ITCL_MINOR_VERSION})
 
     set(ITCL_DEPS)
     if (TARGET tcl_stage)
@@ -99,7 +88,7 @@ if (BRLCAD_ENABLE_TCL)
 
     ExternalProject_Add(ITCL_BLD
       SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/itcl3"
-      BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+      BUILD_ALWAYS ${EXTERNAL_BUILD_UPDATE} ${LOG_OPTS}
       CMAKE_ARGS
       -DCMAKE_INSTALL_PREFIX=${ITCL_INSTDIR}
       $<$<NOT:$<BOOL:${CMAKE_CONFIGURATION_TYPES}>>:-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}>
@@ -107,11 +96,8 @@ if (BRLCAD_ENABLE_TCL)
       -DLIB_DIR=${LIB_DIR}
       -DSHARED_DIR=${SHARED_DIR}
       -DINCLUDE_DIR=${INCLUDE_DIR}
-      -DCMAKE_SKIP_BUILD_RPATH=${CMAKE_SKIP_BUILD_RPATH}
-      -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=${CMAKE_INSTALL_RPATH_USE_LINK_PATH}
       -DCMAKE_INSTALL_RPATH=${CMAKE_BUILD_RPATH}
       -DITCL_STATIC=${BUILD_STATIC_LIBS}
-      -DTCL_ENABLE_TK=${TCL_ENABLE_TK}
       -DTCL_ROOT=$<$<BOOL:${TCL_TARGET}>:${CMAKE_BINARY_ROOT}>
       -DTCL_VERSION=${TCL_VERSION}
       DEPENDS ${ITCL_DEPS}

@@ -18,12 +18,6 @@ tasks as they are completed.
 THESE TASKS SHOULD HAPPEN BEFORE THE NEXT RELEASE
 -------------------------------------------------
 
-* bounding box reduction command
-
-* MGED asynchronous subprocess management appears to be broken with
-  both mged -c and gui mode on Mac.  MGED is blocking when running
-  "rt" command until after the framebuffer window is closed.
-
 * Update libgcv plugin installation location - now that its
   available, they belong with the other plugins in libexec
 
@@ -122,6 +116,17 @@ THESE TASKS SHOULD HAPPEN BEFORE THE NEXT RELEASE
   routines that need to autogenerate names to use the new
   bu_vls_incr/bu_vls_simplify functions.
 
+* rename zlib and libpng when building bundled to avoid conflicting
+  with system-installed libs.  e.g., default to ENABLE_Z_PREFIX=ON
+  with name z_brlcad (perhaps as a post-compile rename custom command)
+  and png_brlcad respectively.
+
+* investigate possibility of using simple, compact libs
+  like miniz and lodepng to replace the complexity of
+  managing zlib and libpng in src/other.  These have been
+  a source of ongoing annoyance, particularly (but not
+  exclusively) on OSX.
+
 * f_dbopen in MGED doesn't seem to be reporting failure
   if a non-.g file is fed to opendb.  That doesn't seem
   right... shouldn't the open process completely fail
@@ -168,52 +173,6 @@ THESE TASKS SHOULD HAPPEN WITHIN TWO RELEASE ITERATIONS
 
 THESE ARE UNSCHEDULED BACKLOG TASKS
 -----------------------------------
-
-* extract a skin or other exterior surface for a given model.  3 options:
-  1. Implement a "shrinkwrap" feature that calculates a concave hull
-  2. Shoot rays from outside, construct exterior mesh based on hits
-     (akin to marching cubes, a surface reconstruction)
-  3. Shoot rays from outside at exterior vertices, retain all mesh faces
-     and objects encountered (i.e., not reconstructed, but extracted)
-
-* RTAREA
-
-  * add an option to rtarea for onehit.  this is probably best as an
-    option that reports the requested objects only and then has a
-    verbose option for the more detailed hiearchical report that is
-    currently produced.
-
-  * verify rtarea.  There are reports that the rtarea
-    command may have a bug in its calculations.  This needs to be
-    investigated.
-
-  * review and fix rtarea's taxonomy for describing
-    presented/projected areas.  users expect presented area to
-    represent what is currently referred to as exposed area.  may make
-    more sense to introduce a different terms for other shotline
-    encounters.
-
-  * make rtarea display a cross-hair and perhaps coordinates for the
-    center of area if run from within mged.
-
-=======
-  * add an option to rtarea for onehit.  this is probably best as an
-    option that reports the requested objects only and then has a
-    verbose option for the more detailed hiearchical report that is
-    currently produced.
-
-  * verify rtarea.  There are reports that the rtarea
-    command may have a bug in its calculations.  This needs to be
-    investigated.
-
-  * review and fix rtarea's taxonomy for describing
-    presented/projected areas.  users expect presented area to
-    represent what is currently referred to as exposed area.  may make
-    more sense to introduce a different terms for other shotline
-    encounters.
-
-  * make rtarea display a cross-hair and perhaps coordinates for the
-    center of area if run from within mged.
 
 * bot -V check solid bot.s visualizations don't show up if bot.s is
   first drawn in MGED - should properly "overlay" them so the user
@@ -541,6 +500,11 @@ THESE ARE UNSCHEDULED BACKLOG TASKS
   + bu_for() specifies iterations of a loop body to be executed in
   parallel.  This would be a way to easily parallelize existing code
   without needing to create wrapper functions for bu_parallel().
+
+* Now that we have >3.0 CMake required, look into replacing our custom
+  time stamping code in favor of using  the CMake time stamp mechanism.
+  Also get rid of the fallback in src/libgcv/plugins/CMakeLists.txt
+  (and any others that have crept in over the years...)
 
 * convert usages of Tcl_InitHashTable() and friends to libbu
   containers (see src/conv/enf-g.c for example usage)
@@ -900,6 +864,11 @@ THESE ARE UNSCHEDULED BACKLOG TASKS
   file for FIXME note); add tests for both functions (note only
   g-dot.c wants to use the functions at the moment)
 
+* verify/fix/improve rtarea.  There are reports that the rtarea
+  command may have a bug in its calculations.  This needs to be
+  investigated along with a review of the taxonomy used by rtarea for
+  describing presented/projected areas.
+
 * eliminate dbi_filepath (perhaps replace with dbi_filedir) as we
   shouldn't need to search.  we were told where the database was.
 
@@ -1063,6 +1032,9 @@ THESE ARE UNSCHEDULED BACKLOG TASKS
   all supported dump formats (obj, dxf, etc.) optionally write out
   normals.  Consider adding an option to smoothly interpolate normals
   (per face or vertex).
+
+* make rtarea display a cross-hair and perhaps coordinates for the
+  center of area if run from within mged.
 
 * refactor and manage libbn tolerance uses by providing an interface
   default (e.g., an init macro) and making everyone use that where it
@@ -2170,10 +2142,6 @@ CONVERTERS
 * implement a ls-dyna "keyword" file format importer.  perhaps extract
   as nmg/bot boundary representation meshes.  lots of great vehicle
   datasets at http://www.ncac.gwu.edu/vml/models.html
-  Update - above link seems to be down as of 2020, see:
-  https://www.nhtsa.gov/crash-simulation-vehicle-models
-  https://www.ccsa.gmu.edu/models/
-
 
 
 STEP

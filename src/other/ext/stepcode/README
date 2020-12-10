@@ -1,0 +1,23 @@
+STEPcode is a set of tools and libraries for reading ISO10303-11 EXPRESS
+schemas and generating C++ source code that can read and write Part 21 files
+conforming to that schema.
+
+The code is originally from the NIST STEP Class Libraries (SCL) written in the
+1990s.  Various contributors hav updated it since then - see the AUTHORS file
+for more info.
+
+For license details, see the COPYING file. Summary: 3-clause BSD.
+
+This particular version of stepcode lacks some of the changes made to the
+repository at https://github.com/stepcode/stepcode  - users are advised to
+check that copy first to see if it will meet their needs.  This copy has
+been stripped down to a minimal core for supporting BRL-CAD's needs (in
+particular, we don't include the python logic, testing, or most of the schema
+files.)
+
+Its headers have been rearranged somewhat, and assume a particular stepcode/<lib>
+installed hierarchy when defining includes.  This is a bit more verbose, but
+makes it immediately clear which library a given header is associated with.
+Given that the headers of core, dai, and editor are rather intertwined this
+approach adds a little clarity to which logic and types are coming from where.
+

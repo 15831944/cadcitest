@@ -41,8 +41,6 @@ if(HAVE_FPIC)
   set_property(SOURCE y2038/time64.c APPEND PROPERTY COMPILE_FLAGS "-fPIC")
 endif(HAVE_FPIC)
 
-set_property(SOURCE fort.c APPEND PROPERTY COMPILE_FLAGS "-g -ggdb -O0")
-
 set(LIBBU_SOURCES
   y2038/time64.c
   affinity.c
@@ -73,7 +71,6 @@ set(LIBBU_SOURCES
   fchmod.c
   fgets.c
   file.c
-  fort.c
   fnmatch.c
   getcwd.c
   gethostname.c
@@ -120,7 +117,6 @@ set(LIBBU_SOURCES
   str.c
   tc.c
   tcllist.c
-  tbl.c
   temp.c
   thread.cpp
   units.c
@@ -176,7 +172,6 @@ set(bu_ignore_files
   CMakeLists.txt
   bitv.h
   charclass.h
-  fort.h
   mime.cmake
   parallel.h
   process.h

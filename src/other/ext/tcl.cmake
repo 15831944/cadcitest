@@ -1,8 +1,3 @@
-# TODO - We appear to have a problem with spaces in pathnames and the 8.6 autotools
-# build. (https://core.tcl-lang.org/tcl/tktview/888c1a8c9d84c1f5da4a46352bbf531424fe7126)
-# May have to switch back to the CMake system until that's fixed, if we want to
-# keep the odd pathnames test running with bundled libs...
-
 if (BRLCAD_ENABLE_TCL)
   set(TCL_VERSION "8.6" CACHE STRING "BRL-CAD uses Tcl 8.6" FORCE)
 endif (BRLCAD_ENABLE_TCL)
@@ -43,7 +38,7 @@ if (BRLCAD_TCL_BUILD)
   # Tcl's own build will think are the final paths.  Rather than attempt build system trickery we simply
   # hard set the values in the source files by rewriting them.
   if (NOT TARGET tcl_replace)
-    configure_file(${BDEPS_CMAKE_DIR}/tcl_replace.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/tcl_replace.cxx @ONLY)
+    configure_file(${BDEPS_CMAKE_DIR}/tcl_replace.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/tcl_replace.cxx)
     add_executable(tcl_replace ${CMAKE_CURRENT_BINARY_DIR}/tcl_replace.cxx)
   endif (NOT TARGET tcl_replace)
   DISTCLEAN(${CMAKE_CURRENT_BINARY_DIR}/tcl_replace.cxx)
@@ -52,28 +47,8 @@ if (BRLCAD_TCL_BUILD)
 
   if (NOT MSVC)
 
-    # Bundled Tcl is a poison pill for the odd_pathnames distcheck test
-    set(BRLCAD_DISABLE_ODD_PATHNAMES_TEST ON CACHE BOOL "Bundled disable by Tcl of distcheck-odd_pathnames")
-    mark_as_advanced(BRLCAD_DISABLE_ODD_PATHNAMES_TEST)
-
-    # Check for spaces in the source and build directories - those won't work
-    # reliably with the Tcl autotools based build.
-    if ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".* .*")
-      message(FATAL_ERROR "Bundled Tcl enabled, but the path \"${CMAKE_CURRENT_SOURCE_DIR}\" contains spaces.  On this platform, Tcl uses autotools to build; paths with spaces are not supported.  To continue relocate your source directory to a path that does not use spaces.")
-    endif ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".* .*")
-    if ("${CMAKE_CURRENT_BINARY_DIR}" MATCHES ".* .*")
-      message(FATAL_ERROR "Bundled Tcl enabled, but the path \"${CMAKE_CURRENT_BINARY_DIR}\" contains spaces.  On this platform, Tcl uses autotools to build; paths with spaces are not supported.  To continue you must select a build directory with a path that does not use spaces.")
-    endif ("${CMAKE_CURRENT_BINARY_DIR}" MATCHES ".* .*")
-
-    if (OPENBSD)
-      set(TCL_BASENAME libtcl${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
-      set(TCL_STUBNAME libtclstub${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
-      set(TCL_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX}.1.0)
-    else (OPENBSD)
-      set(TCL_BASENAME libtcl${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
-      set(TCL_STUBNAME libtclstub${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
-      set(TCL_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
-    endif (OPENBSD)
+    set(TCL_BASENAME libtcl${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
+    set(TCL_STUBNAME libtclstub${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
     set(TCL_EXECNAME tclsh${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
 
     set(TCL_PATCH_FILES "${TCL_SRC_DIR}/unix/configure" "${TCL_SRC_DIR}/macosx/configure" "${TCL_SRC_DIR}/unix/tcl.m4")
@@ -81,10 +56,10 @@ if (BRLCAD_TCL_BUILD)
 
     ExternalProject_Add(TCL_BLD
       URL "${CMAKE_CURRENT_SOURCE_DIR}/tcl"
-      BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
-      PATCH_COMMAND rpath_replace ${TCL_PATCH_FILES}
+      BUILD_ALWAYS ${EXTERNAL_BUILD_UPDATE} ${LOG_OPTS}
+      PATCH_COMMAND rpath_replace "${CMAKE_BUILD_RPATH}" ${TCL_PATCH_FILES}
       COMMAND tcl_replace ${TCL_REWORK_FILES}
-      CONFIGURE_COMMAND LD_LIBRARY_PATH=${CMAKE_BINARY_ROOT}/${LIB_DIR} CPPFLAGS=-I${CMAKE_BINARY_ROOT}/${INCLUDE_DIR} LDFLAGS=-L${CMAKE_BINARY_ROOT}/${LIB_DIR} TCL_SHLIB_LD_EXTRAS=-L${CMAKE_BINARY_ROOT}/${LIB_DIR} ${TCL_SRC_DIR}/unix/configure --prefix=${TCL_INSTDIR}
+      CONFIGURE_COMMAND CPPFLAGS=-I${CMAKE_BINARY_ROOT}/${INCLUDE_DIR} LDFLAGS=-L${CMAKE_BINARY_ROOT}/${LIB_DIR} ${TCL_SRC_DIR}/unix/configure --prefix=${TCL_INSTDIR}
       BUILD_COMMAND make -j${pcnt}
       INSTALL_COMMAND make install
       DEPENDS ${ZLIB_TARGET} tcl_replace rpath_replace
@@ -97,11 +72,10 @@ if (BRLCAD_TCL_BUILD)
     set(TCL_BASENAME tcl${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
     set(TCL_STUBNAME tclstub${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
     set(TCL_EXECNAME tclsh${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
-    set(TCL_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 
     ExternalProject_Add(TCL_BLD
       URL "${CMAKE_CURRENT_SOURCE_DIR}/tcl"
-      BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+      BUILD_ALWAYS ${EXTERNAL_BUILD_UPDATE} ${LOG_OPTS}
       CONFIGURE_COMMAND ""
       BINARY_DIR ${TCL_SRC_DIR}/win
       BUILD_COMMAND ${VCVARS_BAT} && nmake -f makefile.vc INSTALLDIR=${TCL_INSTDIR} SUFX=
@@ -115,7 +89,7 @@ if (BRLCAD_TCL_BUILD)
 
   # Tell the parent build about files and libraries
   ExternalProject_Target(SHARED tcl TCL_BLD ${TCL_INSTDIR}
-    ${TCL_BASENAME}${TCL_SUFFIX}
+    ${TCL_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
     RPATH
     )
 
@@ -373,9 +347,6 @@ if (BRLCAD_TCL_BUILD)
   # Anything building against the stub will want the headers, etc. in place
   add_dependencies(tclstub tcl_stage)
 
-  # Anything using the executable needs everything in place
-  add_dependencies(tclsh_exe tcl_stage)
-
   set(TCL_LIBRARY tcl CACHE STRING "Building bundled tcl" FORCE)
   set(TCL_LIBRARIES tcl CACHE STRING "Building bundled tcl" FORCE)
   set(TCL_STUB_LIBRARY tclstub CACHE STRING "Building bundled tcl" FORCE)
@@ -386,11 +357,6 @@ if (BRLCAD_TCL_BUILD)
 
   SetTargetFolder(TCL_BLD "Third Party Libraries")
   SetTargetFolder(tcl "Third Party Libraries")
-
-else (BRLCAD_TCL_BUILD)
-
-  set(BRLCAD_DISABLE_ODD_PATHNAMES_FLAGS "${BRLCAD_DISABLE_ODD_PATHNAMES_FLAGS} -DBRLCAD_TCL=SYSTEM" CACHE STRING "Options to pass to odd_pathnames distcheck")
-  mark_as_advanced(BRLCAD_DISABLE_ODD_PATHNAMES_FLAGS)
 
 endif (BRLCAD_TCL_BUILD)
 

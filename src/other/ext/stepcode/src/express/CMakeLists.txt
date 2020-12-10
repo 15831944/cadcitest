@@ -1,117 +1,78 @@
 include_directories(
   ${CMAKE_BINARY_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${SC_SOURCE_DIR}/src/base
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include/stepcode
   )
+
+find_package(LEMON)
+find_package(RE2C)
+find_package(PERPLEX)
 
 # Depending on whether we're using pre-generated sources or building them on
 # the fly, set up targets and source lists.
-if(SC_GENERATE_LP_SOURCES)
+if(PERPLEX_FOUND AND RE2C_FOUND AND LEMON_FOUND)
+
   LEMON_TARGET(ExpParser expparse.y)
   PERPLEX_TARGET(ExpScanner expscan.l)
   ADD_PERPLEX_LEMON_DEPENDENCY(ExpScanner ExpParser)
-  include_directories(
-    ${LEMON_ExpParser_INCLUDE_DIR}
-    ${PERPLEX_ExpScanner_INCLUDE_DIR}
+  set(STEPCODE_SO_SRCS
+    ${LEMON_ExpParser_SRC}
+    ${PERPLEX_ExpScanner_SRC}
     )
-else(SC_GENERATE_LP_SOURCES)
-  set(LEMON_ExpParser_SRC ${CMAKE_CURRENT_SOURCE_DIR}/generated/expparse.c)
-  set(LEMON_ExpParser_HDR ${CMAKE_CURRENT_SOURCE_DIR}/generated/expparse.h)
-  set(PERPLEX_ExpScanner_SRC ${CMAKE_CURRENT_SOURCE_DIR}/generated/expscan.c)
-  set(PERPLEX_ExpScanner_HDR ${CMAKE_CURRENT_SOURCE_DIR}/generated/expscan.h)
+
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/ExpParser_expparse)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/ExpScanner_expscan)
+
+else()
+
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/generated)
-endif(SC_GENERATE_LP_SOURCES)
+  set(EXPRESS_GENERATED_SRCS
+    generated/expparse.c
+    generated/expscan.c
+    )
+  set(STEPCODE_SO_SRCS ${EXPRESS_GENERATED_SRCS})
+  set(STEPCODE_STATIC_SRCS ${EXPRESS_GENERATED_SRCS})
+
+endif()
 
 set(EXPRESS_SOURCES
-  ${LEMON_ExpParser_HDR}
-  ${LEMON_ExpParser_SRC}
-  ${PERPLEX_ExpScanner_HDR}
-  ${PERPLEX_ExpScanner_SRC}
+  ${STEPCODE_SO_SRCS}
+  alg.c
+  caseitem.c
+  dict.c
+  entity.c
+  error.c
+  exppp.c
+  expr.c
+  express.c
+  hash.c
+  lexact.c
+  linklist.c
+  memory.c
+  object.c
+  ordered_attrs.cc
+  resolve.c
+  schema.c
+  scope.c
+  stmt.c
   symbol.c
   type.c
   variable.c
-  expr.c
-  entity.c
-  caseitem.c
-  stmt.c
-  alg.c
-  scope.c
-  schema.c
-  resolve.c
-  resolve2.c
-  lexact.c
-  linklist.c
-  error.c
-  dict.c
-  hash.c
-  alloc.c
-  memory.c
-  object.c
-  express.c
-  ordered_attrs.cc
-  info.c
-  factory.c
   )
 
-add_library(express-obj OBJECT ${EXPRESS_SOURCES})
-add_dependencies(express-obj base)
-if(MSVC)
-  set_property(TARGET express-obj APPEND PROPERTY COMPILE_DEFINITIONS "SC_EXPRESS_DLL_EXPORTS")
-endif(MSVC)
-
-
-add_library(express SHARED ${EXPRESS_SOURCES})
-target_link_libraries(express base)
-if(OPENBSD)
-  set_target_properties(express PROPERTIES VERSION ${SC_VERSION_MAJOR}.${SC_VERSION_MINOR})
-else(OPENBSD)
-  set_target_properties(express PROPERTIES VERSION ${SC_VERSION} SOVERSION ${SC_VERSION_MAJOR})
-endif(OPENBSD)
+add_library(express SHARED ${EXPRESS_SOURCES} ${STEPCODE_SO_SRCS})
+set_target_properties(express PROPERTIES VERSION ${STEPCODE_ABI_VERSION} SOVERSION ${STEPCODE_ABI_SOVERSION})
+if(WIN32)
+  target_compile_definitions(express PRIVATE STEPCODE_EXPRESS_DLL_EXPORTS)
+endif()
 if(APPLE)
-  set_property(TARGET express APPEND PROPERTY LINK_FLAGS "-flat_namespace -undefined suppress")
+  set_target_properties(express PROPERTIES LINK_FLAGS "-flat_namespace -undefined suppress")
 endif(APPLE)
 install(TARGETS express
   RUNTIME DESTINATION ${BIN_DIR}
   LIBRARY DESTINATION ${LIB_DIR}
-  ARCHIVE DESTINATION ${LIB_DIR})
-
-if(MSVC)
-  set_property(TARGET express APPEND PROPERTY COMPILE_DEFINITIONS "SC_EXPRESS_DLL_EXPORTS")
-  set_property(TARGET express APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "SC_EXPRESS_DLL_IMPORTS")
-endif(MSVC)
-
-if (BUILD_STATIC_LIBS)
-  add_library(express-static STATIC ${EXPRESS_SOURCES})
-  install(TARGETS express-static
-    RUNTIME DESTINATION ${BIN_DIR}
-    LIBRARY DESTINATION ${LIB_DIR}
-    ARCHIVE DESTINATION ${LIB_DIR})
-endif (BUILD_STATIC_LIBS)
-
-# TODO
-# Currently, fedex.c provides the main() for multiple programs. These programs
-# provide custom behavior by defining EXPRESSinit_init (called by fedex.c's
-# main) which sets other callbacks.
-#
-# What would be better is to remove the call to EXPRESSinit_init and turn
-# fedex.c's main() into an express library function. That way, programs only
-# need to link against express (not fedex.o too) and they can do initialization
-# in their own main (instead of in a local EXPRESSinit_init definition).
-set(CHECK_EXPRESS_SOURCES
-  fedex.c
-  inithook.c
- )
-add_executable(check-express ${CHECK_EXPRESS_SOURCES})
-target_link_libraries(check-express express base)
-install(TARGETS check-express
-  RUNTIME DESTINATION ${BIN_DIR}
-  LIBRARY DESTINATION ${LIB_DIR}
-  ARCHIVE DESTINATION ${LIB_DIR})
-
-
-if(SC_ENABLE_TESTING)
-  add_subdirectory(test)
-endif(SC_ENABLE_TESTING)
+  ARCHIVE DESTINATION ${LIB_DIR}
+  )
 
 # Local Variables:
 # tab-width: 8
@@ -119,3 +80,4 @@ endif(SC_ENABLE_TESTING)
 # indent-tabs-mode: t
 # End:
 # ex: shiftwidth=2 tabstop=8
+

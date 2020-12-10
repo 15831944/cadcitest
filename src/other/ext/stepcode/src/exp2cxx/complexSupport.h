@@ -9,9 +9,9 @@ extern "C"
 {
 #include <string.h>
 #include "classes.h"
-#include "../express/express.h"
-#include "../exppp/exppp.h"
-#include "../express/dict.h"
+#include "express/express.h"
+#include "express/exppp.h"
+#include "express/dict.h"
 }
 
 #define FALSE      0
@@ -181,7 +181,7 @@ class EntList {
         int multiple() {
             return ( join != SIMPLE );
         }
-        EntList * prev, * next;
+        EntList * next, *prev;
 
     protected:
         MatchType viable;
@@ -412,7 +412,7 @@ class ComplexCollect {
         // it's used elsewhere.
         ComplexList * find( char * );
         int supports( EntNode * );
-        bool externMapping( const char * ent ) {
+        int externMapping( const char * ent ) {
             return ( clists ? clists->isDependent( ent ) : 0 );
         }
         // One of our clists shows that ent will have to be instantiated

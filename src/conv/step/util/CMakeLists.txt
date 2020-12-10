@@ -28,7 +28,6 @@ if (BRLCAD_ENABLE_STEP)
   BRLCAD_ADDEXEC(list_elements "${list_elements_srcs}" "${lelem_LIBS}" NO_STRICT NO_INSTALL)
   add_dependencies(list_elements step-express-${SCHEMA_NAME}-list_elements)
   set_property(TARGET list_elements APPEND PROPERTY INCLUDE_DIRECTORIES "${list_elements_SCHEMA_OUT_DIR}")
-  target_compile_definitions(list_elements PRIVATE SC_SCHEMA_DLL_EXPORTS)
 
   if (HIDE_INTERNAL_SYMBOLS)
     set(list_elements_IMPORTS
@@ -36,10 +35,10 @@ if (BRLCAD_ENABLE_STEP)
       BN_DLL_IMPORTS
       RT_DLL_IMPORTS
       WDB_DLL_IMPORTS
-      SC_CORE_DLL_IMPORTS
-      SC_DAI_DLL_IMPORTS
-      SC_EDITOR_DLL_IMPORTS
-      SC_UTILS_DLL_IMPORTS
+      STEPCODE_CORE_DLL_IMPORTS
+      STEPCODE_DAI_DLL_IMPORTS
+      STEPCODE_EDITOR_DLL_IMPORTS
+      STEPCODE_UTILS_DLL_IMPORTS
       )
     list(APPEND list_elements_IMPORTS ${list_elements_IMPORTS})
     set_property(TARGET list_elements APPEND PROPERTY COMPILE_DEFINITIONS "${list_elements_IMPORTS}")

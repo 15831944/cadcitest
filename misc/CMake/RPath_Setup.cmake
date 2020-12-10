@@ -57,13 +57,13 @@ function(relative_rpath outvar)
   # IFF the caller tells us to, lengthen the relative path to a
   # specified length.  This is useful in scenarios where the relative
   # path is the only viable option
-  if (R_LEN AND NOT APPLE)
+  if (R_LEN)
     string(LENGTH "${RELATIVE_RPATH}" CURR_LEN)
     while("${CURR_LEN}" LESS "${R_LEN}")
       set(RELATIVE_RPATH "${RELATIVE_RPATH}:")
       string(LENGTH "${RELATIVE_RPATH}" CURR_LEN)
     endwhile("${CURR_LEN}" LESS "${R_LEN}")
-  endif ()
+  endif (R_LEN)
 
   set(${outvar} "${RELATIVE_RPATH}" PARENT_SCOPE)
 
@@ -208,12 +208,10 @@ function(ext_build_rpath)
   # external build systems so their outputs can be manipulated as if they were
   # outputs of our own build.
   string(LENGTH "${BUILD_RPATH}" CURR_LEN)
-  if (NOT APPLE)
-    while("${CURR_LEN}" LESS "${LLEN}")
-      set(BUILD_RPATH "${BUILD_RPATH}:")
-      string(LENGTH "${BUILD_RPATH}" CURR_LEN)
-    endwhile("${CURR_LEN}" LESS "${LLEN}")
-  endif (NOT APPLE)
+  while("${CURR_LEN}" LESS "${LLEN}")
+    set(BUILD_RPATH "${BUILD_RPATH}:")
+    string(LENGTH "${BUILD_RPATH}" CURR_LEN)
+  endwhile("${CURR_LEN}" LESS "${LLEN}")
 
   # Done - let the parent know what the answers are
   set(CMAKE_BUILD_RPATH "${BUILD_RPATH}" PARENT_SCOPE)

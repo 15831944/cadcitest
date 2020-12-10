@@ -33,9 +33,7 @@
 #  pragma clang diagnostic push
 #endif
 #if defined(__GNUC__) && !defined(__clang__)
-#  if GCC_PREREQ(8,0)
-#    pragma GCC diagnostic ignored "-Wclass-memaccess"
-#  endif
+#  pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
 
 #include "opennurbs.h"
@@ -47,7 +45,7 @@
 #  pragma clang diagnostic pop
 #endif
 
-#include "sdai.h"
+#include "core/sdai.h"
 class SDAI_Application_instance;
 
 /* must come after nist step headers */

@@ -1,7 +1,5 @@
-#    C M A K E L I S T S . T X T   F O R   S T E P C O D E
-#
-# This file is Copyright (c) 2010 United States Government as
-# represented by the U.S. Army Research Laboratory.
+# Copyright (c) 2010-2016 United States Government as represented by
+# the U.S. Army Research Laboratory.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,129 +29,72 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# *******************************************************************
-# ***                 STEPcode's CMakeLists.txt                   ***
-# *******************************************************************
+# ******************************************************************
+# ***                stepcode CMakeLists.txt                     ***
+# ******************************************************************
 
-# This file contains the top level CMakeLists.txt logic for the
-# STEPcode software package.
-
-
-project(SC)
-
-# SC version
-set(SC_VERSION_MAJOR 0)
-set(SC_VERSION_MINOR 9)
-set(SC_VERSION_PATCH 1)
-set(SC_VERSION ${SC_VERSION_MAJOR}.${SC_VERSION_MINOR}.${SC_VERSION_PATCH})
-
-# Minimum required version of CMake
 cmake_minimum_required(VERSION 3.12)
-cmake_policy(SET CMP0077 OLD)
 
-# CMake derives much of its functionality from modules, typically
-# stored in one directory - let CMake know where to find them.
-set(SC_CMAKE_DIR "${SC_SOURCE_DIR}/cmake")
-if(NOT SC_IS_SUBBUILD)
-  set(CMAKE_MODULE_PATH "${SC_CMAKE_DIR};${CMAKE_MODULE_PATH}")
-else(NOT SC_IS_SUBBUILD)
-  set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${SC_CMAKE_DIR}")
-endif(NOT SC_IS_SUBBUILD)
+project(STEPCODE)
 
-# OpenBSD has its own naming conventions.  Set a platform variable based on
-# the OS name so we can test for it succinctly.
-if ("${CMAKE_SYSTEM}" MATCHES ".*OpenBSD.*")
-  set(OPENBSD ON)
-endif ("${CMAKE_SYSTEM}" MATCHES ".*OpenBSD.*")
+# STEPCODE version
+set(STEPCODE_VERSION_MAJOR 0)
+set(STEPCODE_VERSION_MINOR 8-dev)
+set(STEPCODE_VERSION ${STEPCODE_VERSION_MAJOR}.${STEPCODE_VERSION_MINOR})
 
-# testing and compilation options, build output dirs, install dirs, uninstall, package creation, etc
-include(${SC_CMAKE_DIR}/SC_Build_opts.cmake)
+# STEPCODE ABI version. STEPCODE_ABI_SOVERSION should be incremented
+# for each release introducing API incompatibilities
+set(STEPCODE_ABI_SOVERSION 3)
+set(STEPCODE_ABI_VERSION ${STEPCODE_ABI_SOVERSION}.0.0)
 
-# SC_ADDEXEC and SC_ADDLIB macros, dllimport/export, etc
-include(${SC_CMAKE_DIR}/SC_Targets.cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMake)
 
-# Macros related to paths
-include(${SC_CMAKE_DIR}/SC_Paths.cmake)
+include(Path_Setup)
 
-# locale stuff
-include(${SC_CMAKE_DIR}/SC_Locale.cmake)
-
-# logic related to regenerating the lexer and parser source code
-include(${SC_CMAKE_DIR}/SC_Regenerate.cmake)
-
-if(NOT DEFINED SC_SDAI_ADDITIONAL_EXES_SRCS)
-  set(SC_SDAI_ADDITIONAL_EXES_SRCS "" CACHE STRING "Source files for additional executables to be linked with SDAI libs")
-endif(NOT DEFINED SC_SDAI_ADDITIONAL_EXES_SRCS)
-
-if(NOT DEFINED SC_BUILD_SCHEMAS)
-  list(APPEND CONFIG_END_MESSAGES
-    "** CMake variable SC_BUILD_SCHEMAS was not set. Defaults to building ALL schemas, which will take a"
-    "     while; see http://stepcode.org/mw/index.php?title=STEPcode_CMake_variables#SC_BUILD_SCHEMAS")
-  #this makes SC_BUILD_SCHEMAS show up in cmake-gui
-  set(SC_BUILD_SCHEMAS "ALL" CACHE string "Semicolon-separated list of paths to EXPRESS schemas to be built")
-endif(NOT DEFINED SC_BUILD_SCHEMAS)
-
-if(NOT SC_IS_SUBBUILD)
-  list(APPEND CONFIG_END_MESSAGES
-    ".. Don't worry about any messages above about missing headers or failed tests, as long as"
-    "    you see 'Configuring done' below. Headers and features vary by compiler."
-    ".. Generating step can take a while if you are building several schemas.")
-endif(NOT SC_IS_SUBBUILD)
-
-# create config headers sc_cf.h and sc_version_string.h
-include(${SC_CMAKE_DIR}/SC_Config_Headers.cmake)
-
-
-################
-
+# Require C/C++11
+set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(MSVC)
-  # Disable warning for preferred usage of secure functions (example strcpy should be strcpy_s, ...)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS)
-else()
-  add_definitions(-pedantic -W -Wall -Wundef -Wfloat-equal -Wshadow -Winline -Wno-long-long)
-  if(HAVE_NULLPTR)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-  endif(HAVE_NULLPTR)
-endif()
+include(CheckIncludeFiles)
+check_include_files(ndir.h HAVE_NDIR_H)
+check_include_files(stdarg.h HAVE_STDARG_H)
+check_include_files(sys/stat.h HAVE_SYS_STAT_H)
+check_include_files(sys/param.h HAVE_SYS_PARAM_H)
+check_include_files(sysent.h HAVE_SYSENT_H)
+check_include_files(unistd.h HAVE_UNISTD_H)
+check_include_files(dirent.h HAVE_DIRENT_H)
+check_include_files(stdbool.h HAVE_STDBOOL_H)
+check_include_files(process.h HAVE_PROCESS_H)
+check_include_files(io.h HAVE_IO_H)
 
+include(CheckSymbolExists)
+check_symbol_exists(abs "stdlib.h" HAVE_ABS)
+check_symbol_exists(memcpy "string.h" HAVE_MEMCPY)
+check_symbol_exists(memmove "string.h" HAVE_MEMMOVE)
+check_symbol_exists(getopt "getopt.h" HAVE_GETOPT)
+check_symbol_exists(snprintf "stdio.h" HAVE_SNPRINTF)
+check_symbol_exists(vsnprintf "stdio.h" HAVE_VSNPRINTF)
+
+include(CheckTypeSize)
+check_type_size("ssize_t" SSIZE_T)
+
+configure_file(include/stepcode/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stepcode/config.h)
+
+# Common to all libraries/executables
 include_directories(
-  ${SC_SOURCE_DIR}/include
-  ${SC_BINARY_DIR}/include
- )
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/stepcode
+  ${CMAKE_CURRENT_BINARY_DIR}/include/stepcode
+  )
 
-add_subdirectory(src/base)
-add_subdirectory(src/express)
-add_subdirectory(src/exppp)
-add_subdirectory(src/exp2cxx)
-add_subdirectory(src/exp2python)
-add_subdirectory(src/clstepcore)
-add_subdirectory(src/cleditor)
-add_subdirectory(src/cldai)
-add_subdirectory(src/clutils)
-add_subdirectory(src/cllazyfile)
-add_subdirectory(include)
+add_subdirectory(src)
+
+# Get install rules for headers and data files
+add_subdirectory(include/stepcode)
 add_subdirectory(data)
-if(SC_ENABLE_TESTING)
-  add_subdirectory(test)
-endif(SC_ENABLE_TESTING)
-add_subdirectory(doc)
-
-# 'make core' builds everything that isn't generated. for devs.
-add_custom_target(core)
-if($CACHE{SC_BUILD_SHARED_LIBS})
-  add_dependencies(core stepdai stepeditor exp2cxx check-express)
-else()
-  add_dependencies(core stepdai-static stepeditor-static exp2cxx check-express)
-endif()
-
-# CONFIG_END_MESSAGES - list of messages to be printed after everything else is done.
-# THIS MUST BE LAST to ensure that they are visible to the user without scrolling.
-foreach(_msg ${CONFIG_END_MESSAGES})
-  message(STATUS "${_msg}")
-endforeach(_msg ${CONFIG_END_MESSAGES})
 
 # Local Variables:
 # tab-width: 8

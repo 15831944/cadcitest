@@ -45,17 +45,64 @@
  * prettied up interface to print_objects_when_running
  */
 
+
 #include "express/expbasic.h"
 #include "express/schema.h"
 #include "express/object.h"
 #include "express/resolve.h"
 
+struct freelist_head REN_fl;
+struct freelist_head SCOPE_fl;
+struct freelist_head SCHEMA_fl;
+
 int __SCOPE_search_id = 0;
+
+Symbol * RENAME_get_symbol( Generic r ) {
+    return( ( ( Rename * )r )->old );
+}
 
 /** Initialize the Schema module. */
 void SCHEMAinitialize( void ) {
+    OBJcreate( OBJ_RENAME, RENAME_get_symbol, "rename clause", OBJ_UNUSED_BITS );
+    MEMinitialize( &REN_fl, sizeof( struct Rename ), 30, 30 );
+    MEMinitialize( &SCHEMA_fl, sizeof( struct Schema_ ), 40, 20 );
 }
 
+/** Create and return an empty scope inside a parent scope. */
+Scope SCOPEcreate( char type ) {
+    Scope d = SCOPE_new();
+    d->symbol_table = DICTcreate( 50 );
+    d->type = type;
+    return d;
+}
+
+Scope SCOPEcreate_tiny( char type ) {
+    Scope d = SCOPE_new();
+    d->symbol_table = DICTcreate( 1 );
+    d->type = type;
+    return d;
+}
+
+void SCOPEdestroy( Scope scope ) {
+    SCOPE_destroy( scope );
+}
+
+/**
+ * create a scope without a symbol table
+ * used for simple types
+ */
+Scope SCOPEcreate_nostab( char type ) {
+    Scope d = SCOPE_new();
+    d->type = type;
+    return d;
+}
+
+/** Create and return a schema. */
+Schema SCHEMAcreate( void ) {
+    Scope s = SCOPEcreate( OBJ_SCHEMA );
+    s->u.schema = SCHEMA_new();
+    return s;
+}
 
 /**  SCHEMAget_name
 ** \param  schema schema to examine
@@ -82,34 +129,34 @@ SCHEMAdump( Schema schema, FILE * file ) {
 
 #if 0
 SYMBOLprint( Symbol * s ) {
-    fprintf( stderr, "%s (r:%d #:%d f:%s)\n", s->name, s->resolved, s->line, s->filename );
+    printf( "%s (r:%d #:%d f:%s)\n", s->name, s->resolved, s->line, s->filename );
 }
 #endif
 
-void SCHEMAadd_reference( Schema cur_schema, Symbol * ref_schema, Symbol * old, Symbol * snnew ) {
+void SCHEMAadd_reference( Schema cur_schema, Symbol * ref_schema, Symbol * old, Symbol * nnew ) {
     Rename * r = REN_new();
     r->schema_sym = ref_schema;
     r->old = old;
-    r->nnew = snnew;
+    r->nnew = nnew;
     r->rename_type = ref;
 
     if( !cur_schema->u.schema->reflist ) {
         cur_schema->u.schema->reflist = LISTcreate();
     }
-    LISTadd_last( cur_schema->u.schema->reflist, r );
+    LISTadd( cur_schema->u.schema->reflist, ( Generic )r );
 }
 
-void SCHEMAadd_use( Schema cur_schema, Symbol * ref_schema, Symbol * old, Symbol * snnew ) {
+void SCHEMAadd_use( Schema cur_schema, Symbol * ref_schema, Symbol * old, Symbol * nnew ) {
     Rename * r = REN_new();
     r->schema_sym = ref_schema;
     r->old = old;
-    r->nnew = snnew;
+    r->nnew = nnew;
     r->rename_type = use;
 
     if( !cur_schema->u.schema->uselist ) {
         cur_schema->u.schema->uselist = LISTcreate();
     }
-    LISTadd_last( cur_schema->u.schema->uselist, r );
+    LISTadd( cur_schema->u.schema->uselist, ( Generic )r );
 }
 
 void SCHEMAdefine_reference( Schema schema, Rename * r ) {
@@ -123,7 +170,7 @@ void SCHEMAdefine_reference( Schema schema, Rename * r ) {
     }
     if( !old || ( DICT_type != OBJ_RENAME ) || ( old->object != r->object ) ) {
         DICTdefine( schema->u.schema->refdict, name,
-                    r, r->old, OBJ_RENAME );
+                    ( Generic )r, r->old, OBJ_RENAME );
     }
 }
 
@@ -138,7 +185,7 @@ void SCHEMAdefine_use( Schema schema, Rename * r ) {
     }
     if( !old || ( DICT_type != OBJ_RENAME ) || ( old->object != r->object ) ) {
         DICTdefine( schema->u.schema->usedict, name,
-                    r, r->old, OBJ_RENAME );
+                    ( Generic )r, r->old, OBJ_RENAME );
     }
 }
 
@@ -161,7 +208,7 @@ static void SCHEMA_get_entities_use( Scope scope, Linked_List result ) {
     if( scope->u.schema->usedict ) {
         DICTdo_init( scope->u.schema->usedict, &de );
         while( 0 != ( rename = ( Rename * )DICTdo( &de ) ) ) {
-            LISTadd_last( result, rename->object );
+            LISTadd( result, rename->object );
         }
     }
 }
@@ -178,7 +225,7 @@ Linked_List SCHEMAget_entities_use( Scope scope ) {
 }
 
 /** return ref'd entities */
-void SCHEMA_get_entities_ref( Scope scope, Linked_List result ) {
+static void SCHEMA_get_entities_ref( Scope scope, Linked_List result ) {
     Rename * rename;
     DictionaryEntry de;
 
@@ -199,7 +246,7 @@ void SCHEMA_get_entities_ref( Scope scope, Linked_List result ) {
     DICTdo_init( scope->u.schema->refdict, &de );
     while( 0 != ( rename = ( Rename * )DICTdo( &de ) ) ) {
         if( DICT_type == OBJ_ENTITY ) {
-            LISTadd_last( result, rename->object );
+            LISTadd( result, rename->object );
         }
     }
 }

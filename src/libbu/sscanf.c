@@ -48,7 +48,6 @@
 #include <string.h>
 
 #include "bu/defines.h"
-#include "bu/assert.h"
 #include "bu/vls.h"
 #include "bu/log.h"
 

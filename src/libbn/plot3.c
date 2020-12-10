@@ -791,7 +791,7 @@ read_short(FILE *fp, int cnt, int mode)
 static int
 read_ieee(FILE *fp, int cnt, int mode)
 {
-    size_t ret;
+    int ret;
     if (mode == PL_OUTPUT_MODE_BINARY) {
 	for (int i = 0; i < cnt; i++) {
 	    char inbuf[SIZEOF_NETWORK_DOUBLE];
@@ -804,7 +804,7 @@ read_ieee(FILE *fp, int cnt, int mode)
     if (mode == PL_OUTPUT_MODE_TEXT) {
 	double val;
 	for (int i = 0; i < cnt; i++) {
-	    ret = (size_t)fscanf(fp, "%lf", &val);
+	    ret = fscanf(fp, "%lf", &val);
 	    if (ret != 1)
 		return 1;
 	}

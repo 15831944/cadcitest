@@ -30,7 +30,7 @@ if (BRLCAD_ENABLE_TCL AND BRLCAD_ENABLE_TK AND TK_DO_BUILD)
   # Tcl's own build will think are the final paths.  Rather than attempt build system trickery we simply
   # hard set the values in the source files by rewriting them.
   if (NOT TARGET tcl_replace)
-    configure_file(${BDEPS_CMAKE_DIR}/tcl_replace.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/tcl_replace.cxx @ONLY)
+    configure_file(${BDEPS_CMAKE_DIR}/tcl_replace.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/tcl_replace.cxx)
     add_executable(tcl_replace ${CMAKE_CURRENT_BINARY_DIR}/tcl_replace.cxx)
   endif (NOT TARGET tcl_replace)
 
@@ -38,34 +38,17 @@ if (BRLCAD_ENABLE_TCL AND BRLCAD_ENABLE_TK AND TK_DO_BUILD)
 
   if (NOT MSVC)
 
-    # Check for spaces in the source and build directories - those won't work
-    # reliably with the Tk autotools based build.
-    if ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".* .*")
-      message(FATAL_ERROR "Bundled Tk enabled, but the path \"${CMAKE_CURRENT_SOURCE_DIR}\" contains spaces.  On this platform, Tk uses autotools to build; paths with spaces are not supported.  To continue relocate your source directory to a path that does not use spaces.")
-    endif ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".* .*")
-    if ("${CMAKE_CURRENT_BINARY_DIR}" MATCHES ".* .*")
-      message(FATAL_ERROR "Bundled Tk enabled, but the path \"${CMAKE_CURRENT_BINARY_DIR}\" contains spaces.  On this platform, Tk uses autotools to build; paths with spaces are not supported.  To continue you must select a build directory with a path that does not use spaces.")
-    endif ("${CMAKE_CURRENT_BINARY_DIR}" MATCHES ".* .*")
-
-    if (OPENBSD)
-      set(TK_BASENAME libtk${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
-      set(TK_STUBNAME libtkstub${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
-      set(TK_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX}.1.0)
-    else (OPENBSD)
-      set(TK_BASENAME libtk${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
-      set(TK_STUBNAME libtkstub${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
-      set(TK_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
-    endif (OPENBSD)
-
+    set(TK_BASENAME libtk${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
+    set(TK_STUBNAME libtkstub${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
     set(TK_WISHNAME wish${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION})
 
     set(TK_PATCH_FILES "${TK_SRC_DIR}/unix/configure" "${TK_SRC_DIR}/macosx/configure" "${TK_SRC_DIR}/unix/tcl.m4")
 
     ExternalProject_Add(TK_BLD
       URL "${CMAKE_CURRENT_SOURCE_DIR}/tk"
-      BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
-      PATCH_COMMAND rpath_replace ${TK_PATCH_FILES}
-      CONFIGURE_COMMAND LD_LIBRARY_PATH=${CMAKE_BINARY_ROOT}/${LIB_DIR} CPPFLAGS=-I${CMAKE_BINARY_ROOT}/${INCLUDE_DIR} LDFLAGS=-L${CMAKE_BINARY_ROOT}/${LIB_DIR} TK_SHLIB_LD_EXTRAS=-L${CMAKE_BINARY_ROOT}/${LIB_DIR} ${TK_SRC_DIR}/unix/configure --prefix=${TK_INSTDIR} --with-tcl=$<IF:$<BOOL:${TCL_TARGET}>,${CMAKE_BINARY_ROOT}/${LIB_DIR},${TCLCONF_DIR}> --disable-xft --enable-64bit --enable-rpath
+      BUILD_ALWAYS ${EXTERNAL_BUILD_UPDATE} ${LOG_OPTS}
+      PATCH_COMMAND rpath_replace "${CMAKE_BUILD_RPATH}" ${TK_PATCH_FILES}
+      CONFIGURE_COMMAND CPPFLAGS=-I${CMAKE_BINARY_ROOT}/${INCLUDE_DIR} LDFLAGS=-L${CMAKE_BINARY_ROOT}/${LIB_DIR} ${TK_SRC_DIR}/unix/configure --prefix=${TK_INSTDIR} --with-tcl=$<IF:$<BOOL:${TCL_TARGET}>,${CMAKE_BINARY_ROOT}/${LIB_DIR},${TCLCONF_DIR}> --disable-xft --enable-64bit --enable-rpath
       BUILD_COMMAND make -j${pcnt}
       INSTALL_COMMAND make install
       DEPENDS ${TCL_TARGET} rpath_replace
@@ -77,12 +60,11 @@ if (BRLCAD_ENABLE_TCL AND BRLCAD_ENABLE_TK AND TK_DO_BUILD)
 
     set(TK_BASENAME tk${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
     set(TK_STUBNAME tkstub${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
-    set(TK_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
     set(TK_WISHNAME wish${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION})
 
     ExternalProject_Add(TK_BLD
       URL "${CMAKE_CURRENT_SOURCE_DIR}/tk"
-      BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+      BUILD_ALWAYS ${EXTERNAL_BUILD_UPDATE} ${LOG_OPTS}
       CONFIGURE_COMMAND ""
       BINARY_DIR ${TK_SRC_DIR}/win
       BUILD_COMMAND ${VCVARS_BAT} && nmake -f makefile.vc INSTALLDIR=${TK_INSTDIR} TCLDIR=${TCL_SRC_DIR} SUFX=
@@ -98,7 +80,7 @@ if (BRLCAD_ENABLE_TCL AND BRLCAD_ENABLE_TK AND TK_DO_BUILD)
 
   # Tell the parent build about files and libraries
   ExternalProject_Target(SHARED tk TK_BLD ${TK_INSTDIR}
-    ${TK_BASENAME}${TK_SUFFIX}
+    ${TK_BASENAME}${CMAKE_SHARED_LIBRARY_SUFFIX}
     RPATH
     )
   ExternalProject_Target(STATIC tkstub TK_BLD ${TK_INSTDIR}
