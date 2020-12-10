@@ -1,3 +1,38 @@
+#     B R L C A D _ I N S T A L L _ P R E F I X . C M A K E
+# BRL-CAD
+#
+# Copyright (c) 2020 United States Government as represented by
+# the U.S. Army Research Laboratory.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+# notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above
+# copyright notice, this list of conditions and the following
+# disclaimer in the documentation and/or other materials provided
+# with the distribution.
+#
+# 3. The name of the author may not be used to endorse or promote
+# products derived from this software without specific prior written
+# permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+###
 # If we need it, use a standard string to stand in for build types.  This
 # allows for easier replacing later in the logic
 set(BUILD_TYPE_KEY "----BUILD_TYPE----")
@@ -7,55 +42,30 @@ set(BUILD_TYPE_KEY "----BUILD_TYPE----")
 # CMAKE_INSTALL_PREFIX hasn't been set already, to try and allow
 # parent builds (if any) some control.
 
-# TODO - generator expressions may be a way to replace some of this logic (or
-# improve it) by letting us ditch the logic tracking whether the path is
-# initialized to default - that's used to know whether or not it is safe to
-# override CMAKE_INSTALL_PREFIX based on build type.  If we use the generator
-# expressions, we won't have to be concerned about that - problem is that
-# change will require updating all the install commands in the build target
-# functions.  Third party logic will probably need to shift over to the new
-# ExternalProject_Add approach first as well - that way unmodified install
-# commands in 3rd party CMake files will be moot.
-#
-# if (NOT CMAKE_INSTALL_PREFIX)
-# set(CMAKE_INSTALL_PREFIX "/usr/brlcad/")
-#    if (NOT MSVC)
-#       set(gen_exp $<IF:$<CONFIG:Debug>,dev-${BRLCAD_VERSION}/,$<IF:$<CONFIG:Release>,rel-${BRLCAD_VERSION}/${BRLCAD_VERSION},>>)
-#    else (NOT MSVC)
-#       set(gen_exp)
-#        if(CMAKE_CL_64)
-#          set(CMAKE_INSTALL_PREFIX "C:/Program Files/BRL-CAD ${BRLCAD_VERSION}")
-#        else(CMAKE_CL_64)
-#          set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/BRL-CAD ${BRLCAD_VERSION}")
-#        endif(CMAKE_CL_64)
-#    endif (NOT MSVC)
-# endif (NOT CMAKE_INSTALL_PREFIX)
-# install(TARGETS mged DESTINATION ${gen_exp}${BIN_DIR})
-#
-# Another (maybe better) option instead of generators might be to use the CONFIGURATIONS
+# TODO - explore use the CONFIGURATIONS
 # option in our macros and the ExternalProject_Add management:
 # https://cmake.org/cmake/help/latest/command/install.html
 #
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
-	if(NOT CMAKE_CONFIGURATION_TYPES)
-		if("${CMAKE_BUILD_TYPE}" MATCHES "Release")
-			set(CMAKE_INSTALL_PREFIX "/usr/brlcad/rel-${BRLCAD_VERSION}")
-		else("${CMAKE_BUILD_TYPE}" MATCHES "Release")
-			set(CMAKE_INSTALL_PREFIX "/usr/brlcad/dev-${BRLCAD_VERSION}")
-		endif("${CMAKE_BUILD_TYPE}" MATCHES "Release")
-	else(NOT CMAKE_CONFIGURATION_TYPES)
-		if(MSVC)
-			if(CMAKE_CL_64)
-				set(CMAKE_INSTALL_PREFIX "C:/Program Files/BRL-CAD ${BRLCAD_VERSION}")
-			else(CMAKE_CL_64)
-				set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/BRL-CAD ${BRLCAD_VERSION}")
-			endif(CMAKE_CL_64)
-		else(MSVC)
-			set(CMAKE_INSTALL_PREFIX "/usr/brlcad/${BUILD_TYPE_KEY}-${BRLCAD_VERSION}")
-		endif(MSVC)
-	endif(NOT CMAKE_CONFIGURATION_TYPES)
-	set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH "BRL-CAD install prefix" FORCE)
-	set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT 0)
+  if(NOT CMAKE_CONFIGURATION_TYPES)
+    if("${CMAKE_BUILD_TYPE}" MATCHES "Release")
+      set(CMAKE_INSTALL_PREFIX "/usr/brlcad/rel-${BRLCAD_VERSION}")
+    else("${CMAKE_BUILD_TYPE}" MATCHES "Release")
+      set(CMAKE_INSTALL_PREFIX "/usr/brlcad/dev-${BRLCAD_VERSION}")
+    endif("${CMAKE_BUILD_TYPE}" MATCHES "Release")
+  else(NOT CMAKE_CONFIGURATION_TYPES)
+    if(MSVC)
+      if(CMAKE_CL_64)
+	set(CMAKE_INSTALL_PREFIX "C:/Program Files/BRL-CAD ${BRLCAD_VERSION}")
+      else(CMAKE_CL_64)
+	set(CMAKE_INSTALL_PREFIX "C:/Program Files (x86)/BRL-CAD ${BRLCAD_VERSION}")
+      endif(CMAKE_CL_64)
+    else(MSVC)
+      set(CMAKE_INSTALL_PREFIX "/usr/brlcad/${BUILD_TYPE_KEY}-${BRLCAD_VERSION}")
+    endif(MSVC)
+  endif(NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} CACHE PATH "BRL-CAD install prefix" FORCE)
+  set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT 0)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
 set(BRLCAD_PREFIX "${CMAKE_INSTALL_PREFIX}" CACHE STRING "BRL-CAD install prefix")
 mark_as_advanced(BRLCAD_PREFIX)
@@ -131,28 +141,39 @@ endif("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr" AND NOT BRLCAD_ALLOW_INSTALL_TO_
 # To ensure the previous (and internally set) CMAKE_INSTALL_PREFIX value
 # is available, BRLCAD_PREFIX is used to store the value in the cache.)
 
+# CMAKE_IGNORE_PATH needs a list of explicit directories, not a
+# list of prefixes - in other words, it ignores EXACTLY the specified
+# path and not any subdirectories under that path.  See:
+# https://cmake.org/cmake/help/latest/variable/CMAKE_IGNORE_PATH.html
+# This means we can't just add the install path to the ignore variables
+# and have find_package skip items in the bin and lib subdirs - we need
+# to list them explicitly for exclusion.
+
 if(NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr" AND NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
-	get_filename_component(PATH_NORMALIZED "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}" ABSOLUTE)
-	if (CMAKE_CONFIGURATION_TYPES)
-		foreach(cfg ${CMAKE_CONFIGURATION_TYPES})
-			if ("${cfg}" STREQUAL "Release")
-				string(REPLACE "${BUILD_TYPE_KEY}" "rel" "${CMAKE_INSTALL_PREFIX}" RELPATH)
-				set(CMAKE_SYSTEM_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${RELPATH}")
-				set(CMAKE_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${RELPATH}")
-			endif ("${cfg}" STREQUAL "Release")
-			if ("${cfg}" STREQUAL "Debug")
-				string(REPLACE "${BUILD_TYPE_KEY}" "dev" "${CMAKE_INSTALL_PREFIX}" DEVPATH)
-				set(CMAKE_SYSTEM_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${DEVPATH}")
-				set(CMAKE_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${DEVPATH}")
-			endif ("${cfg}" STREQUAL "Debug")
-			string(REPLACE "${BUILD_TYPE_KEY}" "${cfg}" "${CMAKE_INSTALL_PREFIX}" TYPEPATH)
-			set(CMAKE_SYSTEM_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${TYPEPATH}")
-			set(CMAKE_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${TYPEPATH}")
-		endforeach(cfg ${CMAKE_CONFIGURATION_TYPES})
-	else (CMAKE_CONFIGURATION_TYPES)
-		set(CMAKE_SYSTEM_IGNORE_PATH "${PATH_NORMALIZED}")
-		set(CMAKE_IGNORE_PATH "${PATH_NORMALIZED}")
-	endif (CMAKE_CONFIGURATION_TYPES)
+  # Make sure we are working with the fully normalized path
+  get_filename_component(PATH_NORMALIZED "${CMAKE_INSTALL_PREFIX}" ABSOLUTE)
+  set(IGNORE_SUBDIRS ${BIN_DIR} ${LIB_DIR})
+  if (CMAKE_CONFIGURATION_TYPES)
+    # If we're doing multi-config, ignore all the possible output locations
+    foreach(cfg ${CMAKE_CONFIGURATION_TYPES})
+      if ("${cfg}" STREQUAL "Release")
+	string(REPLACE "${BUILD_TYPE_KEY}" "rel" "${CMAKE_INSTALL_PREFIX}" TYPEPATH)
+      elseif ("${cfg}" STREQUAL "Debug")
+	string(REPLACE "${BUILD_TYPE_KEY}" "dev" "${CMAKE_INSTALL_PREFIX}" TYPEPATH)
+      else ("${cfg}" STREQUAL "Release")
+	string(REPLACE "${BUILD_TYPE_KEY}" "${cfg}" "${CMAKE_INSTALL_PREFIX}" TYPEPATH)
+      endif ("${cfg}" STREQUAL "Release")
+      foreach(sd ${IGNORE_SUBDIRS})
+	set(CMAKE_SYSTEM_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${TYPEPATH}/${sd}")
+	set(CMAKE_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${TYPEPATH}/${sd}")
+      endforeach(sd ${IGNORE_SUBDIRS})
+    endforeach(cfg ${CMAKE_CONFIGURATION_TYPES})
+  else (CMAKE_CONFIGURATION_TYPES)
+    foreach(sd ${IGNORE_SUBDIRS})
+      set(CMAKE_SYSTEM_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${PATH_NORMALIZED}/${sd}")
+      set(CMAKE_IGNORE_PATH "${CMAKE_SYSTEM_IGNORE_PATH};${PATH_NORMALIZED}/${sd}")
+    endforeach(sd ${IGNORE_SUBDIRS})
+  endif (CMAKE_CONFIGURATION_TYPES)
 endif(NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr" AND NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
 
 #------------------------------------------------------------------------------
@@ -160,3 +181,10 @@ endif(NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr" AND NOT "${CMAKE_INSTALL_PRE
 # and reporting time deltas
 generate_dreport()
 
+
+# Local Variables:
+# tab-width: 8
+# mode: cmake
+# indent-tabs-mode: t
+# End:
+# ex: shiftwidth=2 tabstop=8

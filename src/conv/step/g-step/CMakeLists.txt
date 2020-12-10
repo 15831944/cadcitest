@@ -7,7 +7,7 @@ include_directories(
 
 link_directories(${CMAKE_BINARY_DIR}/${LIB_DIR})
 
-set(STEP_SCHEMA_FILE ${CMAKE_SOURCE_DIR}/src/other/ext/stepcode/data/ap203/ap203.exp)
+set(STEP_SCHEMA_FILE ${CMAKE_SOURCE_DIR}/src/other/stepcode/data/ap203/ap203.exp)
 add_definitions(-DAP203)
 
 GENERATE_SCHEMA_INPUTS(${STEP_SCHEMA_FILE} gstep)
@@ -48,6 +48,7 @@ if (BRLCAD_ENABLE_STEP)
   BRLCAD_ADDEXEC(g-step "${gstep_SOURCES}" "${gstep_LIBS}" NO_STRICT)
   add_dependencies(g-step step-express-${SCHEMA_NAME}-gstep)
   set_property(TARGET g-step APPEND PROPERTY INCLUDE_DIRECTORIES "${gstep_SCHEMA_OUT_DIR}")
+  target_compile_definitions(g-step PRIVATE SC_SCHEMA_DLL_EXPORTS)
 
   if (HIDE_INTERNAL_SYMBOLS)
     set(gstep_IMPORTS
@@ -55,10 +56,10 @@ if (BRLCAD_ENABLE_STEP)
       BN_DLL_IMPORTS
       RT_DLL_IMPORTS
       WDB_DLL_IMPORTS
-      STEPCODE_CORE_DLL_IMPORTS
-      STEPCODE_DAI_DLL_IMPORTS
-      STEPCODE_EDITOR_DLL_IMPORTS
-      STEPCODE_UTILS_DLL_IMPORTS
+      SC_CORE_DLL_IMPORTS
+      SC_DAI_DLL_IMPORTS
+      SC_EDITOR_DLL_IMPORTS
+      SC_UTILS_DLL_IMPORTS
       )
     list(APPEND gstep_IMPORTS ${gstep_IMPORTS})
     set_property(TARGET g-step APPEND PROPERTY COMPILE_DEFINITIONS "${gstep_IMPORTS}")

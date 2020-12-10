@@ -32,16 +32,14 @@ ENDIF(WIN32)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${TKTABLE_CFLAGS}")
 
-add_executable(tktable_hdr tktable_hdr.cxx)
-
-add_custom_command(
+ADD_CUSTOM_COMMAND(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h
-  COMMAND tktable_hdr ${CMAKE_CURRENT_SOURCE_DIR}/library/tkTable.tcl ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h.new
+  COMMAND ${TCL_TCLSH} ${CMAKE_CURRENT_SOURCE_DIR}/misc/tkTable_header.tcl ${CMAKE_CURRENT_SOURCE_DIR}/library/tkTable.tcl ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h.new
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h.new ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h
   COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h.new
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/library/tkTable.tcl tktable_hdr
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/library/tkTable.tcl ${CMAKE_CURRENT_SOURCE_DIR}/misc/tkTable_header.tcl ${TCL_TCLSH}
   )
-add_custom_target(tktable_header_gen ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h)
+ADD_CUSTOM_TARGET(tktable_header_gen ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h)
 
 set(TKTABLE_SRCS
   generic/tkTable.c
@@ -80,7 +78,6 @@ install(TARGETS Tktable
   ARCHIVE DESTINATION ${LIB_DIR})
 
 # Create the pkgIndex.tcl file.
-include(TCL_PKGINDEX)
 TCL_PKGINDEX(Tktable ${TKTABLE_PKGNAME} ${TKTABLE_PKGVERSION})
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.txt DESTINATION lib/${TKTABLE_PKGNAME}${TKTABLE_PKGVERSION})
@@ -99,7 +96,7 @@ else(CMAKE_CONFIGURATION_TYPES)
   file(COPY ${TKTABLE_MISC} DESTINATION ${CMAKE_BINARY_DIR}/lib/${TKTABLE_PKGNAME}${TKTABLE_PKGVERSION})
 endif(CMAKE_CONFIGURATION_TYPES)
 
-install(FILES ${TKTABLE_MISC} DESTINATION lib/${TKTABLE_PKGNAME}${TKTABLE_PKGVERSION})
+INSTALL(FILES ${TKTABLE_MISC} DESTINATION lib/${TKTABLE_PKGNAME}${TKTABLE_PKGVERSION})
 
 # Local Variables:
 # tab-width: 8
