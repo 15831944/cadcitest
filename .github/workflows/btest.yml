@@ -42,7 +42,7 @@ jobs:
       - name: Build
         #run: cd build && ninja -j1 -v STEPCODE_BLD && cd src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && ninja clean && ninja -j1 -v
         #run: cmake --build build --config Release --target STEPCODE_BLD && cd build/src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && msbuild ALL_BUILD.vcxproj -t:clean && msbuild ALL_BUILD.vcxproj -v:diag
-        run: cd build && ninja -j1 -v
+        run: cd build && ninja -j1 -v libbu
         #run: cmake --build build --config Release --target package
 
 #     - name: Upload Package

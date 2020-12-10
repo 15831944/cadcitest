@@ -52,6 +52,11 @@ BUILD_CFG_HDR(brlcad_version.h.in ${INCLUDE_DIR}/brlcad)
 # FIXME: shouldn't exist, needs to be absorbed into brlcad_config.h
 if(MSVC)
   BUILD_CFG_HDR(config_win.h.in ${INCLUDE_DIR}/brlcad)
+
+  message("config_win.h:")
+  file(READ "${CMAKE_BINARY_DIR}/${INCLUDE_DIR}/brlcad/config_win.h" CWCON)
+  message("config_win.h:\n${CWCON}")
+
 endif(MSVC)
 
 set(include_misc
