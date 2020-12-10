@@ -9,7 +9,7 @@ on: [push]
 jobs:
   windows:
     name: Windows Latest MSVC
-    runs-on: windows-2019
+    runs-on: windows-latest
     strategy:
       fail-fast: true
     steps:
