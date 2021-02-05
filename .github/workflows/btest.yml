@@ -84,7 +84,7 @@ jobs:
 
   osx:
     name: macOS Latest Clang
-    runs-on: macos-11.0
+    runs-on: macos-latest
     strategy:
       fail-fast: true
     steps:
