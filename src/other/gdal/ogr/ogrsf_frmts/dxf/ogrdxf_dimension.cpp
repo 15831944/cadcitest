@@ -31,7 +31,7 @@
 #include "ogr_dxf.h"
 #include "cpl_conv.h"
 
-CPL_CVSID("$Id: ogrdxf_dimension.cpp 37040 2016-12-30 15:31:43Z rouault $");
+CPL_CVSID("$Id$");
 
 /************************************************************************/
 /*                         TranslateDIMENSION()                         */

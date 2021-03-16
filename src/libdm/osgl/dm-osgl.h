@@ -1,7 +1,7 @@
 /*                        D M -  O S G . H
  * BRL-CAD
  *
- * Copyright (c) 2014-2020 United States Government as represented by
+ * Copyright (c) 2014-2021 United States Government as represented by
  * the U.S. Army Research Laboratory.
  *
  * This library is free software; you can redistribute it and/or
@@ -72,14 +72,14 @@ extern "C" {
 #endif
 #if defined(__GNUC__) && !defined(__clang__)
 #  pragma GCC diagnostic ignored "-Wfloat-equal"
-#include "./fontstash/fontstash.h"
+#include "../fontstash/fontstash.h"
 #endif
 #if defined(__clang__)
 #  pragma clang diagnostic ignored "-Wfloat-equal"
 #endif
 #define GLFONTSTASH_IMPLEMENTATION
 
-#include "./fontstash/glfontstash.h"
+#include "../fontstash/glfontstash.h"
 
 #if defined(__GNUC__) && !defined(__clang__)
 #  pragma GCC diagnostic pop

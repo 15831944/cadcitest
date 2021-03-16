@@ -1,4 +1,4 @@
-/* $Id: token.h 858 2008-04-03 20:53:44Z helly $ */
+/* $Id$ */
 #ifndef _token_h
 #define	_token_h
 

@@ -2,7 +2,7 @@
 #define CONV_SHP_SHAPELIB_SHAPEFIL_H
 
 /******************************************************************************
- * $Id: shapefil.h,v 1.47 2010-01-28 11:34:34 fwarmerdam Exp $
+ * $Id$
  *
  * Project:  Shapelib
  * Purpose:  Primary include file for Shapelib.
@@ -36,7 +36,7 @@
  * DEALINGS IN THE SOFTWARE.
  ******************************************************************************
  *
- * $Log: shapefil.h,v $
+ * $Log$
  * Revision 1.47  2010-01-28 11:34:34  fwarmerdam
  * handle the shape file length limits more gracefully (#3236)
  *

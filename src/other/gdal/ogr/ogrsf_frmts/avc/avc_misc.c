@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id: avc_misc.c 36763 2016-12-09 22:10:55Z rouault $
+ * $Id$
  *
  * Name:     avc_misc.c
  * Project:  Arc/Info vector coverage (AVC)  BIN<->E00 conversion library
@@ -29,7 +29,7 @@
  * DEALINGS IN THE SOFTWARE.
  **********************************************************************
  *
- * $Log: avc_misc.c,v $
+ * $Log$
  * Revision 1.9  2005/06/03 03:49:59  daniel
  * Update email address, website url, and copyright dates
  *

@@ -1,7 +1,7 @@
 #                     C M A K E L I S T S . T X T
 # BRL-CAD
 #
-# Copyright (c) 2010-2020 United States Government as represented by
+# Copyright (c) 2010-2021 United States Government as represented by
 # the U.S. Army Research Laboratory.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -142,6 +142,11 @@ if(NOT EXISTS ${BRLCAD_CNT_FILE})
 else(NOT EXISTS ${BRLCAD_CNT_FILE})
   set(BRLCAD_PRINT_MSGS 0)
 endif(NOT EXISTS ${BRLCAD_CNT_FILE})
+
+# Now that we know whether or not we're supposed to, print the CMake verison
+if(BRLCAD_PRINT_MSGS)
+  message(STATUS "CMake version: ${CMAKE_VERSION}")
+endif(BRLCAD_PRINT_MSGS)
 
 #---------------------------------------------------------------------
 # Define an option to use OBJECT libraries.  If we are building with object

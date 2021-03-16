@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-catch {namespace eval hv3 { set {version($Id: hv3_request.tcl,v 1.28 2008/02/03 06:29:39 danielk1977 Exp $)} 1 }}
+catch {namespace eval hv3 { set {version($Id$)} 1 }}
 
 #--------------------------------------------------------------------------
 # This file contains the implementation of two types used by hv3:

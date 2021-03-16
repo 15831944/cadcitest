@@ -1,7 +1,7 @@
 /*                  D M _ P L U G I N S . C P P
  * BRL-CAD
  *
- * Copyright (c) 2020 United States Government as represented by
+ * Copyright (c) 2020-2021 United States Government as represented by
  * the U.S. Army Research Laboratory.
  *
  * This library is free software; you can redistribute it and/or
@@ -251,6 +251,7 @@ dm_default_type()
 	    continue;
 	}
 	ret = b;
+	break;
     }
     if (!ret)
 	ret = "nu";

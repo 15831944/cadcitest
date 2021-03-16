@@ -28,7 +28,7 @@
  * Date:	Sun Jul 29 1984
  * Copyright (c) 1984 Todd W. Fuqua
  *
- * $Id: rle.h 47674 2011-11-29 02:14:59Z starseeker $
+ * $Id$
  */
 
 #ifndef RLE_H

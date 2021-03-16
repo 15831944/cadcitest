@@ -1,4 +1,4 @@
-/* $Id: tif_close.c,v 1.21 2016-01-23 21:20:34 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

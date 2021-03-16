@@ -1,4 +1,4 @@
-/* $Id: scanner.h 860 2008-04-09 22:57:45Z nuno-lopes $ */
+/* $Id$ */
 #ifndef _scanner_h
 #define	_scanner_h
 

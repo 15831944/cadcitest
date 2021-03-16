@@ -1,4 +1,4 @@
-/* $Id: tif_packbits.c,v 1.25 2017-01-11 20:33:35 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

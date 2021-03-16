@@ -1,7 +1,7 @@
 /*                        S E A R C H . C
  * BRL-CAD
  *
- * Copyright (c) 2008-2020 United States Government as represented by
+ * Copyright (c) 2008-2021 United States Government as represented by
  * the U.S. Army Research Laboratory.
  *
  * This library is free software; you can redistribute it and/or
@@ -579,6 +579,7 @@ ged_search_core(struct ged *gedp, int argc, const char *argv_orig[])
 
 			switch (search->search_type) {
 			    case 0:
+				flags &= ~DB_SEARCH_RETURN_UNIQ_DP;
 				(void)db_search(search_results, flags, bu_vls_addr(&search_string), 1, &curr_path, gedp->ged_wdbp->dbip, ctx);
 
 				sr_len = j = BU_PTBL_LEN(search_results);

@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id: avc_e00parse.c 37451 2017-02-25 15:38:43Z rouault $
+ * $Id$
  *
  * Name:     avc_e00parse.c
  * Project:  Arc/Info vector coverage (AVC)  E00->BIN conversion library
@@ -29,7 +29,7 @@
  * DEALINGS IN THE SOFTWARE.
  **********************************************************************
  *
- * $Log: avc_e00parse.c,v $
+ * $Log$
  * Revision 1.19  2008/07/23 20:51:38  dmorissette
  * Fixed GCC 4.1.x compile warnings related to use of char vs unsigned char
  * (GDAL/OGR ticket http://trac.osgeo.org/gdal/ticket/2495)

@@ -38,6 +38,13 @@ class git_commitish {
 	long mark  = -1;  // globally unique numerical identifier
 	std::string sha1 = std::string(); // Original sha1 or part thereof, if available.  If the commit is modified this string should be invalidated.
 	std::string ref = std::string(); //  branch reference or other Git reference
+
+	bool operator==(const git_commitish &o) const {
+	    if (index == o.index) return true;
+	    if (mark == o.mark) return true;
+	    if (sha1 == o.sha1) return true;
+	    return false;
+	}
 };
 
 
@@ -52,11 +59,11 @@ class git_op {
 	std::string dest_path;
 };
 
-struct git_fi_data;
+class git_fi_data;
 
 class git_commit_data {
     public:
-	struct git_fi_data *s;
+	git_fi_data *s;
 
 	// Basic commit data
 	git_commitish id;
@@ -95,6 +102,10 @@ class git_commit_data {
 	// storage purpose, but they are written differently
 	int reset_commit = 0;
 
+
+	// If this commit is to be removed, set this flag
+	bool skip_commit = false;
+
 	// Special purpose entries for assigning an additional line
 	// to the existing notes-based info to id SVN usernames
 	std::string svn_id;
@@ -106,7 +117,7 @@ class git_commit_data {
 
 class git_tag_data {
     public:
-	struct git_fi_data *s;
+	git_fi_data *s;
 	std::string tag;
 	git_commitish id;
 	git_commitish from;
@@ -117,7 +128,7 @@ class git_tag_data {
 
 class git_blob_data {
     public:
-	struct git_fi_data *s;
+	git_fi_data *s;
 	size_t offset;
 	size_t length;
 	git_commitish id;
@@ -139,6 +150,8 @@ class git_fi_data {
 	std::vector<git_blob_data> blobs;
 	std::vector<git_tag_data> tags;
 	std::vector<git_commit_data> commits;
+	std::vector<git_commit_data> splice_commits;
+	std::map<long, long> splice_map;
 
 	// SHA1s are static in this environment, since it is too
 	// difficult to calculate the SHA1 after changing commit
@@ -190,6 +203,9 @@ class git_fi_data {
 	std::map<std::string, std::string> key2cvsauthor;
 	std::map<std::string, std::string> key2cvsbranch;
 
+	// If processing a replacement operation, need to know which commit
+	// to target
+	std::string replace_sha1;
     private:
 	long mark = -1;
 };
@@ -197,6 +213,9 @@ class git_fi_data {
 extern int git_parse_commitish(git_commitish &gc, git_fi_data *s, std::string line);
 extern int parse_blob(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_commit(git_fi_data *fi_data, std::ifstream &infile);
+extern int parse_splice_commit(git_fi_data *fi_data, std::ifstream &infile);
+extern int parse_replace_commit(git_fi_data *fi_data, std::ifstream &infile);
+extern int parse_add_commit(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_reset(git_fi_data *fi_data, std::ifstream &infile);
 extern int parse_tag(git_fi_data *fi_data, std::ifstream &infile);
 
@@ -214,7 +233,7 @@ extern int parse_option(git_fi_data *fi_data, std::ifstream &infile);
 
 /* Output */
 extern int write_blob(std::ofstream &outfile, git_blob_data *b, std::ifstream &infile);
-extern int write_commit(std::ofstream &outfile, git_commit_data *c, std::ifstream &infile);
+extern int write_commit(std::ofstream &outfile, git_commit_data *c, git_fi_data *d, std::ifstream &infile);
 extern int write_tag(std::ofstream &outfile, git_tag_data *t, std::ifstream &infile);
 
 #endif /* REPOWORK_H */

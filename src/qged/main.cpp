@@ -1,7 +1,7 @@
 /*                        M A I N . C X X
  * BRL-CAD
  *
- * Copyright (c) 2014 United States Government as represented by
+ * Copyright (c) 2014-2021 United States Government as represented by
  * the U.S. Army Research Laboratory.
  *
  * This library is free software; you can redistribute it and/or
@@ -96,8 +96,7 @@ int main(int argc, char *argv[])
     }
 
     // TODO - this needs to be a setting that is saved and restored
-    //mainWin.resize(1100, 800);
-    mainWin.restore_settings();
+    mainWin.resize(1100, 800);
 
     // Set up the command prompt's commands
     cad_register_commands(&app);

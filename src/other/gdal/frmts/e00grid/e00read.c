@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id: e00read.c 39207 2017-06-20 17:57:08Z rouault $
+ * $Id$
  *
  * Name:     e00read.c
  * Project:  Compressed E00 Read/Write library
@@ -8,7 +8,7 @@
  *           of uncompressed lines.
  * Author:   Daniel Morissette, dmorissette@mapgears.com
  *
- * $Log: e00read.c,v $
+ * $Log$
  * Revision 1.10  2009-02-24 20:03:50  aboudreault
  * Added a short manual pages (#1875)
  * Updated documentation and code examples (#247)

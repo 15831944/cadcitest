@@ -18,14 +18,18 @@ tasks as they are completed.
 THESE TASKS SHOULD HAPPEN BEFORE THE NEXT RELEASE
 -------------------------------------------------
 
-* dbconcat corrupted database / failed. created a top-level comb with
-  invalid "1_[subcomb]/" to be created that result in error messages
-  during any db listing (e.g., tops).  workaround was to manually edit
-  the comb and remove the 1_ and / on the entries.
+* On some Windows machine Tcl script commands using "puts" to write to
+  stdout are intermittently failing with:
+  Error: error writing "stdout": invalid argument
 
 
 THESE TASKS SHOULD HAPPEN WITHIN TWO RELEASE ITERATIONS
 -------------------------------------------------------
+
+* dbconcat corrupted database / failed. created a top-level comb with
+  invalid "1_[subcomb]/" to be created that result in error messages
+  during any db listing (e.g., tops).  workaround was to manually edit
+  the comb and remove the 1_ and / on the entries.
 
 * The following will be removed from MGED's menu bar (unused
   features, can be accomplished another way, or will be exposed
@@ -117,6 +121,8 @@ THESE TASKS SHOULD HAPPEN WITHIN TWO RELEASE ITERATIONS
 
 THESE ARE UNSCHEDULED BACKLOG TASKS
 -----------------------------------
+
+* dbconcat option to override / merge over existing objects
 
 * gdiff in mged appears to be broken?  get "no primitives found" on
   second comb when specifying two combs (gdiff comb1 comb2).

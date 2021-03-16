@@ -50,7 +50,7 @@
 #include "ogr_p.h"
 #include "ogr_srs_api.h"
 
-CPL_CVSID("$Id: ogr_srs_esri.cpp 38677 2017-05-29 11:07:01Z rouault $");
+CPL_CVSID("$Id$");
 
 extern void OGREPSGDatumNameMassage( char ** ppszDatum );
 

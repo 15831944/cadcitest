@@ -13,7 +13,7 @@
  *	Public Domain, Distribution Unlimitied.
  */
 #ifndef lint
-static char RCSid[] = "@(#)$Id: vaxshort.c 28910 2007-09-14 15:22:11Z erikgreenwald $ (BRL)";
+static char RCSid[] = "@(#)$Id$ (BRL)";
 #endif
 
 /*

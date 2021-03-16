@@ -1,7 +1,7 @@
 /*                    T C L D U M M I E S . C
  * BRL-CAD
  *
- * Copyright (c) 2002-2020 United States Government as represented by
+ * Copyright (c) 2002-2021 United States Government as represented by
  * the U.S. Army Research Laboratory.
  *
  * This library is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@
  *      IABG mbH
  *      Einsteinstr. 20, 85521 Ottobrunn, Germany
  *
- * $Id: TclDummies.c 74972 2020-03-02 00:20:13Z starseeker $
+ * $Id$
  */
 
 #include "common.h"

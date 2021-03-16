@@ -7,8 +7,8 @@
    see qh-stat.htm and stat.h
 
    Copyright (c) 1993-2012 The Geometry Center.
-   $Id: //main/2011/qhull/src/libqhull/stat.c#3 $$Change: 1464 $
-   $DateTime: 2012/01/25 22:58:41 $$Author: bbarber $
+   $Id$$Change: 1464 $
+   $DateTime: 2012/01/25 22:58:41 $$Author$
 */
 
 #include "qhull_a.h"

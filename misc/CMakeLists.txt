@@ -207,12 +207,14 @@ set(misc_ignore_files
   repoconv/domap.sh
   repoconv/email_fixups.txt
   repoconv/cvs_repaired/sphflake.pix,v
+  repoconv/cvs_svn_branches.txt
   repoconv/gitattributes
   repoconv/github_ci_actions.yml
   repoconv/gitignore.tar.gz
   repoconv/manual_merge_info.tar.gz
   repoconv/md5.hpp
   repoconv/sha1.hpp
+  repoconv/sha1_update.sh
   repoconv/svn2git/README
   repoconv/svn2git/archive_branches.sh
   repoconv/svn2git/rules
@@ -244,11 +246,15 @@ set(misc_ignore_files
   repoconv/svn_git_diff.cxx
   repoconv/svn_map_commit_revs.cxx
   repoconv/svn_msgs.cxx
+  repoconv/svn_rev_updates.txt
+  repoconv/branch_corrections.txt
+  repoconv/remove_commits.txt
   repoconv/svnfexport.cxx
   repoconv/svnfexport_git.cxx
   repoconv/svnfexport_svn.cxx
   repoconv/sync_commit.sh
   repoconv/sync_commit_trunk.sh
+  repoconv/tag_commits.txt
   repoconv/tagmap.sh
   repoconv/terra.dsp
   repoconv/verify/cvs.sh

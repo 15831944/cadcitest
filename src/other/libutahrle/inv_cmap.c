@@ -24,7 +24,7 @@
  * Date:	Thu Sep 20 1990
  * Copyright (c) 1990, University of Michigan
  *
- * $Id: inv_cmap.c 37542 2010-02-04 00:46:50Z bob1961 $
+ * $Id$
  */
 
 #include <math.h>

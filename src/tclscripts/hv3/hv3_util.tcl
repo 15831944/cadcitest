@@ -28,7 +28,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-catch {namespace eval hv3 { set {version($Id: hv3_util.tcl,v 1.9 2008/02/02 17:15:02 danielk1977 Exp $)} 1 }}
+catch {namespace eval hv3 { set {version($Id$)} 1 }}
 
 
 namespace eval hv3 {

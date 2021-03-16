@@ -1,7 +1,7 @@
 /*              D I S P L A Y M A N A G E R . C P P
  * BRL-CAD
  *
- * Copyright (c) 2020 United States Government as represented by
+ * Copyright (c) 2020-2021 United States Government as represented by
  * the U.S. Army Research Laboratory.
  *
  * This library is free software; you can redistribute it and/or
@@ -41,7 +41,7 @@
 #define DM_SOLID_LINE 0
 #define DM_DASHED_LINE 1
 
-DisplayManager::DisplayManager(Display *display) : display(display) {
+DisplayManager::DisplayManager(BRLCADDisplay *display) : display(display) {
     setFGColor(0,0,0, 1);
     glLineStipple(1, 0xCF33);
 }

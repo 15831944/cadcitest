@@ -3,7 +3,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-/* @(#) $Id: zutil.c 69820 2017-05-17 14:35:21Z starseeker $ */
+/* @(#) $Id$ */
 
 #include "zutil.h"
 #ifndef Z_SOLO

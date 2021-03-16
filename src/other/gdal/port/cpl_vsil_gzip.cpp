@@ -108,7 +108,7 @@
 #include "cpl_vsi_virtual.h"
 
 
-CPL_CVSID("$Id: cpl_vsil_gzip.cpp 38248 2017-05-13 12:58:34Z rouault $");
+CPL_CVSID("$Id$");
 
 static const int Z_BUFSIZE = 65536;  // Original size is 16384
 static const int gz_magic[2] = {0x1f, 0x8b};  // gzip magic header

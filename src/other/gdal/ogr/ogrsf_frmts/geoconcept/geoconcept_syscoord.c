@@ -1,5 +1,5 @@
 /**********************************************************************
- * $Id: geoconcept_syscoord.c$
+ * $Id$
  *
  * Name:     geoconcept_syscoord.c
  * Project:  OpenGIS Simple Features Reference Implementation
@@ -33,7 +33,7 @@
 #include "geoconcept_syscoord.h"
 #include "cpl_string.h"
 
-CPL_CVSID("$Id: geoconcept_syscoord.c 36471 2016-11-23 16:36:44Z rouault $")
+CPL_CVSID("$Id$")
 
 /* -------------------------------------------------------------------- */
 /*      GCSRS globals                                                   */

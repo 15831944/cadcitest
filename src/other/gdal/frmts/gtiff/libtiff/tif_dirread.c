@@ -1,4 +1,4 @@
-/* $Id: tif_dirread.c,v 1.207 2017-01-11 16:09:02 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

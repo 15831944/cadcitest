@@ -55,7 +55,7 @@
 #include "ogrgeojsonreader.h"
 #include "ogr_json_header.h"
 
-CPL_CVSID("$Id: nasakeywordhandler.cpp 38306 2017-05-14 09:21:58Z rouault $");
+CPL_CVSID("$Id$");
 
 /************************************************************************/
 /* ==================================================================== */

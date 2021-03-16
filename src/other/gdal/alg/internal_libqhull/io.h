@@ -7,8 +7,8 @@
    see README, libqhull.h and io.c
 
    Copyright (c) 1993-2012 The Geometry Center.
-   $Id: //main/2011/qhull/src/libqhull/io.h#3 $$Change: 1464 $
-   $DateTime: 2012/01/25 22:58:41 $$Author: bbarber $
+   $Id$$Change: 1464 $
+   $DateTime: 2012/01/25 22:58:41 $$Author$
 */
 
 #ifndef qhDEFio

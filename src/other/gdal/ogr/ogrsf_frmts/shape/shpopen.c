@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: shpopen.c 37185 2017-01-19 13:36:59Z rouault $
+ * $Id$
  *
  * Project:  Shapelib
  * Purpose:  Implementation of core Shapefile read/write functions.
@@ -34,7 +34,7 @@
  * DEALINGS IN THE SOFTWARE.
  ******************************************************************************
  *
- * $Log: shpopen.c,v $
+ * $Log$
  * Revision 1.75  2016-12-05 12:44:05  erouault
  * * Major overhaul of Makefile build system to use autoconf/automake.
  *
@@ -297,7 +297,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-SHP_CVSID("$Id: shpopen.c 37185 2017-01-19 13:36:59Z rouault $")
+SHP_CVSID("$Id$")
 
 typedef unsigned char uchar;
 

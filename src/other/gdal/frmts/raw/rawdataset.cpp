@@ -50,7 +50,7 @@
 #include "gdal.h"
 #include "gdal_priv.h"
 
-CPL_CVSID("$Id: rawdataset.cpp 37414 2017-02-18 12:13:26Z goatbar $");
+CPL_CVSID("$Id$");
 
 /************************************************************************/
 /*                           RawRasterBand()                            */

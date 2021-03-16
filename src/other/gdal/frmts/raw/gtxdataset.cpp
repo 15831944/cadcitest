@@ -32,7 +32,7 @@
 #include "ogr_srs_api.h"
 #include "rawdataset.h"
 
-CPL_CVSID("$Id: gtxdataset.cpp 38048 2017-04-17 19:04:42Z rouault $");
+CPL_CVSID("$Id$");
 
 /**
 

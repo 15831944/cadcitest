@@ -1,4 +1,4 @@
-/* $Id: tif_print.c,v 1.65 2016-11-20 22:31:22 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

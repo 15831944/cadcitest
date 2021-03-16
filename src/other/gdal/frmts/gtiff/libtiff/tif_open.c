@@ -1,4 +1,4 @@
-/* $Id: tif_open.c,v 1.48 2016-11-20 22:29:47 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

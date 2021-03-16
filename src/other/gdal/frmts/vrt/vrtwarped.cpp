@@ -48,7 +48,7 @@
 #include "gdal_priv.h"
 #include "gdalwarper.h"
 
-CPL_CVSID("$Id: vrtwarped.cpp 37723 2017-03-16 17:07:53Z rouault $");
+CPL_CVSID("$Id$");
 
 /************************************************************************/
 /*                      GDALAutoCreateWarpedVRT()                       */

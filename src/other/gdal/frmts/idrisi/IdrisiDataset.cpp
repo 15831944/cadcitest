@@ -44,7 +44,7 @@
 
 #include <cmath>
 
-CPL_CVSID( "$Id: IdrisiDataset.cpp 38148 2017-04-26 20:18:07Z rouault $" );
+CPL_CVSID( "$Id$" );
 
 #ifdef WIN32
 #  define PATHDELIM       '\\'

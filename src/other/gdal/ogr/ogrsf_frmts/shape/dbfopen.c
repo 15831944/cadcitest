@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: dbfopen.c 37046 2016-12-31 09:59:57Z rouault $
+ * $Id$
  *
  * Project:  Shapelib
  * Purpose:  Implementation of .dbf access API documented in dbf_api.html.
@@ -34,7 +34,7 @@
  * DEALINGS IN THE SOFTWARE.
  ******************************************************************************
  *
- * $Log: dbfopen.c,v $
+ * $Log$
  * Revision 1.92  2016-12-05 18:44:08  erouault
  * * dbfopen.c, shapefil.h: write DBF end-of-file character 0x1A by default.
  * This behaviour can be controlled with the DBFSetWriteEndOfFileChar()
@@ -209,7 +209,7 @@
 #define CPLsnprintf snprintf
 #endif
 
-SHP_CVSID("$Id: dbfopen.c 37046 2016-12-31 09:59:57Z rouault $")
+SHP_CVSID("$Id$")
 
 #ifndef FALSE
 #  define FALSE		0

@@ -1,4 +1,4 @@
-/* $Id: tif_lzw.c,v 1.54 2017-02-18 18:46:00 erouault Exp $ */
+/* $Id$ */
 
 /*
  * Copyright (c) 1988-1997 Sam Leffler

@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: ogr_xplane_fix_reader.cpp$
+ * $Id$
  *
  * Project:  X-Plane fix.dat file reader header
  * Purpose:  Definition of classes for X-Plane fix.dat file reader

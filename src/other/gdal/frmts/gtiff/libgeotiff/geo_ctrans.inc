@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: geo_ctrans.inc 2209 2012-05-09 01:34:58Z warmerdam $
+ * $Id$
  *
  * Project:  libgeotiff
  * Purpose:  GeoTIFF Projection Method codes. 
