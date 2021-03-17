@@ -35,16 +35,22 @@ jobs:
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja -D CMAKE_C_COMPILER="cl.exe" -D CMAKE_CXX_COMPILER="cl.exe" -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release
-          #cmake -S . -B build -D ENABLE_ALL=ON
           powershell Write-VolumeCache C
           powershell Write-VolumeCache D
 
       - name: Build
+        run: cd build && ninja -j1 -v && ninja check -v && ninja package
+
+        # Various other Windows build lines used for various types of testing.
+        # Preserved for reference, as the iterative time to figure out how to
+        # perform them was significant...
+        #run: cmake --build build --config Release --target package
         #run: cd build && ninja -j1 -v STEPCODE_BLD && cd src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && ninja clean && ninja -j1 -v
         #run: cmake --build build --config Release --target STEPCODE_BLD && cd build/src/other/ext/STEPCODE_BLD-prefix/src/STEPCODE_BLD-build && msbuild ALL_BUILD.vcxproj -t:clean && msbuild ALL_BUILD.vcxproj -v:diag
-        run: cd build && ninja -j1 -v
-        #run: cmake --build build --config Release --target package
 
+        # For the moment the space demands are too extreme to enable this
+        # output for every compile test, but leave the enabling logic present
+        # in commented out form so it can be enabled as needed.
 #     - name: Upload Package
 #       uses: actions/upload-artifact@v2
 #       with:
@@ -74,8 +80,12 @@ jobs:
       - name: Build
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
+          cmake --build build --config Release --target check
           cmake --build build --config Release --target package
 
+        # For the moment the space demands are too extreme to enable this
+        # output for every compile test, but leave the enabling logic present
+        # in commented out form so it can be enabled as needed.
 #     - name: Upload Package
 #       uses: actions/upload-artifact@v2
 #       with:
@@ -107,8 +117,12 @@ jobs:
       - name: Build
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
+          cmake --build build --config Release --target check
           cmake --build build --config Release --target package
 
+        # For the moment the space demands are too extreme to enable this
+        # output for every compile test, but leave the enabling logic present
+        # in commented out form so it can be enabled as needed.
 #     - name: Upload Package
 #       uses: actions/upload-artifact@v2
 #       with:
