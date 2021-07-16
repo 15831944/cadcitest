@@ -119,6 +119,7 @@ static OPTION options[] = {
     { "-bool",      N_BOOL,         c_bool,	    O_ARGV },
     { "-depth",     N_DEPTH,        c_depth,        O_ARGV },
     { "-exec",      N_EXEC,         c_exec,         O_ARGVP},
+    { "-idn",       N_IDN,          c_idn,          O_ZERO },
     { "-iname",     N_INAME,        c_iname,        O_ARGV },
     { "-iregex",    N_IREGEX,       c_iregex,       O_ARGV },
     { "-maxdepth",  N_MAXDEPTH,     c_maxdepth,     O_ARGV },
@@ -1457,6 +1458,8 @@ f_exec(struct db_plan_t *plan, struct db_node_t *db_node, struct db_i *UNUSED(db
     }
 
     if (db_node->flags & DB_SEARCH_RETURN_UNIQ_DP) {
+	if (!db_node || !db_node->path || !DB_FULL_PATH_CUR_DIR(db_node->path))
+	    return 1;
 	name = DB_FULL_PATH_CUR_DIR(db_node->path)->d_namep;
     } else {
 	name = db_path_to_string(db_node->path);
@@ -1468,7 +1471,6 @@ f_exec(struct db_plan_t *plan, struct db_node_t *db_node, struct db_i *UNUSED(db
 	plain_begin = 0;
 	filled_len = 0;
 	plain_len = 0;
-	old_filled_len = 0;
 	for (char_i=0; originals[hole_i][char_i] != '\0'; char_i++) {
 	    if (originals[hole_i][char_i] == '{' && originals[hole_i][char_i+1] == '}') {
 		old_filled_len = filled_len;
@@ -1591,6 +1593,94 @@ c_depth(char *pattern, char ***UNUSED(ignored), int UNUSED(unused), struct db_pl
 
     newplan = palloc(N_DEPTH, f_depth, tbl);
     newplan->p_un._attr_data = pattern;
+    (*resultplan) = newplan;
+
+    return BRLCAD_OK;
+}
+
+
+/*
+ * -idn function --
+ *
+ * True if the matrix combining the object into its parent tree is an
+ * identity matrix.
+ */
+
+static void
+child_matrix(union tree *tp, const char *n, mat_t *m)
+{
+    if (!tp) return;
+    RT_CK_TREE(tp);
+    switch (tp->tr_op) {
+	case OP_DB_LEAF:
+	    if (BU_STR_EQUAL(n, tp->tr_l.tl_name)) {
+		if (tp->tr_l.tl_mat)
+		    MAT_COPY(*m, tp->tr_l.tl_mat);
+	    }
+	    return;
+	case OP_UNION:
+	case OP_INTERSECT:
+	case OP_SUBTRACT:
+	    /* This node is known to be a binary op */
+	    child_matrix(tp->tr_b.tb_left, n, m);
+	    child_matrix(tp->tr_b.tb_right, n, m);
+	    return;
+	default:
+	    bu_log("child_matrix: bad op %d\n", tp->tr_op);
+	    bu_bomb("child_matrix\n");
+    }
+    return;
+}
+
+
+HIDDEN int
+f_idn(struct db_plan_t *UNUSED(plan), struct db_node_t *db_node, struct db_i *dbip, struct bu_ptbl *UNUSED(results))
+{
+
+    if (DB_FULL_PATH_LEN(db_node->path) < 2) {
+	// Top level objects are always IDN included
+	return 1;
+    }
+
+    struct directory *cdp = DB_FULL_PATH_CUR_DIR(db_node->path);
+    struct directory *dp = DB_FULL_PATH_GET(db_node->path, DB_FULL_PATH_LEN(db_node->path) - 2);
+
+    if (!(dp->d_flags & RT_DIR_COMB)) {
+	return 0;
+    }
+
+    struct rt_db_internal intern;
+    if (rt_db_get_internal(&intern, dp, dbip, (fastf_t *)NULL, &rt_uniresource) < 0) {
+	return 0;
+    }
+    struct rt_comb_internal *comb = (struct rt_comb_internal *)intern.idb_ptr;
+    if (comb->tree == NULL) {
+	rt_db_free_internal(&intern);
+	return 0;
+    }
+
+    mat_t mat;
+    MAT_IDN(mat);
+    child_matrix(comb->tree, cdp->d_namep, &mat);
+    rt_db_free_internal(&intern);
+
+    mat_t imat;
+    MAT_IDN(imat);
+    const struct bn_tol mtol = {BN_TOL_MAGIC, BN_TOL_DIST, BN_TOL_DIST * BN_TOL_DIST, 1.0e-6, 1.0 - 1.0e-6 };
+    if (bn_mat_is_equal(mat, imat, &mtol)) {
+	return 1;
+    }
+
+    return 0;
+}
+
+
+HIDDEN int
+c_idn(char *UNUSED(pattern), char ***UNUSED(ignored), int UNUSED(unused), struct db_plan_t **resultplan, int *UNUSED(db_search_isoutput), struct bu_ptbl *tbl, struct db_search_context *UNUSED(ctx))
+{
+    struct db_plan_t *newplan;
+
+    newplan = palloc(N_IDN, f_idn, tbl);
     (*resultplan) = newplan;
 
     return BRLCAD_OK;
@@ -1934,7 +2024,6 @@ yankexpr(struct db_plan_t **planp, struct db_plan_t **resultplan)          /* po
     struct db_plan_t *tail;             /* pointer to tail of subplan */
     struct db_plan_t *subplan;          /* pointer to head of () expression */
     extern int f_expr(struct db_plan_t *, struct db_node_t *, struct db_i *, struct bu_ptbl *);
-    int error_return = BRLCAD_OK;
 
     /* first pull the top node from the plan */
     if ((node = yanknode(planp)) == NULL) {
@@ -1949,7 +2038,7 @@ yankexpr(struct db_plan_t **planp, struct db_plan_t **resultplan)          /* po
      */
     if (node->type == N_OPENPAREN)
 	for (tail = subplan = NULL;;) {
-	    if ((error_return = yankexpr(planp, &next)) != BRLCAD_OK)
+	    if (yankexpr(planp, &next) != BRLCAD_OK)
 		return BRLCAD_ERROR;
 	    if (next == NULL) {
 		bu_log("(: missing closing ')'\n");
@@ -2096,7 +2185,8 @@ not_squish(struct db_plan_t *plan, struct db_plan_t **resultplan)          /* pl
 	    tail->next = next;
 	    tail = next;
 	}
-	tail->next = NULL;
+	if (tail)
+	    tail->next = NULL;
     }
     (*resultplan) = result;
     return BRLCAD_OK;
@@ -2350,7 +2440,7 @@ db_search_form_plan(char **argv,
     if (!db_search_isoutput) {
 	if (plan == NULL) {
 	    c_print(NULL, NULL, 0, &newplan, &db_search_isoutput, tbl, NULL);
-	    tail = plan = newplan;
+	    plan = newplan;
 	} else {
 	    c_openparen(NULL, NULL, 0, &newplan, &db_search_isoutput, tbl, NULL);
 	    newplan->next = plan;
@@ -2360,7 +2450,6 @@ db_search_form_plan(char **argv,
 	    tail = newplan;
 	    c_print(NULL, NULL, 0, &newplan, &db_search_isoutput, tbl, NULL);
 	    tail->next = newplan;
-	    tail = newplan;
 	}
     }
 

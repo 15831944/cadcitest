@@ -91,7 +91,7 @@ struct nurb_hit {
     extern void rt_brep_curve(struct curvature *cvp, struct hit *hitp, struct soltab *stp);
     extern void rt_brep_uv(struct application *ap, struct soltab *stp, struct hit *hitp, struct uvcoord *uvp);
     extern void rt_brep_free(struct soltab *stp);
-    extern int rt_brep_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_tess_tol *ttol, const struct bn_tol *tol, const struct rt_view_info *UNUSED(info));
+    extern int rt_brep_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_tess_tol *ttol, const struct bn_tol *tol, const struct bview *UNUSED(info));
 
 #endif /* CONVERT_TO_BREP */
 
@@ -335,8 +335,8 @@ rt_nurb_shot(struct soltab *stp, struct xray *rp, struct application *ap, struct
     /* Note: the equation of the plane in BRL-CAD is
      * Ax + By + Cz = D represented by [A B C D]
      */
-    bn_make_plane_3pnts(plane1, p1, p3, p2, tol);
-    bn_make_plane_3pnts(plane2, p1, p2, p4, tol);
+    bg_make_plane_3pnts(plane1, p1, p3, p2, tol);
+    bg_make_plane_3pnts(plane2, p1, p2, p4, tol);
 
     /* make sure that the hit_list is zero */
 
@@ -556,7 +556,7 @@ rt_nurb_free(struct soltab *stp)
 
 
 int
-rt_nurb_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_tess_tol *ttol, const struct bn_tol *tol, const struct rt_view_info *UNUSED(info))
+rt_nurb_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_tess_tol *ttol, const struct bn_tol *tol, const struct bview *UNUSED(info))
 {
     struct rt_nurb_internal *sip;
 
@@ -635,10 +635,10 @@ rt_nurb_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_t
 
 	vp = c->ctl_points;
 	for (i = 0; i < c->s_size[0]; i++) {
-	    RT_ADD_VLIST(vhead, vp, BN_VLIST_LINE_MOVE);
+	    RT_ADD_VLIST(vhead, vp, BV_VLIST_LINE_MOVE);
 	    vp += coords;
 	    for (j = 1; j < c->s_size[1]; j++) {
-		RT_ADD_VLIST(vhead, vp, BN_VLIST_LINE_DRAW);
+		RT_ADD_VLIST(vhead, vp, BV_VLIST_LINE_DRAW);
 		vp += coords;
 	    }
 	}
@@ -648,9 +648,9 @@ rt_nurb_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_t
 
 	    stride = c->s_size[1] * coords;
 	    vp = &c->ctl_points[j * coords];
-	    RT_ADD_VLIST(vhead, vp, BN_VLIST_LINE_MOVE);
+	    RT_ADD_VLIST(vhead, vp, BV_VLIST_LINE_MOVE);
 	    for (i = 0; i < c->s_size[0]; i++) {
-		RT_ADD_VLIST(vhead, vp, BN_VLIST_LINE_DRAW);
+		RT_ADD_VLIST(vhead, vp, BV_VLIST_LINE_DRAW);
 		vp += stride;
 	    }
 	}
@@ -1432,6 +1432,65 @@ int
 rt_nurb_params(struct pc_pc_set *, const struct rt_db_internal *)
 {
     return 0;			/* OK */
+}
+
+extern "C" void
+rt_nurb_labels(struct bu_ptbl *labels, const struct rt_db_internal *ip, struct bview *v)
+{
+    if (!labels || !ip)
+	return;
+
+    struct rt_nurb_internal *nurb = (struct rt_nurb_internal *)ip->idb_ptr;
+    RT_NURB_CK_MAGIC(nurb);
+
+    // Set up the containers
+    struct bv_label *l[5];
+    for (int i = 0; i < 5; i++) {
+	struct bv_scene_obj *s;
+	struct bv_label *la;
+	BU_GET(s, struct bv_scene_obj);
+	BU_GET(la, struct bv_label);
+	s->s_i_data = (void *)la;
+	s->s_v = v;
+
+	BU_LIST_INIT(&(s->s_vlist));
+	VSET(s->s_color, 255, 255, 0);
+	s->s_type_flags |= BV_DBOBJ_BASED;
+	s->s_type_flags |= BV_LABELS;
+	BU_VLS_INIT(&la->label);
+
+	l[i] = la;
+	bu_ptbl_ins(labels, (long *)s);
+    }
+
+    // Do the specific data assignments for each label
+    /*XXX Needs work */
+
+    struct face_g_snurb *surf;
+    fastf_t *fp;
+    surf = nurb->srfs[0];
+    NMG_CK_SNURB(surf);
+    fp = &RT_NURB_GET_CONTROL_POINT(surf, 0, 0);
+    bu_vls_sprintf(&l[0]->label, "V");
+    VMOVE(l[0]->p, fp);
+
+    fp = &RT_NURB_GET_CONTROL_POINT(surf, 0, 0);
+    bu_vls_sprintf(&l[1]->label, "  0, 0");
+    VMOVE(l[1]->p, fp);
+
+    fp = &RT_NURB_GET_CONTROL_POINT(surf, 0, surf->s_size[1]-1);
+    bu_vls_sprintf(&l[2]->label, "u, 0");
+    VMOVE(l[2]->p, fp);
+
+
+    fp = &RT_NURB_GET_CONTROL_POINT(surf, surf->s_size[0]-1, 0);
+    bu_vls_sprintf(&l[3]->label, "0, v");
+    VMOVE(l[3]->p, fp);
+
+    fp = &RT_NURB_GET_CONTROL_POINT(surf, surf->s_size[0]-1, surf->s_size[1]-1);
+    bu_vls_sprintf(&l[4]->label, "u, v");
+    VMOVE(l[4]->p, fp);
+
 }
 
 #ifdef __cplusplus

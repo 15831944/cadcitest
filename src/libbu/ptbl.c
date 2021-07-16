@@ -146,7 +146,7 @@ bu_ptbl_ins_unique(struct bu_ptbl *b, long int *p)
 	return -1;	/* To signal that it was added */
     }
 
-    b->buffer[k=b->end++] = p;
+    b->buffer[b->end++] = p;
     return -1;		/* To signal that it was added */
 }
 
@@ -230,6 +230,9 @@ bu_ptbl_cat_uniq(struct bu_ptbl *dest, const struct bu_ptbl *src)
 void
 bu_ptbl_free(struct bu_ptbl *b)
 {
+    if (UNLIKELY(!b))
+	return;
+
     BU_CK_PTBL(b);
 
     if (b->buffer) {

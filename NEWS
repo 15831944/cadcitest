@@ -13,6 +13,12 @@ changes made.  See document footer for additional details.
 --- 2021-XX-XX  Release 7.32.4                                     ---
 ----------------------------------------------------------------------
 
+* Added -idn search filter for finding identity matrices - Cliff Yapp
+* Improve documentation for bot modes in bot and search - Cliff Yapp
+* enabled draw -h (hidden line mode) in MGED - Cliff Yapp
+* added -o output option to GED stat command - Cliff Yapp
+* fixed overlay support for drawing multiple files - Cliff Yapp
+* fixed file creation for tire command - Cliff Yapp
 * fixed mixing object and full path searches in MGED - Cliff Yapp
 * fixed launching of ISST graphical viewer - Cliff Yapp
 * updated stepcode to latest upstream version - Cliff Yapp

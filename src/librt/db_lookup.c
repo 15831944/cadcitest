@@ -34,7 +34,7 @@
 #include "bu/vls.h"
 #include "rt/db4.h"
 #include "raytrace.h"
-
+#include "librt_private.h"
 
 int
 db_is_directory_non_empty(const struct db_i *dbip)
@@ -307,6 +307,14 @@ db_diradd(struct db_i *dbip, const char *name, b_off_t laddr, size_t len, int fl
     }
 
     bu_vls_free(&local);
+
+    if (BU_PTBL_IS_INITIALIZED(&dbip->dbi_changed_clbks)) {
+	for (size_t i = 0; i < BU_PTBL_LEN(&dbip->dbi_changed_clbks); i++) {
+	    struct dbi_changed_clbk *cb = (struct dbi_changed_clbk *)BU_PTBL_GET(&dbip->dbi_changed_clbks, i);
+	    (*cb->f)(dbip, dp, 1, cb->u_data);
+	}
+    }
+
     return dp;
 }
 
@@ -328,6 +336,17 @@ db_dirdelete(struct db_i *dbip, struct directory *dp)
     }
 
     if (*headp == dp) {
+
+	// If we've gotten this far, the dp is on its way out - call the change
+	// callback first if defined, so the app can get information from the
+	// dp before it is cleared.
+	if (BU_PTBL_IS_INITIALIZED(&dbip->dbi_changed_clbks)) {
+	    for (size_t i = 0; i < BU_PTBL_LEN(&dbip->dbi_changed_clbks); i++) {
+		struct dbi_changed_clbk *cb = (struct dbi_changed_clbk *)BU_PTBL_GET(&dbip->dbi_changed_clbks, i);
+		(*cb->f)(dbip, dp, 2, cb->u_data);
+	    }
+	}
+
 	RT_DIR_FREE_NAMEP(dp);	/* frees d_namep */
 	*headp = dp->d_forw;
 
@@ -339,6 +358,17 @@ db_dirdelete(struct db_i *dbip, struct directory *dp)
     for (findp = *headp; findp != RT_DIR_NULL; findp = findp->d_forw) {
 	if (findp->d_forw != dp)
 	    continue;
+
+	// If we've gotten this far, the dp is on its way out - call the change
+	// callback first if defined, so the app can get information from the
+	// dp before it is cleared.
+	if (BU_PTBL_IS_INITIALIZED(&dbip->dbi_changed_clbks)) {
+	    for (size_t i = 0; i < BU_PTBL_LEN(&dbip->dbi_changed_clbks); i++) {
+		struct dbi_changed_clbk *cb = (struct dbi_changed_clbk *)BU_PTBL_GET(&dbip->dbi_changed_clbks, i);
+		(*cb->f)(dbip, dp, 2, cb->u_data);
+	    }
+	}
+
 	RT_DIR_FREE_NAMEP(dp);	/* frees d_namep */
 	findp->d_forw = dp->d_forw;
 

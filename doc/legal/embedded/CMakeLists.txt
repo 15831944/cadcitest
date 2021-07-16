@@ -1,10 +1,10 @@
 set(embedded_licenses
   alphanum.txt
   apple.txt
-  appleseed.txt
   art.txt
   ayam.txt
   b64.txt
+  breeze_style.txt
   bullet.txt
   chull2d.txt
   clipper.txt
@@ -41,13 +41,13 @@ set(embedded_licenses
   normalize.txt
   obr.txt
   OpenNURBS.txt
-  osg.txt
   osl.txt
   ParaView.txt
   pbrt.txt
   point_in_polygon.txt
   polygonizer.txt
   pstdint.txt
+  qconsolelistener.txt
   qsort.txt
   QFlowLayout.txt
   QuickHull.txt
@@ -74,6 +74,7 @@ set(embedded_licenses
   whereami.txt
   winmmap.txt
   x24.txt
+  xxhash.txt
   y2038.txt
   )
 

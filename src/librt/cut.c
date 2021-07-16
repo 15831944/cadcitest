@@ -46,8 +46,8 @@
 #include "bu/sort.h"
 #include "vmath.h"
 #include "raytrace.h"
-#include "bn/plane.h"
-#include "bn/plot3.h"
+#include "bg/plane.h"
+#include "bv/plot3.h"
 
 
 HIDDEN int rt_ck_overlap(const vect_t min, const vect_t max, const struct soltab *stp, const struct rt_i *rtip);
@@ -597,7 +597,7 @@ rt_ck_overlap(register const fastf_t *min, register const fastf_t *max, register
 
     /* RPP overlaps, invoke per-solid method for detailed check */
     if (OBJ[stp->st_id].ft_classify &&
-	OBJ[stp->st_id].ft_classify(stp, min, max, &rtip->rti_tol) == BN_CLASSIFY_OUTSIDE)
+	OBJ[stp->st_id].ft_classify(stp, min, max, &rtip->rti_tol) == BG_CLASSIFY_OUTSIDE)
 	return 0;
 
     /* don't know, check it */

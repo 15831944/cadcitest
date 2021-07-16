@@ -25,6 +25,9 @@
 
 #include "common.h"
 
+#define XXH_STATIC_LINKING_ONLY
+#define XXH_IMPLEMENTATION
+#include "xxhash.h"
 
 #include "./ged_private.h"
 
@@ -112,7 +115,7 @@ _ged_do_rot(struct ged *gedp,
 
     /* pure rotation */
     bn_mat_mul2(rmat, gedp->ged_gvp->gv_rotation);
-    bview_update(gedp->ged_gvp);
+    bv_update(gedp->ged_gvp);
 
     return GED_OK;
 }
@@ -125,7 +128,7 @@ _ged_do_slew(struct ged *gedp, vect_t svec)
 
     MAT4X3PNT(model_center, gedp->ged_gvp->gv_view2model, svec);
     MAT_DELTAS_VEC_NEG(gedp->ged_gvp->gv_center, model_center);
-    bview_update(gedp->ged_gvp);
+    bv_update(gedp->ged_gvp);
 
     return GED_OK;
 }
@@ -160,9 +163,53 @@ _ged_do_tra(struct ged *gedp,
 
     VSUB2(nvc, vc, delta);
     MAT_DELTAS_VEC_NEG(gedp->ged_gvp->gv_center, nvc);
-    bview_update(gedp->ged_gvp);
+    bv_update(gedp->ged_gvp);
 
     return GED_OK;
+}
+
+unsigned long long
+ged_dl_hash(struct display_list *dl)
+{
+    if (!dl)
+	return 0;
+
+    XXH64_hash_t hash_val;
+    XXH64_state_t *state;
+    state = XXH64_createState();
+    if (!state)
+	return 0;
+    XXH64_reset(state, 0);
+
+    struct display_list *gdlp;
+    struct display_list *next_gdlp;
+    struct bv_scene_obj *sp;
+
+    gdlp = BU_LIST_NEXT(display_list, (struct bu_list *)dl);
+    while (BU_LIST_NOT_HEAD(gdlp, dl)) {
+	next_gdlp = BU_LIST_PNEXT(display_list, gdlp);
+
+	for (BU_LIST_FOR(sp, bv_scene_obj, &gdlp->dl_head_scene_obj)) {
+	    if (!sp->s_u_data)
+		continue;
+	    struct ged_bv_data *bdata = (struct ged_bv_data *)sp->s_u_data;
+	    XXH64_update(state, &bdata->s_fullpath.fp_len, sizeof(size_t));
+	    XXH64_update(state, &bdata->s_fullpath.fp_maxlen, sizeof(size_t));
+	    for (size_t i = 0; i < DB_FULL_PATH_LEN(&bdata->s_fullpath); i++) {
+		// In principle we should check all of struct directory
+		// contents, but names are unique in the database and should
+		// suffice for this purpose - we care if the path has changed.
+		struct directory *dp = DB_FULL_PATH_GET(&bdata->s_fullpath, i);
+		XXH64_update(state, &dp->d_namep, strlen(dp->d_namep));
+	    }
+	}
+	gdlp = next_gdlp;
+    }
+
+    hash_val = XXH64_digest(state);
+    XXH64_freeState(state);
+
+    return (unsigned long long)hash_val;
 }
 
 /*

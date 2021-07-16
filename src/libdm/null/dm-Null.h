@@ -75,6 +75,10 @@ null_drawString2D(struct dm *dmp, const char *str, fastf_t x, fastf_t y, int siz
 
 
 DM_NULL_EXPORT extern int
+null_String2DBBox(struct dm *dmp, vect2d_t *bmin, vect2d_t *bmax, const char *str, fastf_t x, fastf_t y, int size, int use_aspect);
+
+
+DM_NULL_EXPORT extern int
 null_drawLine2D(struct dm *dmp, fastf_t x_1, fastf_t y_1, fastf_t x_2, fastf_t y_2);
 
 
@@ -99,15 +103,15 @@ null_drawPoints3D(struct dm *dmp, int npoints, point_t *points);
 
 
 DM_NULL_EXPORT extern int
-null_drawVList(struct dm *dmp, struct bn_vlist *vp);
+null_drawVList(struct dm *dmp, struct bv_vlist *vp);
 
 
 DM_NULL_EXPORT extern int
-null_drawVListHiddenLine(struct dm *dmp, struct bn_vlist *vp);
+null_drawVListHiddenLine(struct dm *dmp, struct bv_vlist *vp);
 
 
 DM_NULL_EXPORT extern int
-null_draw(struct dm *dmp, struct bn_vlist *(*callback_function)(void *), void **data);
+null_draw(struct dm *dmp, struct bv_vlist *(*callback_function)(void *), void **data);
 
 
 DM_NULL_EXPORT extern int
@@ -171,11 +175,11 @@ null_genDLists(struct dm *dmp, size_t range);
 
 
 DM_NULL_EXPORT extern int
-null_getDisplayImage(struct dm *dmp, unsigned char **image);
+null_getDisplayImage(struct dm *dmp, unsigned char **image, int flip, int alpha);
 
 
 DM_NULL_EXPORT extern int
-null_draw(struct dm *dmp, struct bn_vlist *(*callback_function)(void *), void **data);
+null_draw(struct dm *dmp, struct bv_vlist *(*callback_function)(void *), void **data);
 
 
 DM_NULL_EXPORT extern int
@@ -195,6 +199,10 @@ null_makeCurrent(struct dm *dmp);
 
 
 DM_NULL_EXPORT extern int
+null_SwapBuffers(struct dm *dmp);
+
+
+DM_NULL_EXPORT extern int
 null_doevent(struct dm *dmp, void *clientData, void *eventPtr);
 
 
@@ -204,6 +212,81 @@ null_processEvents(struct dm *dmp);
 
 DM_NULL_EXPORT extern int
 null_openFb(struct dm *dmp);
+
+
+/* FB null functions */
+
+DM_NULL_EXPORT extern int
+_fb_null_open(struct fb *ifp, const char *file, int width, int height);
+
+DM_NULL_EXPORT extern struct fb_platform_specific *
+_fb_null_get_fbps(uint32_t magic);
+
+DM_NULL_EXPORT extern void
+_fb_null_put_fbps(struct fb_platform_specific *fbps);
+
+DM_NULL_EXPORT extern int
+_fb_null_open_existing(struct fb *ifp, int width, int height, struct fb_platform_specific *fb_p);
+
+DM_NULL_EXPORT extern int
+_fb_null_close_existing(struct fb *ifp);
+
+DM_NULL_EXPORT extern int
+_fb_null_configure_window(struct fb *ifp, int width, int height);
+
+DM_NULL_EXPORT extern int
+_fb_null_refresh(struct fb *ifp, int x, int y, int w, int h);
+
+DM_NULL_EXPORT extern int
+_fb_null_close(struct fb *ifp);
+
+DM_NULL_EXPORT extern int
+_fb_null_clear(struct fb *ifp, unsigned char *pp);
+
+DM_NULL_EXPORT extern ssize_t
+_fb_null_read(struct fb *ifp, int x, int y, unsigned char *pixelp, size_t count);
+
+DM_NULL_EXPORT extern ssize_t
+_fb_null_write(struct fb *ifp, int x, int y, const unsigned char *pixelp, size_t count);
+
+DM_NULL_EXPORT extern int
+_fb_null_rmap(struct fb *ifp, ColorMap *cmp);
+
+DM_NULL_EXPORT extern int
+_fb_null_wmap(struct fb *ifp, const ColorMap *cmp);
+
+DM_NULL_EXPORT extern int
+_fb_null_view(struct fb *ifp, int xcenter, int ycenter, int xzoom, int yzoom);
+
+DM_NULL_EXPORT extern int
+_fb_null_getview(struct fb *ifp, int *xcenter, int *ycenter, int *xzoom, int *yzoom);
+
+DM_NULL_EXPORT extern int
+_fb_null_setcursor(struct fb *ifp, const unsigned char *bits, int xbits, int ybits, int xorig, int yorig);
+
+DM_NULL_EXPORT extern int
+_fb_null_cursor(struct fb *ifp, int mode, int x, int y);
+
+DM_NULL_EXPORT extern int
+_fb_null_getcursor(struct fb *ifp, int *mode, int *x, int *y);
+
+DM_NULL_EXPORT extern int
+_fb_null_readrect(struct fb *ifp, int xmin, int ymin, int width, int height, unsigned char *pp);
+
+DM_NULL_EXPORT extern int
+_fb_null_writerect(struct fb *ifp, int xmin, int ymin, int width, int height, const unsigned char *pp);
+
+DM_NULL_EXPORT extern int
+_fb_null_poll(struct fb *ifp);
+
+DM_NULL_EXPORT extern int
+_fb_null_flush(struct fb *ifp);
+
+DM_NULL_EXPORT extern int
+_fb_null_free(struct fb *ifp);
+
+DM_NULL_EXPORT extern int
+_fb_null_help(struct fb *ifp);
 
 __END_DECLS
 

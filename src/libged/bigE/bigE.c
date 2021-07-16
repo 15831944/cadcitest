@@ -1095,6 +1095,7 @@ classify_seg(struct seg *segp, struct soltab *shoot, struct xray *rp, struct _ge
 HIDDEN void
 shoot_and_plot(point_t start_pt,
 	       vect_t dir,
+	       struct bu_list *vlfree,
 	       struct bu_list *vhead,
 	       fastf_t edge_len,
 	       int skip_leaf1,
@@ -1281,14 +1282,14 @@ shoot_and_plot(point_t start_pt,
 	    bu_log("\t\tDRAW (%g %g %g)", V3ARGS(pt));
 #endif
 
-	    RT_ADD_VLIST(vhead, pt, BN_VLIST_LINE_MOVE);
+	    BV_ADD_VLIST(vlfree, vhead, pt, BV_VLIST_LINE_MOVE);
 	    VJOIN1(pt, rp.r_pt, seg->seg_out.hit_dist, rp.r_dir);
 
 #ifdef debug
 	    bu_log("<->(%g %g %g)\n", V3ARGS(pt));
 #endif
 
-	    RT_ADD_VLIST(vhead, pt, BN_VLIST_LINE_DRAW);
+	    BV_ADD_VLIST(vlfree, vhead, pt, BV_VLIST_LINE_DRAW);
 	}
 
     }
@@ -1317,6 +1318,7 @@ Eplot(union E_tree *eptr,
     struct bn_tol *tol;
 
     tol = &dgcdp->gedp->ged_wdbp->wdb_tol;
+    struct bu_list *vlfree = &RTG.rtg_vlfree;
 
     CK_ETREE(eptr);
 
@@ -1370,7 +1372,7 @@ Eplot(union E_tree *eptr,
 		continue;
 	    inv_len = 1.0/edge_len;
 	    VSCALE(dir, dir, inv_len);
-	    shoot_and_plot(vg->coord, dir, vhead, edge_len, leaf_no, -1, eptr, ON_SURF, dgcdp);
+	    shoot_and_plot(vg->coord, dir, vlfree, vhead, edge_len, leaf_no, -1, eptr, ON_SURF, dgcdp);
 
 	}
     }
@@ -1438,7 +1440,7 @@ Eplot(union E_tree *eptr,
 
 		    NMG_GET_FU_PLANE(pl2, fu2);
 
-		    if (bn_coplanar(pl1, pl2, tol)) {
+		    if (bg_coplanar(pl1, pl2, tol)) {
 			continue;
 		    }
 
@@ -1455,7 +1457,7 @@ Eplot(union E_tree *eptr,
 
 			    /* find intersection of this edge with fu2 */
 
-			    if (bn_isect_line3_plane(&dist, vg1a->coord,
+			    if (bg_isect_line3_plane(&dist, vg1a->coord,
 						     dir, pl2,
 						     tol) < 1)
 				continue;
@@ -1483,7 +1485,7 @@ Eplot(union E_tree *eptr,
 
 			    /* find intersection of this edge with fu1 */
 
-			    if (bn_isect_line3_plane(&dist, vg2a->coord,
+			    if (bg_isect_line3_plane(&dist, vg2a->coord,
 						     dir, pl1,
 						     tol) < 1)
 				continue;
@@ -1645,7 +1647,7 @@ Eplot(union E_tree *eptr,
 			point_t ray_start;
 
 			VJOIN1(ray_start, start_pt, aseg->seg_in.hit_dist, dir);
-			shoot_and_plot(ray_start, dir, vhead,
+			shoot_and_plot(ray_start, dir, vlfree, vhead,
 				       aseg->seg_out.hit_dist - aseg->seg_in.hit_dist,
 				       leaf_no, leaf2, eptr, ON_INT, dgcdp);
 		    }
@@ -1831,7 +1833,7 @@ fix_halfs(struct _ged_client_data *dgcdp)
 
 	    NMG_GET_FU_PLANE(pl, fu);
 
-	    if (bn_coplanar(pl, haf_pl, tol) > 0)
+	    if (bg_coplanar(pl, haf_pl, tol) > 0)
 		continue;
 
 	    lu = BU_LIST_FIRST(loopuse, &fu->lu_hd);
@@ -1847,7 +1849,7 @@ fix_halfs(struct _ged_client_data *dgcdp)
 
 		VSUB2(dir, v2g->coord, v1g->coord);
 
-		if (bn_isect_line3_plane(&dist, v1g->coord, dir, haf_pl, tol) < 1)
+		if (bg_isect_line3_plane(&dist, v1g->coord, dir, haf_pl, tol) < 1)
 		    continue;
 
 		if (dist < 0.0 || dist >=1.0)
@@ -2006,10 +2008,10 @@ ged_E_core(struct ged *gedp, int argc, const char *argv[])
     BU_ALLOC(dgcdp, struct _ged_client_data);
     dgcdp->gedp = gedp;
     dgcdp->do_polysolids = 0;
-    dgcdp->wireframe_color_override = 0;
-    dgcdp->transparency = 0;
-    dgcdp->dmode = _GED_BOOL_EVAL;
-    dgcdp->freesolid = gedp->freesolid;
+    dgcdp->vs.color_override = 0;
+    dgcdp->vs.transparency = 0;
+    dgcdp->vs.s_dmode = _GED_BOOL_EVAL;
+    dgcdp->free_scene_obj = gedp->free_scene_obj;
 
     /* Parse options. */
     bu_optind = 1;          /* re-init bu_getopt() */
@@ -2032,10 +2034,10 @@ ged_E_core(struct ged *gedp, int argc, const char *argv[])
 		    if (g < 0 || g > 255) g = 255;
 		    if (b < 0 || b > 255) b = 255;
 
-		    dgcdp->wireframe_color_override = 1;
-		    dgcdp->wireframe_color[0] = r;
-		    dgcdp->wireframe_color[1] = g;
-		    dgcdp->wireframe_color[2] = b;
+		    dgcdp->vs.color_override = 1;
+		    dgcdp->vs.color[0] = r;
+		    dgcdp->vs.color[1] = g;
+		    dgcdp->vs.color[2] = b;
 		}
 		break;
 	    case 's':

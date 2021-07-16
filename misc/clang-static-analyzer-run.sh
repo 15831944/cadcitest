@@ -61,9 +61,14 @@ rm -rfv ./scan-reports-*
 # the analyzer output
 cd src/other
 make -j12
-cd ../../misc/tools/astyle
+cd ../../
+cd src/other/ext
 make -j12
 cd ../../../
+cd misc/tools
+make -j12
+cd ../../
+
 
 # The following targets should generate empty directories (i.e. their report
 # directory should not be present at the end of the test.
@@ -79,14 +84,14 @@ rm -rf ./scan-reports*
 cleantest libbu
 cleantest libpkg
 cleantest libbn
+cleantest libbv
 failingtest libbg
 failingtest libnmg
 failingtest libbrep
 failingtest librt
 cleantest libwdb
-failingtest libfb
-failingtest libgcv
-failingtest libgcv_plugins
+cleantest libgcv
+failingtest gcv_plugins
 cleantest libanalyze
 cleantest liboptical
 cleantest libicv
@@ -506,6 +511,9 @@ for f in "${!expected_failure[@]}"; do
 	echo "                       $f(${expected_failure["$f"]} bugs)";
 done
 fi
+
+# Clean up empty scan-* output dirs
+find . -type d -empty -name scan-\* |xargs rmdir
 
 if [ "$failures" -ne "0" ]; then
 	exit 1

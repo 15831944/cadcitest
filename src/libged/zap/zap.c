@@ -30,6 +30,7 @@
 
 #include "../ged_private.h"
 
+extern int ged_zap2_core(struct ged *gedp, int argc, const char *argv[]);
 
 /*
  * Erase all currently displayed geometry
@@ -41,6 +42,11 @@
 int
 ged_zap_core(struct ged *gedp, int argc, const char *argv[])
 {
+
+    const char *cmd2 = getenv("GED_TEST_NEW_CMD_FORMS");
+    if (BU_STR_EQUAL(cmd2, "1"))
+	return ged_zap2_core(gedp, argc, argv);
+
     GED_CHECK_DATABASE_OPEN(gedp, GED_ERROR);
     GED_CHECK_DRAWABLE(gedp, GED_ERROR);
     GED_CHECK_ARGC_GT_0(gedp, argc, GED_ERROR);
@@ -53,7 +59,7 @@ ged_zap_core(struct ged *gedp, int argc, const char *argv[])
 	return GED_ERROR;
     }
 
-    dl_zap(gedp, gedp->freesolid);
+    dl_zap(gedp, gedp->free_scene_obj);
 
     return GED_OK;
 }

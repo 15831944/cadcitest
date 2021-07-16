@@ -156,8 +156,8 @@ struct obj_list {
 };
 
 static struct obj_list *brlcad_objs_root=NULL;
-static struct bn_vert_tree *vert_tree;
-static struct bn_vert_tree *norm_tree;
+static struct bg_vert_tree *vert_tree;
+static struct bg_vert_tree *norm_tree;
 
 static int indent_delta=4;
 
@@ -588,7 +588,7 @@ make_curve_particles( tag_t guide_curve, fastf_t outer_diam, fastf_t inner_diam,
 	while ( BU_LIST_NOT_HEAD( &next->l, &pt_head.l ) ) {
 
 	    /* check for collinearity */
-	    if ( bn_3pnts_collinear( prev->pt, pt->pt, next->pt, &tol ) ) {
+	    if ( bg_3pnts_collinear( prev->pt, pt->pt, next->pt, &tol ) ) {
 		/* remove middle point */
 		BU_LIST_DEQUEUE( &pt->l );
 		bu_free( (char *)pt, "pt_list" );
@@ -620,7 +620,7 @@ make_curve_particles( tag_t guide_curve, fastf_t outer_diam, fastf_t inner_diam,
 	    VSCALE( tmp_pt, tmp_pt, units_conv );
 	    MAT4X3PNT( this_pt, curr_xform, tmp_pt );
 
-	    if ( bn_3pnts_collinear( cur->pt, this_pt, next->pt, &tol ) ) {
+	    if ( bg_3pnts_collinear( cur->pt, this_pt, next->pt, &tol ) ) {
 		continue;
 	    }
 
@@ -1722,7 +1722,7 @@ get_thru_faces_length( tag_t feat_tag,
 	pl[W] = bb[i+3];
 	DO_INDENT;
 	bu_log( "\tChecking plane (%g %g %g %g)\n", V4ARGS( pl ) );
-	ret = bn_isect_line3_plane( &dist, base, dir, pl, &tol );
+	ret = bg_isect_line3_plane( &dist, base, dir, pl, &tol );
 	DO_INDENT;
 	bu_log( "ret = %d, dist = %g\n", ret, dist );
 	/* 1 - exit, 2 - entrance, else miss */
@@ -1737,7 +1737,7 @@ get_thru_faces_length( tag_t feat_tag,
 	pl[W] = -bb[i];
 	DO_INDENT;
 	bu_log( "\tChecking plane (%g %g %g %g)\n", V4ARGS( pl ) );
-	ret = bn_isect_line3_plane( &dist, base, dir, pl, &tol );
+	ret = bg_isect_line3_plane( &dist, base, dir, pl, &tol );
 	DO_INDENT;
 	bu_log( "ret = %d, dist = %g\n", ret, dist );
 	/* 1 - exit, 2 - entrance, else miss */
@@ -1770,7 +1770,7 @@ get_thru_faces_length( tag_t feat_tag,
 
 	    pl[i] = 1.0;
 	    pl[W] = bb[i+3];
-	    ret = bn_isect_line3_plane( &dist, base, dir, pl, &tol );
+	    ret = bg_isect_line3_plane( &dist, base, dir, pl, &tol );
 	    /* 1 - exit, 2 - entrance, else miss */
 	    if ( ret == 1 ) {
 		V_MIN(min_exit, dist);
@@ -1781,7 +1781,7 @@ get_thru_faces_length( tag_t feat_tag,
 	    VSETALLN( pl, 0.0, 4 );
 	    pl[i] = -1.0;
 	    pl[W] = -bb[i];
-	    ret = bn_isect_line3_plane( &dist, base, dir, pl, &tol );
+	    ret = bg_isect_line3_plane( &dist, base, dir, pl, &tol );
 	    /* 1 - exit, 2 - entrance, else miss */
 	    if ( ret == 1 ) {
 		V_MIN(min_exit, dist);
@@ -4442,11 +4442,11 @@ facetize( tag_t solid_tag, char *part_name, char *refset_name, char *inst_name, 
 		VSCALE(v[vn], v[vn], units_conv);
 	    }
 	    MAT4X3PNT( xformed_pt, curr_xform, v[vn] );
-	    vindex[vn] = bn_vert_tree_add( vert_tree, xformed_pt[0], xformed_pt[1], xformed_pt[2], tol_dist_sq );
+	    vindex[vn] = bg_vert_tree_add( vert_tree, xformed_pt[0], xformed_pt[1], xformed_pt[2], tol_dist_sq );
 
 	    if ( use_normals ) {
 		MAT4X3VEC( xformed_pt, curr_xform, normals[vn] );
-		nindex[vn] = bn_vert_tree_add( norm_tree, xformed_pt[0], xformed_pt[1], xformed_pt[2], tol_dist_sq );
+		nindex[vn] = bg_vert_tree_add( norm_tree, xformed_pt[0], xformed_pt[1], xformed_pt[2], tol_dist_sq );
 	    }
 	}
 	if ( !bad_triangle( vindex[0], vindex[1], vindex[2] ) ) {
@@ -4479,8 +4479,8 @@ facetize( tag_t solid_tag, char *part_name, char *refset_name, char *inst_name, 
 	    }
 	}
 
-	bn_vert_tree_clean( vert_tree );
-	bn_vert_tree_clean( norm_tree );
+	bg_vert_tree_clean( vert_tree );
+	bg_vert_tree_clean( norm_tree );
 	curr_tri = 0;
 	curr_norm = 0;
 
@@ -4534,8 +4534,8 @@ facetize( tag_t solid_tag, char *part_name, char *refset_name, char *inst_name, 
 	    return solid_name;
 	}
     } else {
-	bn_vert_tree_clean( vert_tree );
-	bn_vert_tree_clean( norm_tree );
+	bg_vert_tree_clean( vert_tree );
+	bg_vert_tree_clean( norm_tree );
 	curr_tri = 0;
 	curr_norm = 0;
 
@@ -5372,8 +5372,8 @@ main(int ac, char *av[])
 	bu_exit(1, usage, av[0]);
     }
 
-    vert_tree = bn_vert_tree_create();
-    norm_tree = bn_vert_tree_create();
+    vert_tree = bg_vert_tree_create();
+    norm_tree = bg_vert_tree_create();
 
     if ( ac > i+1 ) {
 	subparts = (char **)bu_calloc( ac - i + 1, sizeof(char *), "subparts" );

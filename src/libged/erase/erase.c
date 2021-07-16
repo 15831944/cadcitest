@@ -31,6 +31,7 @@
 
 #include "../ged_private.h"
 
+extern int ged_erase2_core(struct ged *gedp, int argc, const char **argv);
 /*
  * Erase objects from the display.
  *
@@ -38,6 +39,10 @@
 int
 ged_erase_core(struct ged *gedp, int argc, const char *argv[])
 {
+    const char *cmd2 = getenv("GED_TEST_NEW_CMD_FORMS");
+    if (BU_STR_EQUAL(cmd2, "1"))
+	return ged_erase2_core(gedp, argc, argv);
+
     size_t i;
     int flag_A_attr=0;
     int flag_o_nonunique=1;

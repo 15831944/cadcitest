@@ -185,7 +185,7 @@ dozoom(int which_eye)
 		       color_scheme->cs_predictor[0],
 		       color_scheme->cs_predictor[1],
 		       color_scheme->cs_predictor[2], 1, 1.0);
-	dm_draw_vlist(DMP, (struct bn_vlist *)&mged_curr_dm->dm_p_vlist);
+	dm_draw_vlist(DMP, (struct bv_vlist *)&mged_curr_dm->dm_p_vlist);
     }
 
     /*
@@ -248,7 +248,7 @@ createDLists(struct bu_list *hdlp)
  * display manager that has already created the display list)
  */
 void
-createDListSolid(struct solid *sp)
+createDListSolid(struct bv_scene_obj *sp)
 {
     struct mged_dm *save_dlp;
 
@@ -266,13 +266,13 @@ createDListSolid(struct solid *sp)
 	    (void)dm_make_current(DMP);
 	    (void)dm_begin_dlist(DMP, sp->s_dlist);
 	    if (sp->s_iflag == UP)
-		(void)dm_set_fg(DMP, 255, 255, 255, 0, sp->s_transparency);
+		(void)dm_set_fg(DMP, 255, 255, 255, 0, sp->s_os.transparency);
 	    else
 		(void)dm_set_fg(DMP,
 			(unsigned char)sp->s_color[0],
 			(unsigned char)sp->s_color[1],
-			(unsigned char)sp->s_color[2], 0, sp->s_transparency);
-	    (void)dm_draw_vlist(DMP, (struct bn_vlist *)&sp->s_vlist);
+			(unsigned char)sp->s_color[2], 0, sp->s_os.transparency);
+	    (void)dm_draw_vlist(DMP, (struct bv_vlist *)&sp->s_vlist);
 	    (void)dm_end_dlist(DMP);
 	}
 
@@ -294,8 +294,8 @@ createDListSolid(struct solid *sp)
 void
 createDListAll(struct display_list *gdlp)
 {
-    struct solid *sp;
-    FOR_ALL_SOLIDS(sp, &gdlp->dl_headSolid) {
+    struct bv_scene_obj *sp;
+    for (BU_LIST_FOR(sp, bv_scene_obj, &gdlp->dl_head_scene_obj)) {
 	createDListSolid(sp);
     }
 }

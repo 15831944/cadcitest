@@ -35,7 +35,7 @@
 extern struct dm dm_txt;
 
 struct dm *
-txt_open(void *interp, int argc, const char **argv)
+txt_open(void *UNUSED(ctx), void *interp, int argc, const char **argv)
 {
     struct dm *dmp;
 
@@ -44,6 +44,7 @@ txt_open(void *interp, int argc, const char **argv)
 
     BU_ALLOC(dmp, struct dm);
     dmp->magic = DM_MAGIC;
+    dmp->start_time = 0;
 
     BU_ALLOC(dmp->i, struct dm_impl);
 
@@ -89,12 +90,18 @@ txt_drawEnd(struct dm *UNUSED(dmp))
 
 
 HIDDEN int
-txt_normal(struct dm *UNUSED(dmp))
+txt_hud_begin(struct dm *UNUSED(dmp))
 {
-    bu_log("normal called\n");
+    bu_log("hud_begin called\n");
     return 0;
 }
 
+HIDDEN int
+txt_hud_end(struct dm *UNUSED(dmp))
+{
+    bu_log("hud_end called\n");
+    return 0;
+}
 
 HIDDEN int
 txt_loadMatrix(struct dm *UNUSED(dmp), fastf_t *UNUSED(mat), int UNUSED(which_eye))
@@ -116,6 +123,14 @@ HIDDEN int
 txt_drawString2D(struct dm *UNUSED(dmp), const char *UNUSED(str), fastf_t UNUSED(x), fastf_t UNUSED(y), int UNUSED(size), int UNUSED(use_aspect))
 {
     bu_log("drawString2D called\n");
+    return 0;
+}
+
+
+HIDDEN int
+txt_String2DBBox(struct dm *UNUSED(dmp), vect2d_t *UNUSED(bmin), vect2d_t *UNUSED(bmax), const char *UNUSED(str), fastf_t UNUSED(x), fastf_t UNUSED(y), int UNUSED(size), int UNUSED(use_aspect))
+{
+    bu_log("String2DBBox called\n");
     return 0;
 }
 
@@ -169,7 +184,7 @@ txt_drawPoints3D(struct dm *UNUSED(dmp), int UNUSED(npoints), point_t *UNUSED(po
 
 
 HIDDEN int
-txt_drawVList(struct dm *UNUSED(dmp), struct bn_vlist *UNUSED(vp))
+txt_drawVList(struct dm *UNUSED(dmp), struct bv_vlist *UNUSED(vp))
 {
     bu_log("drawVList called\n");
     return 0;
@@ -177,7 +192,7 @@ txt_drawVList(struct dm *UNUSED(dmp), struct bn_vlist *UNUSED(vp))
 
 
 HIDDEN int
-txt_drawVListHiddenLine(struct dm *UNUSED(dmp), struct bn_vlist *UNUSED(vp))
+txt_drawVListHiddenLine(struct dm *UNUSED(dmp), struct bv_vlist *UNUSED(vp))
 {
     bu_log("drawVListHiddenLine called\n");
     return 0;
@@ -185,7 +200,7 @@ txt_drawVListHiddenLine(struct dm *UNUSED(dmp), struct bn_vlist *UNUSED(vp))
 
 
 HIDDEN int
-txt_draw(struct dm *dmp, struct bn_vlist *(*callback_function)(void *), void **data)
+txt_draw(struct dm *dmp, struct bv_vlist *(*callback_function)(void *), void **data)
 {
     bu_log("draw called\n");
     return dmp == NULL && callback_function == NULL && data == NULL;
@@ -321,9 +336,9 @@ txt_genDLists(struct dm *UNUSED(dmp), size_t UNUSED(range))
 
 
 HIDDEN int
-txt_getDisplayImage(struct dm *UNUSED(dmp), unsigned char **UNUSED(image))
+txt_getDisplayImage(struct dm *UNUSED(dmp), unsigned char **UNUSED(image), int flip, int alpha)
 {
-    bu_log("getDisplayImage called\n");
+    bu_log("getDisplayImage called (flip: %d, alpha: %d)\n", flip, alpha);
     return 0;
 }
 
@@ -343,6 +358,12 @@ txt_makeCurrent(struct dm *UNUSED(dmp))
     return 0;
 }
 
+HIDDEN int
+txt_SwapBuffers(struct dm *UNUSED(dmp))
+{
+    bu_log("SwapBuffers called\n");
+    return 0;
+}
 
 HIDDEN int
 txt_doevent(struct dm *UNUSED(dmp), void *UNUSED(vclientData), void *UNUSED(veventPtr))
@@ -365,10 +386,12 @@ struct dm_impl dm_txt_impl = {
     txt_viable,
     txt_drawBegin,
     txt_drawEnd,
-    txt_normal,
+    txt_hud_begin,
+    txt_hud_end,
     txt_loadMatrix,
     txt_loadPMatrix,
     txt_drawString2D,
+    txt_String2DBBox,
     txt_drawLine2D,
     txt_drawLine3D,
     txt_drawLines3D,
@@ -399,6 +422,7 @@ struct dm_impl dm_txt_impl = {
     txt_getDisplayImage,
     txt_reshape,
     txt_makeCurrent,
+    txt_SwapBuffers,
     txt_doevent,
     txt_openFb,
     NULL,
@@ -452,10 +476,12 @@ struct dm_impl dm_txt_impl = {
     0,                          /* not overriding the auto font size */
     BU_STRUCTPARSE_NULL,
     FB_NULL,
-    0				/* Tcl interpreter */
+    0,				/* Tcl interpreter */
+    NULL,                       /* Drawing context */
+    NULL                        /* App data */
 };
 
-struct dm dm_txt = { DM_MAGIC, &dm_txt_impl };
+struct dm dm_txt = { DM_MAGIC, &dm_txt_impl, 0 };
 
 #ifdef DM_PLUGIN
 const struct dm_plugin pinfo = { DM_API, &dm_txt };

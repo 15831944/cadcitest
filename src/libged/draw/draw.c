@@ -65,8 +65,7 @@ draw_forced_wireframe(
     /* draw the path with the given client data, but force wireframe mode */
     struct _ged_client_data dgcd = *dgcdp;
     dgcd.gedp->ged_gdp->gd_shaded_mode = 0;
-    dgcd.shaded_mode_override = _GED_SHADED_MODE_UNSET;
-    dgcd.dmode = _GED_WIREFRAME;
+    dgcd.vs.s_dmode = _GED_WIREFRAME;
 
     av[0] = db_path_to_string(pathp);
     av[1] = (char *)0;
@@ -130,10 +129,10 @@ draw_check_leaf(struct db_tree_state *tsp,
     RT_TREE_INIT(curtree);
     curtree->tr_op = OP_NOP;
 
-    if (dgcdp->draw_non_subtract_only && (tsp->ts_sofar & (TS_SOFAR_MINUS|TS_SOFAR_INTER)))
+    if (dgcdp->vs.draw_non_subtract_only && (tsp->ts_sofar & (TS_SOFAR_MINUS|TS_SOFAR_INTER)))
 	return curtree;
 
-    switch (dgcdp->dmode) {
+    switch (dgcdp->vs.s_dmode) {
 	case _GED_SHADED_MODE_BOTS:
 	    if (ip->idb_major_type == DB5_MAJORTYPE_BRLCAD &&
 		(ip->idb_minor_type == DB5_MINORTYPE_BRLCAD_BOT   ||
@@ -146,6 +145,15 @@ draw_check_leaf(struct db_tree_state *tsp,
 	    }
 	    break;
 	case _GED_SHADED_MODE_ALL:
+	    if (ip->idb_major_type == DB5_MAJORTYPE_BRLCAD &&
+		ip->idb_minor_type != DB5_MINORTYPE_BRLCAD_PIPE)
+	    {
+		plot_shaded(tsp, pathp, ip, dgcdp);
+	    } else {
+		draw_forced_wireframe(pathp, dgcdp);
+	    }
+	    break;
+	case _GED_HIDDEN_LINE:
 	    if (ip->idb_major_type == DB5_MAJORTYPE_BRLCAD &&
 		ip->idb_minor_type != DB5_MINORTYPE_BRLCAD_PIPE)
 	    {
@@ -334,7 +342,7 @@ draw_nmg_region_start(struct db_tree_state *tsp, const struct db_full_path *path
 		if (RT_G_DEBUG&RT_DEBUG_TREEWALK) {
 		    bu_log("fastpath draw ID_POLY %s\n", dp->d_namep);
 		}
-		if (dgcdp->draw_wireframes) {
+		if (dgcdp->nmg_fast_wireframe_draw) {
 		    (void)rt_pg_plot(&vhead, &intern, tsp->ts_ttol, tsp->ts_tol, NULL);
 		} else {
 		    (void)rt_pg_plot_poly(&vhead, &intern, tsp->ts_ttol, tsp->ts_tol);
@@ -346,7 +354,7 @@ draw_nmg_region_start(struct db_tree_state *tsp, const struct db_full_path *path
 		if (RT_G_DEBUG&RT_DEBUG_TREEWALK) {
 		    bu_log("fastpath draw ID_BOT %s\n", dp->d_namep);
 		}
-		if (dgcdp->draw_wireframes) {
+		if (dgcdp->nmg_fast_wireframe_draw) {
 		    (void)rt_bot_plot(&vhead, &intern, tsp->ts_ttol, tsp->ts_tol, NULL);
 		} else {
 		    (void)rt_bot_plot_poly(&vhead, &intern, tsp->ts_ttol, tsp->ts_tol);
@@ -358,7 +366,7 @@ draw_nmg_region_start(struct db_tree_state *tsp, const struct db_full_path *path
 		if (RT_G_DEBUG&RT_DEBUG_TREEWALK) {
 		    bu_log("fastpath draw ID_BREP %s\n", dp->d_namep);
 		}
-		if (dgcdp->draw_wireframes) {
+		if (dgcdp->nmg_fast_wireframe_draw) {
 		    (void)rt_brep_plot(&vhead, &intern, tsp->ts_ttol, tsp->ts_tol, NULL);
 		} else {
 		    (void)rt_brep_plot_poly(&vhead, pathp, &intern, tsp->ts_ttol, tsp->ts_tol, NULL);
@@ -509,7 +517,7 @@ draw_nmg_region_end(struct db_tree_state *tsp, const struct db_full_path *pathp,
 	/* Convert NMG to vlist */
 	NMG_CK_REGION(r);
 
-	if (dgcdp->draw_wireframes) {
+	if (dgcdp->nmg_fast_wireframe_draw) {
 	    /* Draw in vector form */
 	    style = NMG_VLIST_STYLE_VECTOR;
 	} else {
@@ -563,7 +571,9 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
     int i;
     int ac = 1;
     char *av[3];
+    int bot_threshold = 0;
     int threshold_cached = 0;
+    int shaded_mode_override = _GED_SHADED_MODE_UNSET;
 
     RT_CHECK_DBI(gedp->ged_wdbp->dbip);
 
@@ -584,9 +594,9 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 
 	gvp = gedp->ged_gvp;
 
-	if (gedp && gedp->ged_gvp) threshold_cached = gvp->gv_bot_threshold;
+	if (gedp && gedp->ged_gvp) threshold_cached = gvp->gv_s->bot_threshold;
 
-	if (gvp && gvp->gv_adaptive_plot)
+	if (gvp && gvp->gv_s->adaptive_plot)
 	    dgcdp.autoview = 1;
 	else
 	    dgcdp.autoview = 0;
@@ -594,28 +604,26 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 	/* Initial values for options, must be reset each time */
 	dgcdp.draw_nmg_only = 0;	/* no booleans */
 	dgcdp.nmg_triangulate = 1;
-	dgcdp.draw_wireframes = 0;
+	dgcdp.nmg_fast_wireframe_draw = 0;
 	dgcdp.draw_normals = 0;
-	dgcdp.draw_solid_lines_only = 0;
+	dgcdp.vs.draw_solid_lines_only = 0;
 	dgcdp.draw_no_surfaces = 0;
-	dgcdp.draw_non_subtract_only = 0;
+	dgcdp.vs.draw_non_subtract_only = 0;
 	dgcdp.shade_per_vertex_normals = 0;
 	dgcdp.draw_edge_uses = 0;
-	dgcdp.wireframe_color_override = 0;
+	dgcdp.vs.color_override = 0;
 	dgcdp.fastpath_count = 0;
-	dgcdp.shaded_mode_override = _GED_SHADED_MODE_UNSET;
-	dgcdp.bot_threshold = 0;
 
 	/* default color - red */
-	dgcdp.wireframe_color[0] = 255;
-	dgcdp.wireframe_color[1] = 0;
-	dgcdp.wireframe_color[2] = 0;
+	dgcdp.vs.color[0] = 255;
+	dgcdp.vs.color[1] = 0;
+	dgcdp.vs.color[2] = 0;
 
 	/* default transparency - opaque */
-	dgcdp.transparency = 1.0;
+	dgcdp.vs.transparency = 1.0;
 
-	/* freesolid */
-	dgcdp.freesolid = gedp->freesolid;
+	/* free_scene_obj */
+	dgcdp.free_scene_obj = gedp->free_scene_obj;
 
 	enable_fastpath = 0;
 
@@ -627,7 +635,7 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 		    dgcdp.draw_edge_uses = 1;
 		    break;
 		case 's':
-		    dgcdp.draw_solid_lines_only = 1;
+		    dgcdp.vs.draw_solid_lines_only = 1;
 		    break;
 		case 't':
 		    nmg_use_tnurbs = 1;
@@ -636,11 +644,11 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 		    dgcdp.shade_per_vertex_normals = 1;
 		    break;
 		case 'w':
-		    dgcdp.draw_wireframes = 1;
+		    dgcdp.nmg_fast_wireframe_draw = 1;
 		    break;
 		case 'S':
 		    dgcdp.draw_no_surfaces = 1;
-		    dgcdp.draw_non_subtract_only = 1;
+		    dgcdp.vs.draw_non_subtract_only = 1;
 		    break;
 		case 'T':
 		    dgcdp.nmg_triangulate = 0;
@@ -677,49 +685,51 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 			if (g < 0 || g > 255) g = 255;
 			if (b < 0 || b > 255) b = 255;
 
-			dgcdp.wireframe_color_override = 1;
-			dgcdp.wireframe_color[0] = r;
-			dgcdp.wireframe_color[1] = g;
-			dgcdp.wireframe_color[2] = b;
+			dgcdp.vs.color_override = 1;
+			dgcdp.vs.color[0] = r;
+			dgcdp.vs.color[1] = g;
+			dgcdp.vs.color[2] = b;
 		    }
 		    break;
 		case 'h':
-		    dgcdp.hiddenLine = 1;
-		    dgcdp.shaded_mode_override = _GED_SHADED_MODE_ALL;
+		    shaded_mode_override = _GED_HIDDEN_LINE;
 		    break;
 		case 'm':
-		    dgcdp.shaded_mode_override = atoi(bu_optarg);
+		    shaded_mode_override = atoi(bu_optarg);
 
-		    switch (dgcdp.shaded_mode_override) {
+		    switch (shaded_mode_override) {
 			case 0:
-			    dgcdp.shaded_mode_override = _GED_WIREFRAME;
+			    shaded_mode_override = _GED_WIREFRAME;
 			    break;
 			case 1:
-			    dgcdp.shaded_mode_override = _GED_SHADED_MODE_BOTS;
+			    shaded_mode_override = _GED_SHADED_MODE_BOTS;
 			    break;
 			case 2:
-			    dgcdp.shaded_mode_override = _GED_SHADED_MODE_ALL;
+			    shaded_mode_override = _GED_SHADED_MODE_ALL;
 			    break;
 			case 3:
-			    dgcdp.shaded_mode_override = _GED_SHADED_MODE_EVAL;
+			    shaded_mode_override = _GED_SHADED_MODE_EVAL;
+			    break;
+			case 4:
+			    shaded_mode_override = _GED_HIDDEN_LINE;
 			    break;
 			default:
-			    if (dgcdp.shaded_mode_override < 0) {
-				dgcdp.shaded_mode_override = _GED_SHADED_MODE_UNSET;
+			    if (shaded_mode_override < 0) {
+				shaded_mode_override = _GED_SHADED_MODE_UNSET;
 			    } else {
-				dgcdp.shaded_mode_override = _GED_SHADED_MODE_ALL;
+				shaded_mode_override = _GED_SHADED_MODE_ALL;
 			    }
 		    }
 		    break;
 		case 'x':
-		    dgcdp.transparency = atof(bu_optarg);
+		    dgcdp.vs.transparency = atof(bu_optarg);
 
 		    /* clamp it to [0, 1] */
-		    if (dgcdp.transparency < 0.0)
-			dgcdp.transparency = 0.0;
+		    if (dgcdp.vs.transparency < 0.0)
+			dgcdp.vs.transparency = 0.0;
 
-		    if (1.0 < dgcdp.transparency)
-			dgcdp.transparency = 1.0;
+		    if (1.0 < dgcdp.vs.transparency)
+			dgcdp.vs.transparency = 1.0;
 
 		    break;
 		case 'R':
@@ -732,7 +742,7 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 			if (cp) {
 			    t = atoi(cp);
 			    if (t >= 0) {
-				dgcdp.bot_threshold = (size_t)t;
+				bot_threshold = (size_t)t;
 			    } else {
 				bu_vls_printf(gedp->ged_result_str, "invalid -L argument: %s\n", cp);
 				--drawtrees_depth;
@@ -762,15 +772,15 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 
 	switch (kind) {
 	    case _GED_DRAW_WIREFRAME:
-		dgcdp.dmode = _GED_WIREFRAME;
-		if (dgcdp.shaded_mode_override != _GED_SHADED_MODE_UNSET) {
-		    dgcdp.dmode = dgcdp.shaded_mode_override;
+		dgcdp.vs.s_dmode = _GED_WIREFRAME;
+		if (shaded_mode_override != _GED_SHADED_MODE_UNSET) {
+		    dgcdp.vs.s_dmode = shaded_mode_override;
 		} else if (gedp->ged_gdp->gd_shaded_mode) {
-		    dgcdp.dmode = gedp->ged_gdp->gd_shaded_mode;
+		    dgcdp.vs.s_dmode = gedp->ged_gdp->gd_shaded_mode;
 		}
 		break;
 	    case _GED_DRAW_NMG_POLY:
-		dgcdp.dmode = _GED_BOOL_EVAL;
+		dgcdp.vs.s_dmode = _GED_BOOL_EVAL;
 		break;
 	}
 
@@ -799,9 +809,10 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 	     * If shaded_mode is _GED_SHADED_MODE_ALL, everything except pipe solids
 	     * are drawn as shaded polygons.
 	     */
-	    if (dgcdp.dmode == _GED_SHADED_MODE_BOTS ||
-		dgcdp.dmode == _GED_SHADED_MODE_ALL  ||
-		dgcdp.dmode == _GED_SHADED_MODE_EVAL)
+	    if (dgcdp.vs.s_dmode == _GED_SHADED_MODE_BOTS ||
+		dgcdp.vs.s_dmode == _GED_SHADED_MODE_ALL  ||
+		dgcdp.vs.s_dmode == _GED_SHADED_MODE_EVAL ||
+		dgcdp.vs.s_dmode == _GED_HIDDEN_LINE)
 	    {
 		struct _ged_client_data dgcdp_save;
 
@@ -814,15 +825,15 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 
 		    dgcdp_save = dgcdp;
 
-		    if (dgcdp.dmode == _GED_SHADED_MODE_EVAL) {
+		    if (dgcdp.vs.s_dmode == _GED_SHADED_MODE_EVAL) {
 			ret = plot_shaded_eval(gedp, argv[i], &dgcdp);
 			if (ret == GED_OK) {
 			    continue;
 			}
 			/* if evaluated shading failed, fall back to "all" mode */
 			dgcdp.gedp->ged_gdp->gd_shaded_mode = 0;
-			dgcdp.shaded_mode_override = _GED_SHADED_MODE_ALL;
-			dgcdp.dmode = _GED_SHADED_MODE_ALL;
+			shaded_mode_override = _GED_SHADED_MODE_ALL;
+			dgcdp.vs.s_dmode = _GED_SHADED_MODE_ALL;
 		    }
 
 		    av[0] = (char *)argv[i];
@@ -848,19 +859,18 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 
 		/* create solids */
 		for (i = 0; i < argc; ++i) {
-		    struct bview_solid_data bview_data;
-		    bview_data.draw_solid_lines_only = dgcdp.draw_solid_lines_only;
-		    bview_data.wireframe_color_override = dgcdp.wireframe_color_override;
-		    bview_data.wireframe_color[0]= dgcdp.wireframe_color[0];
-		    bview_data.wireframe_color[1]= dgcdp.wireframe_color[1];
-		    bview_data.wireframe_color[2]= dgcdp.wireframe_color[2];
-		    bview_data.transparency= dgcdp.transparency;
-		    bview_data.dmode = dgcdp.dmode;
-		    bview_data.hiddenLine = dgcdp.hiddenLine;
-		    bview_data.freesolid = (void *)gedp->freesolid;
+		    struct ged_solid_data bv_data;
+		    bv_data.draw_solid_lines_only = dgcdp.vs.draw_solid_lines_only;
+		    bv_data.wireframe_color_override = dgcdp.vs.color_override;
+		    bv_data.wireframe_color[0]= dgcdp.vs.color[0];
+		    bv_data.wireframe_color[1]= dgcdp.vs.color[1];
+		    bv_data.wireframe_color[2]= dgcdp.vs.color[2];
+		    bv_data.transparency= dgcdp.vs.transparency;
+		    bv_data.dmode = dgcdp.vs.s_dmode;
+		    bv_data.free_scene_obj = (void *)gedp->free_scene_obj;
 
 		    dgcdp.gdlp = dl_addToDisplay(gedp->ged_gdp->gd_headDisplay, gedp->ged_wdbp->dbip, argv[i]);
-		    bview_data.gdlp = dgcdp.gdlp;
+		    bv_data.gdlp = dgcdp.gdlp;
 
 		    /* store draw path */
 		    paths_to_draw[i] = dgcdp.gdlp;
@@ -878,7 +888,7 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 				       NULL,
 				       wireframe_region_end,
 				       append_solid_to_display_list,
-				       (void *)&bview_data);
+				       (void *)&bv_data);
 		}
 
 		/* We need to know the view size in order to choose
@@ -893,7 +903,7 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 		}
 
 		/* Set the view threshold */
-		if (gedp && gedp->ged_gvp) gedp->ged_gvp->gv_bot_threshold = dgcdp.bot_threshold;
+		if (gedp && gedp->ged_gvp) gedp->ged_gvp->gv_s->bot_threshold = bot_threshold;
 
 		/* calculate plot vlists for solids of each draw path */
 		for (i = 0; i < argc; ++i) {
@@ -903,10 +913,10 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 			continue;
 		    }
 
-		    ret = dl_redraw(gdlp, gedp, dgcdp.draw_non_subtract_only);
+		    ret = dl_redraw(gdlp, gedp, dgcdp.vs.draw_non_subtract_only);
 		    if (ret < 0) {
 			/* restore view bot threshold */
-			if (gedp && gedp->ged_gvp) gedp->ged_gvp->gv_bot_threshold = threshold_cached;
+			if (gedp && gedp->ged_gvp) gedp->ged_gvp->gv_s->bot_threshold = threshold_cached;
 
 			bu_vls_printf(gedp->ged_result_str, "%s: %s redraw failure\n", argv[0], argv[i]);
 			return GED_ERROR;
@@ -914,7 +924,7 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 		}
 
 		/* restore view bot threshold */
-		if (gedp && gedp->ged_gvp) gedp->ged_gvp->gv_bot_threshold = threshold_cached;
+		if (gedp && gedp->ged_gvp) gedp->ged_gvp->gv_s->bot_threshold = threshold_cached;
 
 		bu_free(paths_to_draw, "draw paths");
 	    }
@@ -925,7 +935,7 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 		gedp->ged_wdbp->wdb_initial_tree_state.ts_m = &nmg_model;
 		if (dgcdp.draw_edge_uses) {
 		    bu_vls_printf(gedp->ged_result_str, "Doing the edgeuse thang (-u)\n");
-		    dgcdp.draw_edge_uses_vbp = rt_vlblock_init();
+		    dgcdp.draw_edge_uses_vbp = bv_vlblock_init(&RTG.rtg_vlfree, 32);
 		}
 
 		for (i = 0; i < argc; ++i) {
@@ -949,8 +959,8 @@ _ged_drawtrees(struct ged *gedp, int argc, const char *argv[], int kind, struct 
 
 		if (dgcdp.draw_edge_uses) {
 		    _ged_cvt_vlblock_to_solids(gedp, dgcdp.draw_edge_uses_vbp, "_EDGEUSES_", 0);
-		    bn_vlblock_free(dgcdp.draw_edge_uses_vbp);
-		    dgcdp.draw_edge_uses_vbp = (struct bn_vlblock *)NULL;
+		    bv_vlblock_free(dgcdp.draw_edge_uses_vbp);
+		    dgcdp.draw_edge_uses_vbp = (struct bv_vlblock *)NULL;
 		}
 
 		/* Destroy NMG */
@@ -1216,9 +1226,14 @@ ged_draw_guts(struct ged *gedp, int argc, const char *argv[], int kind)
 }
 
 
+extern int ged_draw2_core(struct ged *gedp, int argc, const char *argv[]);
 int
 ged_draw_core(struct ged *gedp, int argc, const char *argv[])
 {
+    const char *cmd2 = getenv("GED_TEST_NEW_CMD_FORMS");
+    if (BU_STR_EQUAL(cmd2, "1"))
+	return ged_draw2_core(gedp, argc, argv);
+
     return ged_draw_guts(gedp, argc, argv, _GED_DRAW_WIREFRAME);
 }
 
@@ -1229,9 +1244,14 @@ ged_ev_core(struct ged *gedp, int argc, const char *argv[])
     return ged_draw_guts(gedp, argc, argv, _GED_DRAW_NMG_POLY);
 }
 
+extern int ged_redraw2_core(struct ged *gedp, int argc, const char *argv[]);
 int
-ged_redraw(struct ged *gedp, int argc, const char *argv[])
+ged_redraw_core(struct ged *gedp, int argc, const char *argv[])
 {
+    const char *cmd2 = getenv("GED_TEST_NEW_CMD_FORMS");
+    if (BU_STR_EQUAL(cmd2, "1"))
+	return ged_redraw2_core(gedp, argc, argv);
+
     int ret;
     struct display_list *gdlp;
 
@@ -1318,6 +1338,9 @@ const struct ged_cmd e_cmd = { &e_cmd_impl };
 struct ged_cmd_impl ev_cmd_impl = {"ev", ged_ev_core, GED_CMD_DEFAULT};
 const struct ged_cmd ev_cmd = { &ev_cmd_impl };
 
+struct ged_cmd_impl redraw_cmd_impl = {"redraw", ged_redraw_core, GED_CMD_DEFAULT};
+const struct ged_cmd redraw_cmd = { &redraw_cmd_impl };
+
 extern int ged_loadview_core(struct ged *gedp, int argc, const char *argv[]);
 struct ged_cmd_impl loadview_cmd_impl = {"loadview", ged_loadview_core, GED_CMD_DEFAULT};
 const struct ged_cmd loadview_cmd = { &loadview_cmd_impl };
@@ -1326,9 +1349,9 @@ extern int ged_preview_core(struct ged *gedp, int argc, const char *argv[]);
 struct ged_cmd_impl preview_cmd_impl = {"preview", ged_preview_core, GED_CMD_DEFAULT};
 const struct ged_cmd preview_cmd = { &preview_cmd_impl };
 
-const struct ged_cmd *draw_cmds[] = { &draw_cmd, &e_cmd, &ev_cmd, &loadview_cmd, &preview_cmd, NULL };
+const struct ged_cmd *draw_cmds[] = { &draw_cmd, &e_cmd, &ev_cmd, &redraw_cmd, &loadview_cmd, &preview_cmd, NULL };
 
-static const struct ged_plugin pinfo = { GED_API,  draw_cmds, 5 };
+static const struct ged_plugin pinfo = { GED_API,  draw_cmds, 6 };
 
 COMPILER_DLLEXPORT const struct ged_plugin *ged_plugin_info()
 {

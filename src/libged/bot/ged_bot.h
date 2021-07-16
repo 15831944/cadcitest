@@ -33,7 +33,7 @@
 #include <time.h>
 
 #include "bu/opt.h"
-#include "bn/plot3.h"
+#include "bv/plot3.h"
 #include "bu/color.h"
 #include "rt/db4.h"
 #include "raytrace.h"
@@ -49,7 +49,7 @@ struct _ged_bot_info {
     struct ged *gedp = NULL;
     struct rt_db_internal *intern = NULL;
     struct directory *dp = NULL;
-    struct bn_vlblock *vbp = NULL;
+    struct bv_vlblock *vbp = NULL;
     struct bu_color *color = NULL;
     int verbosity;
     int visualize;

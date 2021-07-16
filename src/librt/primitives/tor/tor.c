@@ -1009,18 +1009,18 @@ static int
 tor_ellipse_points(
 	vect_t ellipse_A,
 	vect_t ellipse_B,
-	const struct rt_view_info *info)
+	fastf_t point_spacing)
 {
     fastf_t avg_radius, circumference;
 
     avg_radius = (MAGNITUDE(ellipse_A) + MAGNITUDE(ellipse_B)) / 2.0;
     circumference = M_2PI * avg_radius;
 
-    return circumference / info->point_spacing;
+    return circumference / point_spacing;
 }
 
 int
-rt_tor_adaptive_plot(struct rt_db_internal *ip, const struct rt_view_info *info)
+rt_tor_adaptive_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bn_tol *tol, const struct bview *v, fastf_t s_size)
 {
     vect_t a, b, tor_a, tor_b, tor_h, center;
     fastf_t mag_a, mag_b, mag_h;
@@ -1028,10 +1028,13 @@ rt_tor_adaptive_plot(struct rt_db_internal *ip, const struct rt_view_info *info)
     fastf_t radian, radian_step;
     int i, num_ellipses, points_per_ellipse;
 
-    BU_CK_LIST_HEAD(info->vhead);
+    BU_CK_LIST_HEAD(vhead);
     RT_CK_DB_INTERNAL(ip);
+    struct bu_list *vlfree = &RTG.rtg_vlfree;
     tor = (struct rt_tor_internal *)ip->idb_ptr;
     RT_TOR_CK_MAGIC(tor);
+
+    fastf_t point_spacing = solid_point_spacing(v, s_size);
 
     VMOVE(tor_a, tor->a);
     mag_a = tor->r_a;
@@ -1048,42 +1051,42 @@ rt_tor_adaptive_plot(struct rt_db_internal *ip, const struct rt_view_info *info)
     VJOIN1(a, tor_a, mag_h / mag_a, tor_a);
     VJOIN1(b, tor_b, mag_h / mag_b, tor_b);
 
-    points_per_ellipse = tor_ellipse_points(a, b, info);
+    points_per_ellipse = tor_ellipse_points(a, b, point_spacing);
     if (points_per_ellipse < 6) {
 	points_per_ellipse = 6;
     }
 
-    plot_ellipse(info->vhead, tor->v, a, b, points_per_ellipse);
+    plot_ellipse(vlfree, vhead, tor->v, a, b, points_per_ellipse);
 
     /* plot inner circular contour */
     VJOIN1(a, tor_a, -1.0 * mag_h / mag_a, tor_a);
     VJOIN1(b, tor_b, -1.0 * mag_h / mag_b, tor_b);
 
-    points_per_ellipse = tor_ellipse_points(a, b, info);
+    points_per_ellipse = tor_ellipse_points(a, b, point_spacing);
     if (points_per_ellipse < 6) {
 	points_per_ellipse = 6;
     }
 
-    plot_ellipse(info->vhead, tor->v, a, b, points_per_ellipse);
+    plot_ellipse(vlfree, vhead, tor->v, a, b, points_per_ellipse);
 
     /* Draw parallel circles to show the primitive's most extreme points along
      * +h/-h.
      */
-    points_per_ellipse = tor_ellipse_points(tor_a, tor_b, info);
+    points_per_ellipse = tor_ellipse_points(tor_a, tor_b, point_spacing);
     if (points_per_ellipse < 6) {
 	points_per_ellipse = 6;
     }
 
     VADD2(center, tor->v, tor_h);
-    plot_ellipse(info->vhead, center, tor_a, tor_b, points_per_ellipse);
+    plot_ellipse(vlfree, vhead, center, tor_a, tor_b, points_per_ellipse);
 
     VJOIN1(center, tor->v, -1.0, tor_h);
-    plot_ellipse(info->vhead, center, tor_a, tor_b, points_per_ellipse);
+    plot_ellipse(vlfree, vhead, center, tor_a, tor_b, points_per_ellipse);
 
     /* draw circular radial cross sections */
     VMOVE(b, tor_h);
 
-    num_ellipses = primitive_curve_count(ip, info);
+    num_ellipses = primitive_curve_count(ip, tol, v->gv_s->curve_scale, s_size);
     if (num_ellipses < 3) {
 	num_ellipses = 3;
     }
@@ -1097,7 +1100,7 @@ rt_tor_adaptive_plot(struct rt_db_internal *ip, const struct rt_view_info *info)
 	VUNITIZE(a);
 	VSCALE(a, a, mag_h);
 
-	plot_ellipse(info->vhead, center, a, b, points_per_ellipse);
+	plot_ellipse(vlfree, vhead, center, a, b, points_per_ellipse);
 
 	radian += radian_step;
     }
@@ -1112,7 +1115,7 @@ rt_tor_adaptive_plot(struct rt_db_internal *ip, const struct rt_view_info *info)
  * ti.a, ti.b perpendicular, to CENTER of torus (for top, bottom)
  */
 int
-rt_tor_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_tess_tol *ttol, const struct bn_tol *UNUSED(tol), const struct rt_view_info *UNUSED(info))
+rt_tor_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_tess_tol *ttol, const struct bn_tol *UNUSED(tol), const struct bview *UNUSED(info))
 {
     fastf_t alpha;
     fastf_t beta;
@@ -1132,6 +1135,7 @@ rt_tor_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_te
 
     BU_CK_LIST_HEAD(vhead);
     RT_CK_DB_INTERNAL(ip);
+    struct bu_list *vlfree = &RTG.rtg_vlfree;
     tip = (struct rt_tor_internal *)ip->idb_ptr;
     RT_TOR_CK_MAGIC(tip);
 
@@ -1209,17 +1213,17 @@ rt_tor_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_te
     /* Draw lengthwise (around outside rim) */
     for (w = 0; w < nw; w++) {
 	len = nlen-1;
-	RT_ADD_VLIST(vhead, TOR_PTA(w, len), BN_VLIST_LINE_MOVE);
+	BV_ADD_VLIST(vlfree, vhead, TOR_PTA(w, len), BV_VLIST_LINE_MOVE);
 	for (len = 0; len < nlen; len++) {
-	    RT_ADD_VLIST(vhead, TOR_PTA(w, len), BN_VLIST_LINE_DRAW);
+	    BV_ADD_VLIST(vlfree, vhead, TOR_PTA(w, len), BV_VLIST_LINE_DRAW);
 	}
     }
     /* Draw around the "width" (1 cross section) */
     for (len = 0; len < nlen; len++) {
 	w = nw-1;
-	RT_ADD_VLIST(vhead, TOR_PTA(w, len), BN_VLIST_LINE_MOVE);
+	BV_ADD_VLIST(vlfree, vhead, TOR_PTA(w, len), BV_VLIST_LINE_MOVE);
 	for (w = 0; w < nw; w++) {
-	    RT_ADD_VLIST(vhead, TOR_PTA(w, len), BN_VLIST_LINE_DRAW);
+	    BV_ADD_VLIST(vlfree, vhead, TOR_PTA(w, len), BV_VLIST_LINE_DRAW);
 	}
     }
 
@@ -1765,6 +1769,57 @@ rt_tor_centroid(point_t *cent, const struct rt_db_internal *ip)
     RT_TOR_CK_MAGIC(tip);
     VMOVE(*cent,tip->v);
 }
+
+void
+rt_tor_labels(struct bu_ptbl *labels, const struct rt_db_internal *ip, struct bview *v)
+{
+    if (!labels || !ip)
+	return;
+
+    struct rt_tor_internal *tor = (struct rt_tor_internal *)ip->idb_ptr;
+    RT_TOR_CK_MAGIC(tor);
+
+    // Set up the containers
+    struct bv_label *l[4];
+    for (int i = 0; i < 4; i++) {
+	struct bv_scene_obj *s;
+	struct bv_label *la;
+	BU_GET(s, struct bv_scene_obj);
+	BU_GET(la, struct bv_label);
+	s->s_i_data = (void *)la;
+	s->s_v = v;
+
+	BU_LIST_INIT(&(s->s_vlist));
+	VSET(s->s_color, 255, 255, 0);
+	s->s_type_flags |= BV_DBOBJ_BASED;
+	s->s_type_flags |= BV_LABELS;
+	BU_VLS_INIT(&la->label);
+
+	l[i] = la;
+	bu_ptbl_ins(labels, (long *)s);
+    }
+
+    // Do the specific data assignments for each label
+    fastf_t r3, r4;
+    vect_t adir;
+    bn_vec_ortho(adir, tor->h);
+    r3 = tor->r_a - tor->r_h;
+    r4 = tor->r_a + tor->r_h;
+
+    bu_vls_sprintf(&l[0]->label, "V");
+    VMOVE(l[0]->p, tor->v);
+
+    bu_vls_sprintf(&l[1]->label, "I");
+    VJOIN1(l[1]->p, tor->v, r3, adir);
+
+    bu_vls_sprintf(&l[2]->label, "O");
+    VJOIN1(l[2]->p, tor->v, r4, adir);
+
+    bu_vls_sprintf(&l[3]->label, "H");
+    VJOIN1(l[3]->p, tor->v, tor->r_a, adir);
+    VADD2(l[3]->p, l[3]->p, tor->h);
+}
+
 
 /*
  * Local Variables:

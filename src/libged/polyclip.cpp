@@ -30,11 +30,11 @@
 
 #include "bu/sort.h"
 #include "bg/polygon.h"
-#include "dm/bview_util.h"
+#include "bv/util.h"
 #include "ged.h"
 
 int
-ged_export_polygon(struct ged *gedp, bview_data_polygon_state *gdpsp, size_t polygon_i, const char *sname)
+ged_export_polygon(struct ged *gedp, bv_data_polygon_state *gdpsp, size_t polygon_i, const char *sname)
 {
     size_t j, k, n;
     size_t num_verts = 0;
@@ -389,7 +389,7 @@ ged_polygon_fill_segments(struct ged *gedp, struct bg_polygon *poly, vect2d_t vf
 
 		V2SUB2(pdir, poly_2d.p_contour[i].pc_point[end], poly_2d.p_contour[i].pc_point[begin]);
 
-		if ((ret = bn_isect_line2_lseg2(distvec,
+		if ((ret = bg_isect_line2_lseg2(distvec,
 						pt_2d, vfilldir,
 						poly_2d.p_contour[i].pc_point[begin], pdir,
 						&gedp->ged_wdbp->wdb_tol)) >= 0) {
@@ -478,7 +478,7 @@ ged_polygon_fill_segments(struct ged *gedp, struct bg_polygon *poly, vect2d_t vf
 
 		V2SUB2(pdir, poly_2d.p_contour[i].pc_point[end], poly_2d.p_contour[i].pc_point[begin]);
 
-		if ((ret = bn_isect_line2_lseg2(distvec,
+		if ((ret = bg_isect_line2_lseg2(distvec,
 						pt_2d, vfilldir,
 						poly_2d.p_contour[i].pc_point[begin], pdir,
 						&gedp->ged_wdbp->wdb_tol)) >= 0) {

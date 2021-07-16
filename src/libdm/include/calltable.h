@@ -58,27 +58,27 @@ struct dm_vars {
  * Tk information...
  */
 struct dm_impl {
-    struct dm *(*dm_open)(void *interp, int argc, const char *argv[]);
-    // TODO - dm_open currently does both new windows and existing windows - rework
-    // to operate like framebuffer API and separate them.
+    struct dm *(*dm_open)(void *ctx, void *interp, int argc, const char *argv[]);
     int (*dm_close)(struct dm *dmp);
     int (*dm_viable)(const char *dpy_string);
     int (*dm_drawBegin)(struct dm *dmp);	/**< @brief formerly dmr_prolog */
     int (*dm_drawEnd)(struct dm *dmp);		/**< @brief formerly dmr_epilog */
-    int (*dm_normal)(struct dm *dmp);
+    int (*dm_hud_begin)(struct dm *dmp);
+    int (*dm_hud_end)(struct dm *dmp);
     int (*dm_loadMatrix)(struct dm *dmp, fastf_t *mat, int which_eye);
     int (*dm_loadPMatrix)(struct dm *dmp, fastf_t *mat);
     int (*dm_drawString2D)(struct dm *dmp, const char *str, fastf_t x, fastf_t y, int size, int use_aspect);	/**< @brief formerly dmr_puts */
+    int (*dm_String2DBBox)(struct dm *dmp, vect2d_t *bmin, vect2d_t *bmax, const char *str, fastf_t x, fastf_t y, int size, int use_aspect); /**< @brief Returns screen X,Y coordinates */
     int (*dm_drawLine2D)(struct dm *dmp, fastf_t x_1, fastf_t y_1, fastf_t x_2, fastf_t y_2);	/**< @brief formerly dmr_2d_line */
     int (*dm_drawLine3D)(struct dm *dmp, point_t pt1, point_t pt2);
     int (*dm_drawLines3D)(struct dm *dmp, int npoints, point_t *points, int sflag);
     int (*dm_drawPoint2D)(struct dm *dmp, fastf_t x, fastf_t y);
     int (*dm_drawPoint3D)(struct dm *dmp, point_t point);
     int (*dm_drawPoints3D)(struct dm *dmp, int npoints, point_t *points);
-    int (*dm_drawVList)(struct dm *dmp, struct bn_vlist *vp);
-    int (*dm_drawVListHiddenLine)(struct dm *dmp, struct bn_vlist *vp);
-    int (*dm_draw_data_axes)(struct dm *dmp, fastf_t sf, struct bview_data_axes_state *bndasp);
-    int (*dm_draw)(struct dm *dmp, struct bn_vlist *(*callback_function)(void *), void **data);	/**< @brief formerly dmr_object */
+    int (*dm_drawVList)(struct dm *dmp, struct bv_vlist *vp);
+    int (*dm_drawVListHiddenLine)(struct dm *dmp, struct bv_vlist *vp);
+    int (*dm_draw_data_axes)(struct dm *dmp, fastf_t sf, struct bv_data_axes_state *bndasp);
+    int (*dm_draw)(struct dm *dmp, struct bv_vlist *(*callback_function)(void *), void **data);	/**< @brief formerly dmr_object */
     int (*dm_setFGColor)(struct dm *dmp, unsigned char r, unsigned char g, unsigned char b, int strict, fastf_t transparency);
     int (*dm_setBGColor)(struct dm *, unsigned char, unsigned char, unsigned char);
     int (*dm_setLineAttr)(struct dm *dmp, int width, int style);	/**< @brief currently - linewidth, (not-)dashed */
@@ -96,9 +96,10 @@ struct dm_impl {
     int (*dm_freeDLists)(struct dm *dmp, unsigned int list, int range);
     int (*dm_genDLists)(struct dm *dmp, size_t range);
     int (*dm_draw_obj)(struct dm *dmp, struct display_list *obj);
-    int (*dm_getDisplayImage)(struct dm *dmp, unsigned char **image);  /**< @brief (0,0) is upper left pixel */
+    int (*dm_getDisplayImage)(struct dm *dmp, unsigned char **image, int flip, int alpha);  /**< @brief (0,0) is upper left pixel */
     int (*dm_reshape)(struct dm *dmp, int width, int height);
     int (*dm_makeCurrent)(struct dm *dmp);
+    int (*dm_SwapBuffers)(struct dm *dmp);
     int (*dm_doevent)(struct dm *dmp, void *clientData, void *eventPtr);
     int (*dm_openFb)(struct dm *dmp);
     int (*dm_get_internal)(struct dm *dmp);
@@ -153,6 +154,8 @@ struct dm_impl {
     struct bu_structparse *vparse;    /**< @brief Table listing settable variables */
     struct fb *fbp;                    /**< @brief Framebuffer associated with this display instance */
     void *dm_interp;		/**< @brief interpreter */
+    void *dm_ctx;		/**< @brief drawing context */
+    void *dm_udata;		/**< @brief associate general application data here */
 };
 
 struct fb_impl {
@@ -211,6 +214,10 @@ struct fb_impl {
     long if_ppixels;    /**< @brief Sizeof page buffer (pixels).                */
     int if_debug;       /**< @brief Buffered IO debug flag.             */
     long if_poll_refresh_rate; /**< @brief Recommended polling rate for interactive framebuffers in microseconds. */
+    void *pp; /* Internal state pointer */
+    char *if_mem;
+    int stand_alone;
+    struct dm *dmp;     /**< @brief Pointer to associated display manager, if FB is embedded */
     /* State variables for individual interface modules */
     union {
         char *p;

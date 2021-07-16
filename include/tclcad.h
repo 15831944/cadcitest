@@ -68,8 +68,8 @@ __BEGIN_DECLS
 #define TCLCAD_PROTATE_MODE 12
 #define TCLCAD_PSCALE_MODE 13
 #define TCLCAD_PTRANSLATE_MODE 14
-#define TCLCAD_POLY_CIRCLE_MODE 15
-#define TCLCAD_POLY_CONTOUR_MODE 16
+// TCLCAD_POLY_CIRCLE_MODE replaced by BV_POLY_CIRCLE_MODE
+// TCLCAD_POLY_CONTOUR_MODE replaced by BV_POLY_CONTOUR_MODE
 #define TCLCAD_POLY_ELLIPSE_MODE 17
 #define TCLCAD_POLY_RECTANGLE_MODE 18
 #define TCLCAD_POLY_SQUARE_MODE 19
@@ -90,49 +90,6 @@ __BEGIN_DECLS
 /* Use fbserv */
 #define USE_FBSERV 1
 
-/* Framebuffer server object */
-
-#define NET_LONG_LEN 4 /**< @brief # bytes to network long */
-#define MAX_CLIENTS 32
-#define MAX_PORT_TRIES 100
-#define FBS_CALLBACK_NULL (void (*)())NULL
-#define FBSERV_OBJ_NULL (struct fbserv_obj *)NULL
-
-struct fbserv_listener {
-    int fbsl_fd;                        /**< @brief socket to listen for connections */
-#if defined(_WIN32) && !defined(__CYGWIN__)
-    Tcl_Channel fbsl_chan;
-#endif
-    int fbsl_port;                      /**< @brief port number to listen on */
-    int fbsl_listen;                    /**< @brief !0 means listen for connections */
-    struct fbserv_obj *fbsl_fbsp;       /**< @brief points to its fbserv object */
-};
-
-
-struct fbserv_client {
-    int fbsc_fd;
-#if defined(_WIN32) && !defined(__CYGWIN__)
-    Tcl_Channel fbsc_chan;
-    Tcl_FileProc *fbsc_handler;
-#endif
-    struct pkg_conn *fbsc_pkg;
-    struct fbserv_obj *fbsc_fbsp;       /**< @brief points to its fbserv object */
-};
-
-
-struct fbserv_obj {
-    struct fb *fbs_fbp;                        /**< @brief framebuffer pointer */
-    void *fbs_interp;             /**< @brief tcl interpreter */
-    struct fbserv_listener fbs_listener;                /**< @brief data for listening */
-    struct fbserv_client fbs_clients[MAX_CLIENTS];      /**< @brief connected clients */
-    void (*fbs_callback)(void *clientData);             /**< @brief callback function */
-    void *fbs_clientData;
-    int fbs_mode;                       /**< @brief 0-off, 1-underlay, 2-interlay, 3-overlay */
-};
-
-DM_EXPORT extern int fbs_open(struct fbserv_obj *fbsp, int port);
-DM_EXPORT extern int fbs_close(struct fbserv_obj *fbsp);
-
 struct tclcad_ged_data {
     struct ged		*gedp;
     struct bu_vls	go_more_args_callback;
@@ -141,16 +98,9 @@ struct tclcad_ged_data {
     // These are view related, but appear to be intended as global across all
     // views associated with the gedp - that is why they are here and not in
     // tclcad_view_data.
-    struct bu_hash_tbl	*go_edited_paths;
     struct bu_vls	go_rt_end_callback;
     int                 go_rt_end_callback_cnt;
-    int			go_dlist_on;
-    int			go_refresh_on;
-
-    // TODO - these really shouldn't be libtclcad specific... we don't want to
-    // depend on Tcl for label primitives...
-    struct bu_vls	*go_prim_label_list;
-    int			go_prim_label_list_size;
+    struct dm_view_data go_dmv;
 };
 
 // Data specific to an individual view rather than the geometry database

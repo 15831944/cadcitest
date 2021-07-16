@@ -70,7 +70,7 @@ void set_curr_dm(struct mged_dm *nc)
     mged_curr_dm = nc;
     if (nc != MGED_DM_NULL && nc->dm_view_state) {
 	GEDP->ged_gvp = nc->dm_view_state->vs_gvp;
-	GEDP->ged_gvp->gv_grid = *nc->dm_grid_state; /* struct copy */
+	GEDP->ged_gvp->gv_s->gv_grid = *nc->dm_grid_state; /* struct copy */
     } else {
 	if (GEDP) {
 	    GEDP->ged_gvp = NULL;
@@ -91,7 +91,7 @@ mged_dm_init(struct mged_dm *o_dm,
     /* register application provided routines */
     cmd_hook = dm_commands;
 
-    if ((DMP = dm_open((void *)INTERP, dm_type, argc-1, argv)) == DM_NULL)
+    if ((DMP = dm_open(NULL, (void *)INTERP, dm_type, argc-1, argv)) == DM_NULL)
 	return TCL_ERROR;
 
     /*XXXX this eventually needs to move into Ogl's private structure */
@@ -480,7 +480,7 @@ mged_attach(const char *wp_name, int argc, const char *argv[])
     mged_fb_open();
 
     GEDP->ged_gvp = mged_curr_dm->dm_view_state->vs_gvp;
-    GEDP->ged_gvp->gv_grid = *mged_curr_dm->dm_grid_state; /* struct copy */
+    GEDP->ged_gvp->gv_s->gv_grid = *mged_curr_dm->dm_grid_state; /* struct copy */
 
     return TCL_OK;
 
@@ -674,7 +674,7 @@ dm_var_init(struct mged_dm *target_dm)
 
     color_scheme->cs_rc = 1;
 
-    BU_ALLOC(grid_state, struct bview_grid_state);
+    BU_ALLOC(grid_state, struct bv_grid_state);
     *grid_state = *target_dm->dm_grid_state;		/* struct copy */
     grid_state->rc = 1;
 
@@ -689,14 +689,14 @@ dm_var_init(struct mged_dm *target_dm)
     *view_state = *target_dm->dm_view_state;			/* struct copy */
     BU_ALLOC(view_state->vs_gvp, struct bview);
     BU_GET(view_state->vs_gvp->callbacks, struct bu_ptbl);
-    bu_ptbl_init(view_state->vs_gvp->callbacks, 8, "bview callbacks");
+    bu_ptbl_init(view_state->vs_gvp->callbacks, 8, "bv callbacks");
 
     *view_state->vs_gvp = *target_dm->dm_view_state->vs_gvp;	/* struct copy */
     view_state->vs_gvp->gv_clientData = (void *)view_state;
-    view_state->vs_gvp->gv_adaptive_plot = 0;
-    view_state->vs_gvp->gv_redraw_on_zoom = 0;
-    view_state->vs_gvp->gv_point_scale = 1.0;
-    view_state->vs_gvp->gv_curve_scale = 1.0;
+    view_state->vs_gvp->gv_s->adaptive_plot = 0;
+    view_state->vs_gvp->gv_s->redraw_on_zoom = 0;
+    view_state->vs_gvp->gv_s->point_scale = 1.0;
+    view_state->vs_gvp->gv_s->curve_scale = 1.0;
     view_state->vs_rc = 1;
     view_ring_init(mged_curr_dm->dm_view_state, (struct _view_state *)NULL);
 

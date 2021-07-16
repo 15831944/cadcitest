@@ -28,6 +28,7 @@
 
 #include "bu/path.h"
 #include "bu/mime.h"
+#include "bv/vlist.h"
 #include "icv.h"
 #include "dm.h"
 
@@ -158,13 +159,18 @@ ged_overlay_core(struct ged *gedp, int argc, const char *argv[])
 	name = argv[1];
     }
 
-    if (!bu_file_exists(argv[0], NULL)) {
-	bu_vls_printf(gedp->ged_result_str, ": file %s not found", argv[0]);
-	return GED_ERROR;
-    }
-
     if (!write_fb) {
-	struct bn_vlblock*vbp;
+	struct bv_vlblock*vbp;
+
+	struct bu_vls nroot = BU_VLS_INIT_ZERO;
+	if (!BU_STR_EQUAL(name, "_PLOT_OVERLAY_")) {
+	    bu_vls_sprintf(&nroot, "overlay::%s", name);
+	} else {
+	    bu_path_component(&nroot, argv[0], BU_PATH_BASENAME_EXTLESS);
+	    bu_vls_simplify(&nroot, NULL, NULL, NULL);
+	    bu_vls_prepend(&nroot, "overlay::");
+	}
+
 	FILE *fp = fopen(argv[0], "rb");
 
 	/* If we don't have an exact filename match, see if we got a pattern -
@@ -172,44 +178,62 @@ ged_overlay_core(struct ged *gedp, int argc, const char *argv[])
 	 * be what was specified. */
 	if (fp == NULL) {
 	    char **files = NULL;
-	    size_t count = bu_file_list(".", argv[1], &files);
+	    size_t count = bu_file_list(".", argv[0], &files);
 	    if (count <= 0) {
 		bu_vls_printf(gedp->ged_result_str, "ged_overlay_core: failed to open file - %s\n", argv[1]);
+		bu_vls_free(&nroot);
 		return GED_ERROR;
 	    }
-	    vbp = rt_vlblock_init();
+	    vbp = bv_vlblock_init(&RTG.rtg_vlfree, 32);
 	    for (size_t i = 0; i < count; i++) {
 		if ((fp = fopen(files[i], "rb")) == NULL) {
 		    bu_vls_printf(gedp->ged_result_str, "ged_overlay_core: failed to open file - %s\n", files[i]);
 		    bu_argv_free(count, files);
+		    bu_vls_free(&nroot);
 		    return GED_ERROR;
 		}
 		ret = rt_uplot_to_vlist(vbp, fp, size, gedp->ged_gdp->gd_uplotOutputMode);
 		fclose(fp);
 		if (ret < 0) {
-		    bn_vlblock_free(vbp);
+		    bv_vlblock_free(vbp);
 		    bu_argv_free(count, files);
+		    bu_vls_free(&nroot);
 		    return GED_ERROR;
 		}
 	    }
 	    bu_argv_free(count, files);
 	    ret = 0;
 	} else {
-	    vbp = rt_vlblock_init();
+	    vbp = bv_vlblock_init(&RTG.rtg_vlfree, 32);
 	    ret = rt_uplot_to_vlist(vbp, fp, size, gedp->ged_gdp->gd_uplotOutputMode);
 	    fclose(fp);
 	    if (ret < 0) {
-		bn_vlblock_free(vbp);
+		bv_vlblock_free(vbp);
+		bu_vls_free(&nroot);
 		return GED_ERROR;
 	    }
 	}
 
-	_ged_cvt_vlblock_to_solids(gedp, vbp, name, 0);
-	bn_vlblock_free(vbp);
+	const char *nview = getenv("GED_TEST_NEW_CMD_FORMS");
+	if (BU_STR_EQUAL(nview, "1")) {
+	    struct bview *v = gedp->ged_gvp;
+	    struct bu_ptbl *vobjs = (v->independent) ? v->gv_view_objs : v->gv_view_shared_objs;
+	    bv_vlblock_to_objs(vobjs, bu_vls_cstr(&nroot), vbp, gedp->ged_gvp, gedp->free_scene_obj, &gedp->vlfree);
+	} else {
+	    _ged_cvt_vlblock_to_solids(gedp, vbp, name, 0);
+	}
+
+	bv_vlblock_free(vbp);
+	bu_vls_free(&nroot);
 
 	return GED_OK;
 
     } else {
+
+	if (!bu_file_exists(argv[0], NULL)) {
+	    bu_vls_printf(gedp->ged_result_str, ": file %s not found", argv[0]);
+	    return GED_ERROR;
+	}
 
 	const char *file_name = argv[0];
 

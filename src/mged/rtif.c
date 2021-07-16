@@ -170,7 +170,7 @@ f_rmats(ClientData UNUSED(clientData), Tcl_Interp *interp, int argc, const char 
     FILE *fp = NULL;
     fastf_t scale = 0.0;
     mat_t rot;
-    struct bn_vlist *vp = NULL;
+    struct bv_vlist *vp = NULL;
     struct directory *dp = NULL;
     struct display_list *gdlp = NULL;
     struct display_list *next_gdlp = NULL;
@@ -181,7 +181,7 @@ f_rmats(ClientData UNUSED(clientData), Tcl_Interp *interp, int argc, const char 
 
     /* static due to setjmp */
     static int mode = 0;
-    static struct solid *sp;
+    static struct bv_scene_obj *sp;
 
     CHECK_DBI_NULL;
 
@@ -202,7 +202,7 @@ f_rmats(ClientData UNUSED(clientData), Tcl_Interp *interp, int argc, const char 
 	return TCL_ERROR;
     }
 
-    sp = SOLID_NULL;
+    sp = NULL;
 
     mode = -1;
     if (argc > 2)
@@ -218,10 +218,13 @@ f_rmats(ClientData UNUSED(clientData), Tcl_Interp *interp, int argc, const char 
 	    while (BU_LIST_NOT_HEAD(gdlp, GEDP->ged_gdp->gd_headDisplay)) {
 		next_gdlp = BU_LIST_PNEXT(display_list, gdlp);
 
-		FOR_ALL_SOLIDS(sp, &gdlp->dl_headSolid) {
-		    if (LAST_SOLID(sp) != dp) continue;
+		for (BU_LIST_FOR(sp, bv_scene_obj, &gdlp->dl_head_scene_obj)) {
+		    if (!sp->s_u_data)
+			continue;
+		    struct ged_bv_data *bdata = (struct ged_bv_data *)sp->s_u_data;
+		    if (LAST_SOLID(bdata) != dp) continue;
 		    if (BU_LIST_IS_EMPTY(&(sp->s_vlist))) continue;
-		    vp = BU_LIST_LAST(bn_vlist, &(sp->s_vlist));
+		    vp = BU_LIST_LAST(bv_vlist, &(sp->s_vlist));
 		    VMOVE(sav_start, vp->pt[vp->nused-1]);
 		    VMOVE(sav_center, sp->s_center);
 		    Tcl_AppendResult(interp, "animating EYE solid\n", (char *)NULL);
@@ -274,28 +277,28 @@ work:
 
 		/* Adjust vector list for non-dl devices */
 		if (BU_LIST_IS_EMPTY(&(sp->s_vlist))) break;
-		vp = BU_LIST_LAST(bn_vlist, &(sp->s_vlist));
+		vp = BU_LIST_LAST(bv_vlist, &(sp->s_vlist));
 		VSUB2(xlate, eye_model, vp->pt[vp->nused-1]);
-		for (BU_LIST_FOR(vp, bn_vlist, &(sp->s_vlist))) {
+		for (BU_LIST_FOR(vp, bv_vlist, &(sp->s_vlist))) {
 		    int i;
 		    int nused = vp->nused;
 		    int *cmd = vp->cmd;
 		    point_t *pt = vp->pt;
 		    for (i = 0; i < nused; i++, cmd++, pt++) {
 			switch (*cmd) {
-			    case BN_VLIST_POLY_START:
-			    case BN_VLIST_POLY_VERTNORM:
-			    case BN_VLIST_TRI_START:
-			    case BN_VLIST_TRI_VERTNORM:
+			    case BV_VLIST_POLY_START:
+			    case BV_VLIST_POLY_VERTNORM:
+			    case BV_VLIST_TRI_START:
+			    case BV_VLIST_TRI_VERTNORM:
 				break;
-			    case BN_VLIST_LINE_MOVE:
-			    case BN_VLIST_LINE_DRAW:
-			    case BN_VLIST_POLY_MOVE:
-			    case BN_VLIST_POLY_DRAW:
-			    case BN_VLIST_POLY_END:
-			    case BN_VLIST_TRI_MOVE:
-			    case BN_VLIST_TRI_DRAW:
-			    case BN_VLIST_TRI_END:
+			    case BV_VLIST_LINE_MOVE:
+			    case BV_VLIST_LINE_DRAW:
+			    case BV_VLIST_POLY_MOVE:
+			    case BV_VLIST_POLY_DRAW:
+			    case BV_VLIST_POLY_END:
+			    case BV_VLIST_TRI_MOVE:
+			    case BV_VLIST_TRI_DRAW:
+			    case BV_VLIST_TRI_END:
 				VADD2(*pt, *pt, xlate);
 				break;
 			}
@@ -310,28 +313,28 @@ work:
     if (mode == 1) {
 	VMOVE(sp->s_center, sav_center);
 	if (BU_LIST_NON_EMPTY(&(sp->s_vlist))) {
-	    vp = BU_LIST_LAST(bn_vlist, &(sp->s_vlist));
+	    vp = BU_LIST_LAST(bv_vlist, &(sp->s_vlist));
 	    VSUB2(xlate, sav_start, vp->pt[vp->nused-1]);
-	    for (BU_LIST_FOR(vp, bn_vlist, &(sp->s_vlist))) {
+	    for (BU_LIST_FOR(vp, bv_vlist, &(sp->s_vlist))) {
 		int i;
 		int nused = vp->nused;
 		int *cmd = vp->cmd;
 		point_t *pt = vp->pt;
 		for (i = 0; i < nused; i++, cmd++, pt++) {
 		    switch (*cmd) {
-			case BN_VLIST_POLY_START:
-			case BN_VLIST_POLY_VERTNORM:
-			case BN_VLIST_TRI_START:
-			case BN_VLIST_TRI_VERTNORM:
+			case BV_VLIST_POLY_START:
+			case BV_VLIST_POLY_VERTNORM:
+			case BV_VLIST_TRI_START:
+			case BV_VLIST_TRI_VERTNORM:
 			    break;
-			case BN_VLIST_LINE_MOVE:
-			case BN_VLIST_LINE_DRAW:
-			case BN_VLIST_POLY_MOVE:
-			case BN_VLIST_POLY_DRAW:
-			case BN_VLIST_POLY_END:
-			case BN_VLIST_TRI_MOVE:
-			case BN_VLIST_TRI_DRAW:
-			case BN_VLIST_TRI_END:
+			case BV_VLIST_LINE_MOVE:
+			case BV_VLIST_LINE_DRAW:
+			case BV_VLIST_POLY_MOVE:
+			case BV_VLIST_POLY_DRAW:
+			case BV_VLIST_POLY_END:
+			case BV_VLIST_TRI_MOVE:
+			case BV_VLIST_TRI_DRAW:
+			case BV_VLIST_TRI_END:
 			    VADD2(*pt, *pt, xlate);
 			    break;
 		    }

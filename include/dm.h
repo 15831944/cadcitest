@@ -35,7 +35,9 @@
 #include "raytrace.h"
 
 #include "./dm/defines.h"
+#include "./dm/fbserv.h"
 #include "./dm/util.h"
+#include "./dm/view.h"
 
 __BEGIN_DECLS
 
@@ -77,6 +79,9 @@ struct dm_hook_data {
 DM_EXPORT extern struct dm dm_null;
 
 DM_EXPORT extern void *dm_interp(struct dm *dmp);
+DM_EXPORT extern void *dm_get_ctx(struct dm *dmp);
+DM_EXPORT extern void *dm_get_udata(struct dm *dmp);
+DM_EXPORT extern void dm_set_udata(struct dm *dmp, void *udata);
 DM_EXPORT extern int dm_share_dlist(struct dm *dmp1,
 				    struct dm *dmp2);
 DM_EXPORT extern fastf_t dm_Xx2Normal(struct dm *dmp,
@@ -98,17 +103,20 @@ DM_EXPORT extern fastf_t dm_wrap(fastf_t f);
 
 /* adc.c */
 DM_EXPORT extern void dm_draw_adc(struct dm *dmp,
-				  struct bview_adc_state *adcp, mat_t view2model, mat_t model2view);
+				  struct bv_adc_state *adcp, mat_t view2model, mat_t model2view);
 
 /* axes.c */
 DM_EXPORT extern void dm_draw_data_axes(struct dm *dmp,
 					fastf_t viewSize,
-					struct bview_data_axes_state *bndasp);
+					struct bv_data_axes_state *bndasp);
 
-DM_EXPORT extern void dm_draw_axes(struct dm *dmp,
+DM_EXPORT extern void dm_draw_scene_axes(struct dm *dmp, struct bv_scene_obj *s);
+
+
+DM_EXPORT extern void dm_draw_hud_axes(struct dm *dmp,
 				   fastf_t viewSize,
 				   const mat_t rmat,
-				   struct bview_axes_state *bnasp);
+				   struct bv_axes *bnasp);
 
 /* clip.c */
 DM_EXPORT extern int clip(fastf_t *,
@@ -122,13 +130,13 @@ DM_EXPORT extern int vclip(fastf_t *,
 
 /* grid.c */
 DM_EXPORT extern void dm_draw_grid(struct dm *dmp,
-				   struct bview_grid_state *ggsp,
+				   struct bv_grid_state *ggsp,
 				   fastf_t scale,
 				   mat_t model2view,
 				   fastf_t base2local);
 
 /* labels.c */
-DM_EXPORT extern int dm_draw_labels(struct dm *dmp,
+DM_EXPORT extern int dm_draw_prim_labels(struct dm *dmp,
 				    struct rt_wdb *wdbp,
 				    const char *name,
 				    mat_t viewmat,
@@ -140,7 +148,7 @@ DM_EXPORT extern int dm_draw_labels(struct dm *dmp,
 
 /* rect.c */
 DM_EXPORT extern void dm_draw_rect(struct dm *dmp,
-				   struct bview_interactive_rect_state *grsp);
+				   struct bv_interactive_rect_state *grsp);
 
 /* scale.c */
 DM_EXPORT extern void dm_draw_scale(struct dm *dmp,
@@ -156,7 +164,8 @@ DM_EXPORT extern const char *dm_version(void);
 /* Plugin related functions */
 DM_EXPORT extern int dm_valid_type(const char *name, const char *dpy_string);
 DM_EXPORT const char * dm_init_msgs();
-DM_EXPORT extern struct dm *dm_open(void *interp,
+DM_EXPORT extern struct dm *dm_open(void *ctx,
+	                     void *interp,
 			     const char *type,
 			     int argc,
 			     const char *argv[]);
@@ -207,6 +216,7 @@ DM_EXPORT extern int dm_get_stereo(struct dm *dmp);
 DM_EXPORT extern int dm_set_win_bounds(struct dm *dmp, fastf_t *w);
 DM_EXPORT extern int dm_configure_win(struct dm *dmp, int force);
 DM_EXPORT extern struct bu_vls *dm_get_pathname(struct dm *dmp);
+DM_EXPORT extern void dm_set_pathname(struct dm *dmp, const char *pname);
 DM_EXPORT extern struct bu_vls *dm_get_dname(struct dm *dmp);
 DM_EXPORT extern const char *dm_get_name(const struct dm *dmp);
 DM_EXPORT extern struct bu_vls *dm_get_tkname(struct dm *dmp);
@@ -226,28 +236,30 @@ DM_EXPORT extern int dm_get_zclip(struct dm *dmp);
 DM_EXPORT extern void dm_set_zclip(struct dm *dmp, int zclip);
 DM_EXPORT extern int dm_get_perspective(struct dm *dmp);
 DM_EXPORT extern void dm_set_perspective(struct dm *dmp, fastf_t perspective);
-DM_EXPORT extern int dm_get_display_image(struct dm *dmp, unsigned char **image);
+DM_EXPORT extern int dm_get_display_image(struct dm *dmp, unsigned char **image, int flip, int alpha);
 DM_EXPORT extern int dm_gen_dlists(struct dm *dmp, size_t range);
 DM_EXPORT extern int dm_begin_dlist(struct dm *dmp, unsigned int list);
 DM_EXPORT extern int dm_draw_dlist(struct dm *dmp, unsigned int list);
 DM_EXPORT extern int dm_end_dlist(struct dm *dmp);
 DM_EXPORT extern int dm_free_dlists(struct dm *dmp, unsigned int list, int range);
-DM_EXPORT extern int dm_draw_vlist(struct dm *dmp, struct bn_vlist *vp);
-DM_EXPORT extern int dm_draw_vlist_hidden_line(struct dm *dmp, struct bn_vlist *vp);
+DM_EXPORT extern int dm_draw_vlist(struct dm *dmp, struct bv_vlist *vp);
+DM_EXPORT extern int dm_draw_vlist_hidden_line(struct dm *dmp, struct bv_vlist *vp);
 DM_EXPORT extern int dm_set_line_attr(struct dm *dmp, int width, int style);
 DM_EXPORT extern int dm_draw_begin(struct dm *dmp);
 DM_EXPORT extern int dm_draw_end(struct dm *dmp);
-DM_EXPORT extern int dm_normal(struct dm *dmp);
+DM_EXPORT extern int dm_hud_begin(struct dm *dmp);
+DM_EXPORT extern int dm_hud_end(struct dm *dmp);
 DM_EXPORT extern int dm_loadmatrix(struct dm *dmp, fastf_t *mat, int eye);
 DM_EXPORT extern int dm_loadpmatrix(struct dm *dmp, fastf_t *mat);
 DM_EXPORT extern int dm_draw_string_2d(struct dm *dmp, const char *str, fastf_t x,  fastf_t y, int size, int use_aspect);
+DM_EXPORT extern int dm_string_bbox_2d(struct dm *dmp, vect2d_t *bmin, vect2d_t *bmax, const char *str, fastf_t x,  fastf_t y, int size, int use_aspect);
 DM_EXPORT extern int dm_draw_line_2d(struct dm *dmp, fastf_t x1, fastf_t y1_2d, fastf_t x2, fastf_t y2);
 DM_EXPORT extern int dm_draw_line_3d(struct dm *dmp, point_t pt1, point_t pt2);
 DM_EXPORT extern int dm_draw_lines_3d(struct dm *dmp, int npoints, point_t *points, int sflag);
 DM_EXPORT extern int dm_draw_point_2d(struct dm *dmp, fastf_t x, fastf_t y);
 DM_EXPORT extern int dm_draw_point_3d(struct dm *dmp, point_t pt);
 DM_EXPORT extern int dm_draw_points_3d(struct dm *dmp, int npoints, point_t *points);
-DM_EXPORT extern int dm_draw(struct dm *dmp, struct bn_vlist *(*callback)(void *), void **data);
+DM_EXPORT extern int dm_draw(struct dm *dmp, struct bv_vlist *(*callback)(void *), void **data);
 DM_EXPORT extern int dm_draw_obj(struct dm *dmp, struct display_list *obj);
 DM_EXPORT extern int dm_set_depth_mask(struct dm *dmp, int d_on);
 DM_EXPORT extern int dm_debug(struct dm *dmp, int lvl);
@@ -354,8 +366,12 @@ typedef struct {
 /* Library entry points */
 
 DM_EXPORT struct fb *fb_get();
+DM_EXPORT struct fb *fb_raw(const char *type);
 DM_EXPORT void  fb_put(struct fb *ifp);
+DM_EXPORT struct dm *fb_get_dm(struct fb *ifp);
 DM_EXPORT extern char *fb_gettype(struct fb *ifp);
+DM_EXPORT extern void fb_set_standalone(struct fb *ifp, int val);
+DM_EXPORT extern int fb_get_standalone(struct fb *ifp);
 DM_EXPORT extern int fb_get_max_width(struct fb *ifp);
 DM_EXPORT extern int fb_get_max_height(struct fb *ifp);
 DM_EXPORT extern int fb_getwidth(struct fb *ifp);
@@ -411,7 +427,7 @@ DM_EXPORT extern int fb_read_icv(struct fb *ifp, icv_image_t *img, int file_xoff
 DM_EXPORT extern icv_image_t *fb_write_icv(struct fb *ifp, int scr_xoff, int scr_yoff, int width, int height);
 DM_EXPORT extern int fb_read_png(struct fb *ifp, FILE *fp_in, int file_xoff, int file_yoff, int scr_xoff, int scr_yoff, int clear, int zoom, int inverse, int one_line_only, int multiple_lines, int verbose, int header_only, double def_screen_gamma, struct bu_vls *result);
 
-DM_EXPORT extern void fb_set_interface(struct fb *ifp, const char *interface_type);
+DM_EXPORT extern int fb_set_interface(struct fb *ifp, const char *interface_type);
 DM_EXPORT extern void fb_set_name(struct fb *ifp, const char *name);
 DM_EXPORT extern const char *fb_get_name(const struct fb *ifp);
 DM_EXPORT extern void fb_set_magic(struct fb *ifp, uint32_t magic);
@@ -430,6 +446,7 @@ struct fb_platform_specific {uint32_t magic; void *data;};
 DM_EXPORT extern struct fb_platform_specific *fb_get_platform_specific(uint32_t magic);
 DM_EXPORT extern void fb_put_platform_specific(struct fb_platform_specific *fb_p);
 DM_EXPORT extern struct fb *fb_open_existing(const char *file, int _width, int _height, struct fb_platform_specific *fb_p);
+DM_EXPORT extern void fb_setup_existing(struct fb *fbp, int _width, int _height, struct fb_platform_specific *fb_p);
 
 /* backward compatibility hacks */
 DM_EXPORT extern int fb_reset(struct fb *ifp);
@@ -470,36 +487,36 @@ typedef struct fb_internal FBIO;
  * Types of packages used for the remote frame buffer
  * communication
  */
-#define MSG_FBOPEN      1
-#define MSG_FBCLOSE     2
-#define MSG_FBCLEAR     3
-#define MSG_FBREAD      4
-#define MSG_FBWRITE     5
-#define MSG_FBCURSOR    6               /**< @brief fb_cursor() */
-#define MSG_FBWINDOW    7               /**< @brief OLD */
-#define MSG_FBZOOM      8               /**< @brief OLD */
-#define MSG_FBSCURSOR   9               /**< @brief OLD */
-#define MSG_FBVIEW      10              /**< @brief NEW */
-#define MSG_FBGETVIEW   11              /**< @brief NEW */
-#define MSG_FBRMAP      12
-#define MSG_FBWMAP      13
-#define MSG_FBHELP      14
-#define MSG_FBREADRECT  15
-#define MSG_FBWRITERECT 16
-#define MSG_FBFLUSH     17
-#define MSG_FBFREE      18
-#define MSG_FBGETCURSOR 19              /**< @brief NEW */
-#define MSG_FBPOLL      30              /**< @brief NEW */
-#define MSG_FBSETCURSOR 31              /**< @brief NEW in Release 4.4 */
-#define MSG_FBBWREADRECT 32             /**< @brief NEW in Release 4.6 */
+#define MSG_FBOPEN        1
+#define MSG_FBCLOSE       2
+#define MSG_FBCLEAR       3
+#define MSG_FBREAD        4
+#define MSG_FBWRITE       5
+#define MSG_FBCURSOR      6             /**< @brief fb_cursor() */
+#define MSG_FBWINDOW      7             /**< @brief OLD */
+#define MSG_FBZOOM        8             /**< @brief OLD */
+#define MSG_FBSCURSOR     9             /**< @brief OLD */
+#define MSG_FBVIEW        10            /**< @brief NEW */
+#define MSG_FBGETVIEW     11            /**< @brief NEW */
+#define MSG_FBRMAP        12
+#define MSG_FBWMAP        13
+#define MSG_FBHELP        14
+#define MSG_FBREADRECT    15
+#define MSG_FBWRITERECT   16
+#define MSG_FBFLUSH       17
+#define MSG_FBFREE        18
+#define MSG_FBGETCURSOR   19            /**< @brief NEW */
+#define MSG_FBPOLL        30            /**< @brief NEW */
+#define MSG_FBSETCURSOR   31            /**< @brief NEW in Release 4.4 */
+#define MSG_FBBWREADRECT  32            /**< @brief NEW in Release 4.6 */
 #define MSG_FBBWWRITERECT 33            /**< @brief NEW in Release 4.6 */
 
-#define MSG_DATA        20
-#define MSG_RETURN      21
-#define MSG_CLOSE       22
-#define MSG_ERROR       23
+#define MSG_DATA          20
+#define MSG_RETURN        21
+#define MSG_CLOSE         22
+#define MSG_ERROR         23
 
-#define MSG_NORETURN    100
+#define MSG_NORETURN     100
 
 __END_DECLS
 

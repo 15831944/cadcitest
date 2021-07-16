@@ -33,6 +33,8 @@
 #include "bio.h"
 
 #include "vmath.h"
+#include "bu/color.h"
+#include "bu/opt.h"
 #include "raytrace.h"
 
 
@@ -354,6 +356,57 @@ db_pr_full_path(const char *msg, const struct db_full_path *pathp)
 
 }
 
+static void
+_db_comb_child_test(int *status, const struct db_i *dbip, union tree *tp, struct directory *dp)
+{
+    if (!tp) return;
+
+    RT_CHECK_DBI(dbip);
+    RT_CK_TREE(tp);
+
+    switch (tp->tr_op) {
+	case OP_UNION:
+	case OP_INTERSECT:
+	case OP_SUBTRACT:
+	case OP_XOR:
+	    _db_comb_child_test(status, dbip, tp->tr_b.tb_right, dp);
+	    /* fall through */
+	case OP_NOT:
+	case OP_GUARD:
+	case OP_XNOP:
+	    _db_comb_child_test(status, dbip, tp->tr_b.tb_left, dp);
+	    break;
+	case OP_DB_LEAF:
+	    if (db_lookup(dbip, tp->tr_l.tl_name, LOOKUP_QUIET) == dp) {
+		(*status) = 1;
+	    }
+	    break;
+	default:
+	    bu_log("_db_comb_child_test: unrecognized operator %d\n", tp->tr_op);
+	    bu_bomb("_db_comb_child_test\n");
+    }
+}
+
+static int
+db_comb_is_child(const struct db_i *dbip, struct directory *cdp, struct directory *dp)
+{
+    RT_CK_DBI(dbip);
+
+    if (!(cdp->d_flags & RT_DIR_COMB))
+	return 0;
+
+    struct rt_db_internal in;
+    struct rt_comb_internal *comb;
+    if (rt_db_get_internal(&in, cdp, dbip, NULL, &rt_uniresource) < 0)
+	return 0;
+    comb = (struct rt_comb_internal *)in.idb_ptr;
+    RT_CK_COMB(comb);
+
+    int is_child = 0;
+    _db_comb_child_test(&is_child, dbip, comb->tree, dp);
+    rt_db_free_internal(&in);
+    return is_child;
+}
 
 int
 db_string_to_path(struct db_full_path *pp, const struct db_i *dbip, const char *str)
@@ -418,10 +471,23 @@ db_string_to_path(struct db_full_path *pp, const struct db_i *dbip, const char *
 	    *slashp = '\0';
 	}
 	if ((dp = db_lookup(dbip, cp, LOOKUP_NOISY)) == RT_DIR_NULL) {
-	    bu_log("db_string_to_path() of '%s' failed on '%s'\n",
-		   str, cp);
+	    bu_log("db_string_to_path() of '%s' failed on '%s'\n", str, cp);
 	    ret = -1; /* FAILED */
 	    /* Fall through, storing null dp in this location */
+	} else {
+	    // db_lookup isn't enough by itself - we also need to check that
+	    // the parent comb (if there is one) does in fact contain this dp
+	    if (nslash > 0 && pp->fp_names[nslash -1] != RT_DIR_NULL) {
+		if (!db_comb_is_child(dbip, pp->fp_names[nslash -1], dp)) {
+		    // NOT falling through here, since we do have a dp but it's
+		    // not under the parent
+		    bu_log("db_string_to_path() failed: '%s' is not a child of '%s'\n", dp->d_namep, pp->fp_names[nslash -1]->d_namep);
+		    pp->fp_names[nslash++] = RT_DIR_NULL;
+		    cp = slashp+1;
+		    ret = -1; /* FAILED */
+		    continue;
+		}
+	    }
 	}
 	pp->fp_names[nslash++] = dp;
 	cp = slashp+1;
@@ -686,6 +752,103 @@ db_path_to_mat(
     return (ret < 0) ? 0 : 1;
 }
 
+// NOTE - this will probably wind up being expensive enough that we'll
+// still want to track it through the draw tree walk - the point of this
+// function is to a) let us get the information locally when we're NOT
+// doing a tree walk and b) concisely and clearly outline ALL the rules
+// for setting object color.
+//
+// See if we can just use the attributes - not sure if we need to crack
+// the comb, but it's possible (particularly if attributes aren't synced)
+void
+db_full_path_color(
+	struct bu_color *c,
+	struct db_full_path *pathp,
+	struct db_i *dbip,
+	struct resource *UNUSED(resp))
+{
+    RT_CHECK_DBI(dbip);
+    RT_CK_FULL_PATH(pathp);
+
+    if (!c)
+	return;
+
+    // If nothing else is found, the color is set to the default
+    unsigned char rgb_default[3] = {255, 0, 0};
+    bu_color_from_rgb_chars(c, rgb_default);
+
+    // Things we have to check for:
+    //
+    // 1. region_id attribute (only with region flag?) + rt_material_head table (see color_soltab)
+    // 2. color attribute
+    // 3. rgb attribute
+    // 4. inherit attribute - if set, children don't override parent
+    for (size_t i = 0; i < pathp->fp_len; i++) {
+	int have_color = 0;
+	struct bu_attribute_value_set c_avs;
+	db5_get_attributes(dbip, &c_avs, pathp->fp_names[i]);
+
+	// Inherit flag tells us whether this dp overrides its children
+	int inherit = (BU_STR_EQUAL(bu_avs_get(&c_avs, "inherit"), "1")) ? 1 : 0;
+
+	if (rt_material_head()) {
+	    // TODO - if region_id is set but region flag isn't, do we still
+	    // use rt_material_head to color?
+	    int region_id = -1;
+	    const char *region_id_val = bu_avs_get(&c_avs, "region_id");
+	    if (region_id_val) {
+		bu_opt_int(NULL, 1, &region_id_val, (void *)&region_id);
+	    } else if (pathp->fp_names[i]->d_flags & RT_DIR_REGION) {
+		// If we have a region flag but no region_id, for color table
+		// purposes treat the region_id as 0
+		region_id = 0;
+	    }
+	    if (region_id >= 0) {
+		// If we have both a region_id and an rt_material_head table, that is (?) highest precedence
+		// for color?
+		const struct mater *mp;
+		for (mp = rt_material_head(); mp != MATER_NULL; mp = mp->mt_forw) {
+		    if (region_id > mp->mt_high || region_id < mp->mt_low) {
+			continue;
+		    }
+		    unsigned char mt[3];
+		    mt[0] = mp->mt_r;
+		    mt[1] = mp->mt_g;
+		    mt[2] = mp->mt_b;
+		    bu_color_from_rgb_chars(c, mt);
+		}
+		// TODO - do we stop only if we have a color with inherit?
+		if (have_color && inherit) {
+		    // Inherit flag set, no point checking child nodes
+		    bu_avs_free(&c_avs);
+		    return;
+		} else {
+		    continue;
+		}
+	    }
+
+	}
+
+	// If we aren't overridden by region_id, check for locally set colors
+	const char *color_val = bu_avs_get(&c_avs, "color");
+	if (!color_val) {
+	    color_val = bu_avs_get(&c_avs, "rgb");
+	}
+	if (color_val) {
+	    bu_opt_color(NULL, 1, &color_val, (void *)c);
+	    have_color = 1;
+	}
+
+	bu_avs_free(&c_avs);
+
+	// If we have inherit (TODO - do we also have to have a non-default
+	// color?), there's no point in checking children for more settings -
+	// they will not override.
+	if (have_color && inherit)
+	    return;
+    }
+
+}
 
 /** @} */
 /*

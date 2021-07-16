@@ -8,9 +8,18 @@ include_directories(
 
 set(VIEW_SRCS
   aet.c
-  #data_lines.c
+  axes.c
   center.cpp
   eye.c
+  faceplate/axes.c
+  faceplate/faceplate.c
+  faceplate/grid.c
+  faceplate/interactive_rect.c
+  gedit.c
+  labels.c
+  lines.c
+  objs.c
+  polygons.c
   quat.c
   size.c
   snap.c
@@ -29,6 +38,7 @@ CMAKEFILES(
   CMakeLists.txt
   ${VIEW_SRCS}
   ged_view.h
+  faceplate/faceplate.h
   )
 
 # Local Variables:

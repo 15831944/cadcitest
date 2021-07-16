@@ -53,6 +53,7 @@ ged_rt_core(struct ged *gedp, int argc, const char *argv[])
 
     const char *bin;
     char rt[256] = {0};
+    const char *cmd2 = getenv("GED_TEST_NEW_CMD_FORMS");
 
     GED_CHECK_DATABASE_OPEN(gedp, GED_ERROR);
     GED_CHECK_DRAWABLE(gedp, GED_ERROR);
@@ -62,7 +63,16 @@ ged_rt_core(struct ged *gedp, int argc, const char *argv[])
     /* initialize result */
     bu_vls_trunc(gedp->ged_result_str, 0);
 
-    args = argc + 7 + 2 + ged_who_argc(gedp);
+    if (!ged_who_argc(gedp)) {
+	bu_vls_printf(gedp->ged_result_str, "no objects displayed\n");
+	return GED_ERROR;
+    }
+
+    if (BU_STR_EQUAL(cmd2, "1")) {
+	args = argc + 9 + 2 + ged_who_argc(gedp);
+    } else {
+	args = argc + 7 + 2 + ged_who_argc(gedp);
+    }
     gd_rt_cmd = (char **)bu_calloc(args, sizeof(char *), "alloc gd_rt_cmd");
 
     bin = bu_dir(NULL, 0, BU_DIR_BIN, NULL);
@@ -72,6 +82,13 @@ ged_rt_core(struct ged *gedp, int argc, const char *argv[])
 
     vp = &gd_rt_cmd[0];
     *vp++ = rt;
+
+    if (BU_STR_EQUAL(cmd2, "1")) {
+	*vp++ = "-F";
+	// TODO - look up dm type for this...
+	*vp++ = "/dev/qtgl";
+    }
+
     *vp++ = "-M";
 
     if (gedp->ged_gvp->gv_perspective > 0) {

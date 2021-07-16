@@ -32,6 +32,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <list>
 #include <map>
 #include <queue>
@@ -683,8 +684,15 @@ _brep_cmd_intersect(void *bs, int argc, const char **argv)
 	bu_vls_printf(gedp->ged_result_str, "Invalid intersection type %s.\n", argv[6]);
     }
 
-    char namebuf[65];
-    _ged_cvt_vlblock_to_solids(gedp, gb->vbp, namebuf, 0);
+    const char *nview = getenv("GED_TEST_NEW_CMD_FORMS");
+    if (BU_STR_EQUAL(nview, "1")) {
+	struct bview *view = gedp->ged_gvp;
+	struct bu_ptbl *vobjs = (view->independent) ? view->gv_view_objs : view->gv_view_shared_objs;
+	bv_vlblock_to_objs(vobjs, "brep_intersect::", gb->vbp, view, gedp->free_scene_obj, &gedp->vlfree);
+    } else {
+	char namebuf[65];
+	_ged_cvt_vlblock_to_solids(gedp, gb->vbp, namebuf, 0);
+    }
 
     rt_db_free_internal(&intern2);
 
@@ -1267,53 +1275,6 @@ _brep_cmd_weld(void *bs, int argc, const char **argv)
     return GED_ERROR;
 }
 
-extern "C" int
-_brep_cmd_help(void *bs, int argc, const char **argv)
-{
-    struct _ged_brep_info *gb = (struct _ged_brep_info *)bs;
-    if (!argc || !argv || BU_STR_EQUAL(argv[0], "help")) {
-	bu_vls_printf(gb->gedp->ged_result_str, "brep [options] <objname> subcommand [args]\n");
-	if (gb->gopts) {
-	    char *option_help = bu_opt_describe(gb->gopts, NULL);
-	    if (option_help) {
-		bu_vls_printf(gb->gedp->ged_result_str, "Options:\n%s\n", option_help);
-		bu_free(option_help, "help str");
-	    }
-	}
-	bu_vls_printf(gb->gedp->ged_result_str, "Available subcommands:\n");
-	const struct bu_cmdtab *ctp = NULL;
-	int ret;
-	const char *helpflag[2];
-	helpflag[1] = PURPOSEFLAG;
-	size_t maxcmdlen = 0;
-	for (ctp = gb->cmds; ctp->ct_name != (char *)NULL; ctp++) {
-	    maxcmdlen = (maxcmdlen > strlen(ctp->ct_name)) ? maxcmdlen : strlen(ctp->ct_name);
-	}
-	for (ctp = gb->cmds; ctp->ct_name != (char *)NULL; ctp++) {
-	    bu_vls_printf(gb->gedp->ged_result_str, "  %s%*s", ctp->ct_name, (int)(maxcmdlen - strlen(ctp->ct_name)) + 2, " ");
-	    if (!BU_STR_EQUAL(ctp->ct_name, "help")) {
-		helpflag[0] = ctp->ct_name;
-		bu_cmd(gb->cmds, 2, helpflag, 0, (void *)gb, &ret);
-	    } else {
-		bu_vls_printf(gb->gedp->ged_result_str, "print help and exit\n");
-	    }
-	}
-    } else {
-	int ret;
-	const char **helpargv = (const char **)bu_calloc(argc+1, sizeof(char *), "help argv");
-	helpargv[0] = argv[0];
-	helpargv[1] = HELPFLAG;
-	for (int i = 1; i < argc; i++) {
-	    helpargv[i+1] = argv[i];
-	}
-	bu_cmd(gb->cmds, argc+1, helpargv, 0, (void *)gb, &ret);
-	bu_free(helpargv, "help argv");
-	return ret;
-    }
-
-    return GED_OK;
-}
-
 const struct bu_cmdtab _brep_cmds[] = {
     { "bool",            _brep_cmd_boolean},
     { "bot",             _brep_cmd_bot},
@@ -1377,8 +1338,13 @@ ged_brep_core(struct ged *gedp, int argc, const char *argv[])
 
     gb.gopts = d;
 
+
+    const char *bargs_help = "[options] <objname> subcommand [args]";
+    struct bu_opt_desc *bdesc = (struct bu_opt_desc *)d;
+    const struct bu_cmdtab *bcmds = (const struct bu_cmdtab *)_brep_cmds;
+
     if (!argc) {
-	_brep_cmd_help(&gb, 0, NULL);
+	_ged_subcmd_help(gedp, bdesc, bcmds, "brep", bargs_help, &gb, 0, NULL);
 	return GED_OK;
     }
 
@@ -1401,9 +1367,9 @@ ged_brep_core(struct ged *gedp, int argc, const char *argv[])
 	if (cmd_pos >= 0) {
 	    argc = argc - cmd_pos;
 	    argv = &argv[cmd_pos];
-	    _brep_cmd_help(&gb, argc, argv);
+	    _ged_subcmd_help(gedp, bdesc, bcmds, "brep", bargs_help, &gb, argc, argv);
 	} else {
-	    _brep_cmd_help(&gb, 0, NULL);
+	    _ged_subcmd_help(gedp, bdesc, bcmds, "brep", bargs_help, &gb, 0, NULL);
 	}
 	return GED_OK;
     }
@@ -1411,7 +1377,7 @@ ged_brep_core(struct ged *gedp, int argc, const char *argv[])
     // Must have a subcommand
     if (cmd_pos == -1) {
 	bu_vls_printf(gedp->ged_result_str, ": no valid subcommand specified\n");
-	_brep_cmd_help(&gb, 0, NULL);
+	_ged_subcmd_help(gedp, bdesc, bcmds, "brep", bargs_help, &gb, 0, NULL);
 	return GED_ERROR;
     }
 
@@ -1452,7 +1418,7 @@ ged_brep_core(struct ged *gedp, int argc, const char *argv[])
     GED_DB_GET_INTERNAL(gedp, &gb.intern, gb.dp, bn_mat_identity, &rt_uniresource, GED_ERROR);
     RT_CK_DB_INTERNAL(&gb.intern);
 
-    gb.vbp = rt_vlblock_init();
+    gb.vbp = bv_vlblock_init(&RTG.rtg_vlfree, 32);
     gb.color = color;
     gb.plotres = plotres;
 
@@ -1468,8 +1434,8 @@ ged_brep_core(struct ged *gedp, int argc, const char *argv[])
 	bu_vls_printf(gedp->ged_result_str, "subcommand %s not defined", argv[0]);
     }
 
-    bn_vlblock_free(gb.vbp);
-    gb.vbp = (struct bn_vlblock *)NULL;
+    bv_vlblock_free(gb.vbp);
+    gb.vbp = (struct bv_vlblock *)NULL;
     rt_db_free_internal(&gb.intern);
     return GED_ERROR;
 }

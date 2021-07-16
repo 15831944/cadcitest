@@ -63,7 +63,7 @@
 #include "./fb_X.h"
 #include "./dm-X.h"
 
-#include "rt/solid.h"
+#include "bv/defines.h"
 
 #include "../include/private.h"
 
@@ -444,7 +444,7 @@ X_viable(const char *dpy_string)
  *
  */
 struct dm *
-X_open(void *vinterp, int argc, const char **argv)
+X_open(void *UNUSED(ctx), void *vinterp, int argc, const char **argv)
 {
     Tcl_Interp *interp = (Tcl_Interp *)vinterp;
     static int count = 0;
@@ -478,6 +478,7 @@ X_open(void *vinterp, int argc, const char **argv)
 
     BU_ALLOC(dmp, struct dm);
     dmp->magic = DM_MAGIC;
+    dmp->start_time = 0;
 
     BU_ALLOC(dmpi, struct dm_impl);
 
@@ -871,10 +872,10 @@ X_loadMatrix(struct dm *dmp, fastf_t *mat, int which_eye)
 
 
 HIDDEN int
-X_drawVList(struct dm *dmp, struct bn_vlist *vp)
+X_drawVList(struct dm *dmp, struct bv_vlist *vp)
 {
     static vect_t spnt, lpnt, pnt;
-    struct bn_vlist *tvp;
+    struct bv_vlist *tvp;
     XSegment segbuf[1024];	/* XDrawSegments list */
     XSegment *segp;		/* current segment */
     int nseg;		        /* number of segments */
@@ -899,7 +900,7 @@ X_drawVList(struct dm *dmp, struct bn_vlist *vp)
 
     nseg = 0;
     segp = segbuf;
-    for (BU_LIST_FOR(tvp, bn_vlist, &vp->l)) {
+    for (BU_LIST_FOR(tvp, bv_vlist, &vp->l)) {
 	int i;
 	int nused = tvp->nused;
 	int *cmd = tvp->cmd;
@@ -913,24 +914,24 @@ X_drawVList(struct dm *dmp, struct bn_vlist *vp)
 	/* Integerize and let the X server do the clipping */
 	for (i = 0; i < nused; i++, cmd++, pt++) {
 	    switch (*cmd) {
-		case BN_VLIST_POLY_START:
-		case BN_VLIST_POLY_VERTNORM:
-		case BN_VLIST_TRI_START:
-		case BN_VLIST_TRI_VERTNORM:
+		case BV_VLIST_POLY_START:
+		case BV_VLIST_POLY_VERTNORM:
+		case BV_VLIST_TRI_START:
+		case BV_VLIST_TRI_VERTNORM:
 		    continue;
-		case BN_VLIST_MODEL_MAT:
+		case BV_VLIST_MODEL_MAT:
 		    privars->xmat = &(privars->mod_mat[0]);
 		    continue;
-		case BN_VLIST_DISPLAY_MAT:
+		case BV_VLIST_DISPLAY_MAT:
 		    MAT4X3PNT(tlate, privars->mod_mat, *pt);
 		    privars->disp_mat[3] = tlate[0];
 		    privars->disp_mat[7] = tlate[1];
 		    privars->disp_mat[11] = tlate[2];
 		    privars->xmat = &(privars->disp_mat[0]);
 		    continue;
-		case BN_VLIST_POLY_MOVE:
-		case BN_VLIST_LINE_MOVE:
-		case BN_VLIST_TRI_MOVE:
+		case BV_VLIST_POLY_MOVE:
+		case BV_VLIST_LINE_MOVE:
+		case BV_VLIST_TRI_MOVE:
 		    /* Move, not draw */
 		    if (dmp->i->dm_debugLevel > 2) {
 			bu_log("before transformation:\n");
@@ -959,11 +960,11 @@ X_drawVList(struct dm *dmp, struct bn_vlist *vp)
 		    lpnt[1] *= 2047 * dmp->i->dm_aspect;
 		    lpnt[2] *= 2047;
 		    continue;
-		case BN_VLIST_POLY_DRAW:
-		case BN_VLIST_POLY_END:
-		case BN_VLIST_LINE_DRAW:
-		case BN_VLIST_TRI_DRAW:
-		case BN_VLIST_TRI_END:
+		case BV_VLIST_POLY_DRAW:
+		case BV_VLIST_POLY_END:
+		case BV_VLIST_LINE_DRAW:
+		case BV_VLIST_TRI_DRAW:
+		case BV_VLIST_TRI_END:
 		    /* draw */
 		    if (dmp->i->dm_debugLevel > 2) {
 			bu_log("before transformation:\n");
@@ -1100,7 +1101,7 @@ X_drawVList(struct dm *dmp, struct bn_vlist *vp)
 			segp = segbuf;
 		    }
 		    break;
-		case BN_VLIST_POINT_DRAW:
+		case BV_VLIST_POINT_DRAW:
 		    if (dmp->i->dm_debugLevel > 2) {
 			bu_log("before transformation:\n");
 			bu_log("pt - %lf %lf %lf\n", V3ARGS(*pt));
@@ -1150,7 +1151,7 @@ X_drawVList(struct dm *dmp, struct bn_vlist *vp)
 			XFillArc(pubvars->dpy, privars->pix, privars->gc, upperLeft[X], upperLeft[Y], pointSize, pointSize, 0, 360*64);
 		    }
 		    break;
-		case BN_VLIST_POINT_SIZE:
+		case BV_VLIST_POINT_SIZE:
 		    pointSize = (*pt)[0];
 		    if (pointSize < DM_X_DEFAULT_POINT_SIZE) {
 			pointSize = DM_X_DEFAULT_POINT_SIZE;
@@ -1182,12 +1183,12 @@ X_drawVList(struct dm *dmp, struct bn_vlist *vp)
 
 
 HIDDEN int
-X_draw(struct dm *dmp, struct bn_vlist *(*callback_function)(void *), void **data)
+X_draw(struct dm *dmp, struct bv_vlist *(*callback_function)(void *), void **data)
 {
-    struct bn_vlist *vp;
+    struct bv_vlist *vp;
     if (!callback_function) {
 	if (data) {
-	    vp = (struct bn_vlist *)data;
+	    vp = (struct bv_vlist *)data;
 	    X_drawVList(dmp, vp);
 	}
     } else {
@@ -1201,18 +1202,24 @@ X_draw(struct dm *dmp, struct bn_vlist *(*callback_function)(void *), void **dat
 }
 
 
-/**
- * Restore the display processor to a normal mode of operation (i.e.,
- * not scaled, rotated, displaced, etc.).
- */
 HIDDEN int
-X_normal(struct dm *dmp)
+X_hud_begin(struct dm *dmp)
 {
     if (dmp->i->dm_debugLevel)
 	bu_log("X_normal()\n");
 
     return BRLCAD_OK;
 }
+
+HIDDEN int
+X_hud_end(struct dm *dmp)
+{
+    if (dmp->i->dm_debugLevel)
+	bu_log("X_normal()\n");
+
+    return BRLCAD_OK;
+}
+
 
 
 /**
@@ -1494,7 +1501,7 @@ X_setZBuffer(struct dm *dmp, int zbuffer_on)
 
 
 HIDDEN int
-X_getDisplayImage(struct dm *dmp, unsigned char **image)
+X_getDisplayImage(struct dm *dmp, unsigned char **image, int flip, int alpha)
 {
     XImage *ximage_p;
     unsigned char **rows;
@@ -1512,6 +1519,15 @@ X_getDisplayImage(struct dm *dmp, unsigned char **image)
     int green_bits;
     int blue_bits;
 
+    if (flip) {
+	bu_log("X: flipping unimplemented for this backend\n");
+	return BRLCAD_ERROR;
+    }
+
+    if (alpha) {
+	bu_log("X: alpha support unimplemented for this backend\n");
+	return BRLCAD_ERROR;
+    }
 
     ximage_p = XGetImage(((struct dm_Xvars *)dmp->i->dm_vars.pub_vars)->dpy,
 			 ((struct dm_Xvars *)dmp->i->dm_vars.pub_vars)->win,
@@ -2075,10 +2091,12 @@ struct dm_impl dm_X_impl = {
     X_viable,
     X_drawBegin,
     X_drawEnd,
-    X_normal,
+    X_hud_begin,
+    X_hud_end,
     X_loadMatrix,
     null_loadPMatrix,
     X_drawString2D,
+    null_String2DBBox,
     X_drawLine2D,
     X_drawLine3D,
     X_drawLines3D,
@@ -2109,6 +2127,7 @@ struct dm_impl dm_X_impl = {
     X_getDisplayImage, /* display to image function */
     X_reshape,
     null_makeCurrent,
+    null_SwapBuffers,
     X_doevent,
     X_openFb,
     NULL,
@@ -2162,10 +2181,12 @@ struct dm_impl dm_X_impl = {
     0,                          /* not overriding the auto font size */
     X_vparse,
     FB_NULL,
-    0				/* Tcl interpreter */
+    0,				/* Tcl interpreter */
+    NULL,                       /* Drawing context */
+    NULL                        /* App data */
 };
 
-struct dm dm_X = { DM_MAGIC, &dm_X_impl };
+struct dm dm_X = { DM_MAGIC, &dm_X_impl, 0 };
 
 #ifdef DM_PLUGIN
 static const struct dm_plugin pinfo = { DM_API, &dm_X };

@@ -190,6 +190,7 @@ set(LIBRT_SOURCES
   primitives/rpc/rpc_brep.cpp
   primitives/rpc/rpc_mirror.c
   primitives/script/script.c
+  primitives/sketch/polygons.c
   primitives/sketch/sketch.c
   primitives/sketch/sketch_brep.cpp
   primitives/sketch/sketch_tess.cpp
@@ -223,6 +224,7 @@ set(LIBRT_SOURCES
   uv.c
   vds/vds.c
   vers.c
+  view.c
   vlist.c
   vshoot.c
   wdb.c
@@ -280,6 +282,7 @@ set(librt_ignored_files
   primitives/solver.cl
 
   primitives/arb8/arb8_shot.cl
+  primitives/arbn/arbn_shot.cl
   primitives/bot/bot_shot.cl
   primitives/ebm/ebm_shot.cl
   primitives/ehy/ehy_shot.cl
@@ -287,11 +290,13 @@ set(librt_ignored_files
   primitives/epa/epa_shot.cl
   primitives/eto/eto_shot.cl
   primitives/hrt/hrt_shot.cl
+  primitives/hyp/hyp_shot.cl
   primitives/part/part_shot.cl
   primitives/rec/rec_shot.cl
   primitives/rhc/rhc_shot.cl
   primitives/rpc/rpc_shot.cl
   primitives/sph/sph_shot.cl
+  primitives/superell/superell_shot.cl
   primitives/tgc/tgc_shot.cl
   primitives/tor/tor_shot.cl
 
@@ -328,6 +333,7 @@ set(CL_FILES
   primitives/solver.cl
 
   primitives/arb8/arb8_shot.cl
+  primitives/arbn/arbn_shot.cl
   primitives/bot/bot_shot.cl
   primitives/ebm/ebm_shot.cl
   primitives/ehy/ehy_shot.cl
@@ -335,11 +341,13 @@ set(CL_FILES
   primitives/epa/epa_shot.cl
   primitives/eto/eto_shot.cl
   primitives/hrt/hrt_shot.cl
+  primitives/hyp/hyp_shot.cl
   primitives/part/part_shot.cl
   primitives/rec/rec_shot.cl
   primitives/rhc/rhc_shot.cl
   primitives/rpc/rpc_shot.cl
   primitives/sph/sph_shot.cl
+  primitives/superell/superell_shot.cl
   primitives/tgc/tgc_shot.cl
   primitives/tor/tor_shot.cl
   )
@@ -356,7 +364,7 @@ if(BRLCAD_ENABLE_SPR)
   set(SPR_LIB libSPR)
 endif(BRLCAD_ENABLE_SPR)
 
-BRLCAD_ADDLIB(librt "${LIBRT_SOURCES}" "${OPENCL_LIBS};libbrep;libnmg;libbg;libbn;libbu;${OPENNURBS_LIBRARIES};${REGEX_LIBRARIES};${WINSOCK_LIB};${RPCRT_LIB};${STDCXX_LIBRARIES}")
+BRLCAD_ADDLIB(librt "${LIBRT_SOURCES}" "${OPENCL_LIBS};libbrep;libnmg;libbg;libbv;libbn;libbu;${OPENNURBS_LIBRARIES};${REGEX_LIBRARIES};${WINSOCK_LIB};${RPCRT_LIB};${STDCXX_LIBRARIES}")
 
 set_target_properties(librt PROPERTIES VERSION 20.0.1 SOVERSION 20)
 if(HIDE_INTERNAL_SYMBOLS)

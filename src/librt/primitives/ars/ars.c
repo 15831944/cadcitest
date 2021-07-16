@@ -474,7 +474,7 @@ rt_ars_tess(struct nmgregion **r, struct model *m, struct rt_db_internal *ip, co
 	    if (VNEAR_EQUAL(ARS_PT(0, -2), ARS_PT(0, -1), tol->dist))
 		continue;
 
-	    code = bn_dist_pnt3_lseg3(&dist, pca, ARS_PT(0, -2), ARS_PT(0, -1), ARS_PT(0, 0), tol);
+	    code = bg_dist_pnt3_lseg3(&dist, pca, ARS_PT(0, -2), ARS_PT(0, -1), ARS_PT(0, 0), tol);
 
 	    if (code < 2) {
 		bu_log("ARS curve backtracks on itself!!!\n");
@@ -532,8 +532,8 @@ rt_ars_tess(struct nmgregion **r, struct model *m, struct rt_db_internal *ip, co
 	    /*
 	     * First triangular face
 	     */
-	    if (bn_3pnts_distinct(ARS_PT(0, 0), ARS_PT(1, 1), ARS_PT(0, 1), tol)
-		&& !bn_3pnts_collinear(ARS_PT(0, 0), ARS_PT(1, 1), ARS_PT(0, 1), tol))
+	    if (bg_3pnts_distinct(ARS_PT(0, 0), ARS_PT(1, 1), ARS_PT(0, 1), tol)
+		&& !bg_3pnts_collinear(ARS_PT(0, 0), ARS_PT(1, 1), ARS_PT(0, 1), tol))
 	    {
 		/* Locate these points, if previously mentioned */
 		FIND_IJ(0, 0);
@@ -563,8 +563,8 @@ rt_ars_tess(struct nmgregion **r, struct model *m, struct rt_db_internal *ip, co
 	    /*
 	     * Second triangular face
 	     */
-	    if (bn_3pnts_distinct(ARS_PT(1, 0), ARS_PT(1, 1), ARS_PT(0, 0), tol)
-		&& !bn_3pnts_collinear(ARS_PT(1, 0), ARS_PT(1, 1), ARS_PT(0, 0), tol))
+	    if (bg_3pnts_distinct(ARS_PT(1, 0), ARS_PT(1, 1), ARS_PT(0, 0), tol)
+		&& !bg_3pnts_collinear(ARS_PT(1, 0), ARS_PT(1, 1), ARS_PT(0, 0), tol))
 	    {
 		/* Locate these points, if previously mentioned */
 		FIND_IJ(1, 0);
@@ -716,11 +716,12 @@ rt_ars_prep(struct soltab *stp, struct rt_db_internal *ip, struct rt_i *rtip)
 
 
 int
-rt_ars_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_tess_tol *UNUSED(ttol), const struct bn_tol *UNUSED(tol), const struct rt_view_info *UNUSED(info))
+rt_ars_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_tess_tol *UNUSED(ttol), const struct bn_tol *UNUSED(tol), const struct bview *UNUSED(info))
 {
     register size_t i;
     register size_t j;
     struct rt_ars_internal *arip;
+    struct bu_list *vlfree = &RTG.rtg_vlfree;
 
     BU_CK_LIST_HEAD(vhead);
     RT_CK_DB_INTERNAL(ip);
@@ -735,17 +736,17 @@ rt_ars_plot(struct bu_list *vhead, struct rt_db_internal *ip, const struct bg_te
 	register fastf_t *v1;
 
 	v1 = arip->curves[i];
-	RT_ADD_VLIST(vhead, v1, BN_VLIST_LINE_MOVE);
+	BV_ADD_VLIST(vlfree, vhead, v1, BV_VLIST_LINE_MOVE);
 	v1 += ELEMENTS_PER_VECT;
 	for (j = 1; j <= arip->pts_per_curve; j++, v1 += ELEMENTS_PER_VECT)
-	    RT_ADD_VLIST(vhead, v1, BN_VLIST_LINE_DRAW);
+	    BV_ADD_VLIST(vlfree, vhead, v1, BV_VLIST_LINE_DRAW);
     }
 
     /* Connect the Ith points on each curve, to make a mesh.  */
     for (i = 0; i < arip->pts_per_curve; i++) {
-	RT_ADD_VLIST(vhead, &arip->curves[0][i*ELEMENTS_PER_VECT], BN_VLIST_LINE_MOVE);
+	BV_ADD_VLIST(vlfree, vhead, &arip->curves[0][i*ELEMENTS_PER_VECT], BV_VLIST_LINE_MOVE);
 	for (j = 1; j < arip->ncurves; j++)
-	    RT_ADD_VLIST(vhead, &arip->curves[j][i*ELEMENTS_PER_VECT], BN_VLIST_LINE_DRAW);
+	    BV_ADD_VLIST(vlfree, vhead, &arip->curves[j][i*ELEMENTS_PER_VECT], BV_VLIST_LINE_DRAW);
     }
 
     return 0;
@@ -964,6 +965,42 @@ rt_ars_params(struct pc_pc_set *UNUSED(ps), const struct rt_db_internal *ip)
     return 0;			/* OK */
 }
 
+void
+rt_ars_labels(struct bu_ptbl *labels, const struct rt_db_internal *ip, struct bview *v)
+{
+    if (!labels || !ip)
+	return;
+
+    /*XXX Needs work - doesn't really represent the ARS data well... */
+
+    struct rt_ars_internal *ars = (struct rt_ars_internal *)ip->idb_ptr;
+    RT_ARS_CK_MAGIC(ars);
+
+    // Set up the containers
+    struct bv_label *l[2];
+    int lcnt = 1;
+    for (int i = 0; i < lcnt; i++) {
+	struct bv_scene_obj *s;
+	struct bv_label *la;
+	BU_GET(s, struct bv_scene_obj);
+	BU_GET(la, struct bv_label);
+	s->s_i_data = (void *)la;
+	s->s_v = v;
+
+	BU_LIST_INIT(&(s->s_vlist));
+	VSET(s->s_color, 255, 255, 0);
+	s->s_type_flags |= BV_DBOBJ_BASED;
+	s->s_type_flags |= BV_LABELS;
+	BU_VLS_INIT(&la->label);
+
+	l[i] = la;
+	bu_ptbl_ins(labels, (long *)s);
+    }
+
+    bu_vls_sprintf(&l[0]->label, "V");
+    VMOVE(l[0]->p, ars->curves[0]);
+
+}
 
 /** @} */
 /*

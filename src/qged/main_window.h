@@ -26,83 +26,73 @@
 
 #ifndef BRLCAD_MAINWINDOW_H
 #define BRLCAD_MAINWINDOW_H
-
-#if defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ < 6) && !defined(__clang__)
-#  pragma message "Disabling GCC float equality comparison warnings via pragma due to Qt headers..."
-#endif
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)) && !defined(__clang__)
-#  pragma GCC diagnostic push
-#endif
-#if defined(__clang__)
-#  pragma clang diagnostic push
-#endif
-#if defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ >= 3) && !defined(__clang__)
-#  pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
-#if defined(__clang__)
-#  pragma clang diagnostic ignored "-Wfloat-equal"
-#endif
-#undef Success
-#include <QMainWindow>
-#undef Success
-#include <QGLWidget>
-#undef Success
-#include <QDockWidget>  // TODO may want to enhance this for our purposes...
-#undef Success
-#include <QMenu>
-#undef Success
-#include <QMenuBar>
-#undef Success
 #include <QAction>
-#undef Success
-#include <QStatusBar>
-#undef Success
+#include <QDockWidget>
 #include <QFileDialog>
-#undef Success
-#include <QTreeView>
-#undef Success
 #include <QHeaderView>
-#undef Success
+#include <QMainWindow>
+#include <QMenu>
+#include <QMenuBar>
 #include <QObject>
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)) && !defined(__clang__)
-#  pragma GCC diagnostic pop
-#endif
-#if defined(__clang__)
-#  pragma clang diagnostic pop
-#endif
+#include <QSettings>
+#include <QStatusBar>
+#include <QTreeView>
 
-#include "cadconsole.h"
-#include "cadtreemodel.h"
-#include "cadaccordion.h"
-#include <display/Display.h>
+#include "qtcad/QtCADQuad.h"
+#include "qtcad/QtCADTree.h"
+#include "qtcad/QtCADView.h"
+#include "qtcad/QtConsole.h"
+
+#include "plugins/plugin.h"
+#include "palettes.h"
+
+// https://stackoverflow.com/q/44707344/2037687
+class QBDockWidget : public QDockWidget
+{
+    Q_OBJECT
+
+    public:
+	QBDockWidget(const QString &title, QWidget *parent);
+    public slots:
+       void toWindow(bool floating);
+};
 
 class BRLCAD_MainWindow : public QMainWindow
 {
     Q_OBJECT
     public:
-	BRLCAD_MainWindow();
+	BRLCAD_MainWindow(int canvas_type = 0, int quad_view = 0);
 
-	BRLCADDisplay *canvas;
+	QtCADView *canvas = NULL;
+	QtCADQuad *c4 = NULL;
+	bool isValid3D();
+	void fallback3D();
 
-    private slots:
-	void open_file();
+	CADTreeView *treeview;
+	CADTreeModel *treemodel;
+	QtConsole *console;
+	CADPalette *vc;
+	CADPalette *ic;
+	CADPalette *oc;
+
+    public slots:
+        //void save_image();
 
     private:
 	QMenu *file_menu;
 	QAction *cad_open;
+	QAction *cad_save_settings;
+	//QAction *cad_save_image;
 	QAction *cad_exit;
 	QMenu *view_menu;
 	QMenu *help_menu;
 
-	QDockWidget *console_dock;
-	QDockWidget *tree_dock;
-	QDockWidget *panel_dock;
+	QBDockWidget *console_dock;
+	QBDockWidget *tree_dock;
+	QDockWidget *vcd;
+	QDockWidget *icd;
+	QDockWidget *ocd;
 
-	CADConsole *console;
-	CADTreeModel *treemodel;
-	QTreeView *treeview;
-	CADAccordion *panel;
-	QString db_file;
 };
 
 #endif /* BRLCAD_MAINWINDOW_H */

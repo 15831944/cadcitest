@@ -22,6 +22,29 @@
  * This program (the BRL-CAD Geometry SHell) is a low level way to
  * interact with BRL-CAD geometry (.g) files.
  *
+ * TODO - right now this program can't handle async output from commands like
+ * rtcheck.  We need something similar to (but more cross platform than)
+ * https://github.com/antirez/linenoise/pull/95/ but that's not enough by
+ * itself - we need to know when input is arriving from the subprocess and
+ * a mechanism to trigger the printing action..
+ *
+ * In Qt we're using QSocketNotifier + signals and slots to make this work with
+ * a single text widget, which is similar in some ways to what needs to happen
+ * here.  (Indeed, it's most likely essential - in Qt we could use multiple
+ * text widgets, but that's not really an option for gsh.)  We don't want to
+ * pull in Qt as a gsh dependency... could we make use of
+ * https://github.com/fr00b0/nod here?  Perhaps trying timed I/O reading from a
+ * thread and then sending back any results to linenoise via signals, and then
+ * have linenoise do something similar to the 95 logic to get it on the screen?
+ * nod (and a number of other libs) do stand-alone signals and slots, but so
+ * far I've not found a cross-platform wrapper equivalent to QSocketNotifier...
+ *
+ * libuv may be worth investigating - I think what we need to do is a subset of
+ * libuv's capabilities, at least at a glance.  It does also have a CMake build
+ * and Windows is supported, is liberally licensed, and it looks like it isn't
+ * a huge dependency:
+ * https://github.com/libuv/libuv
+ *
  */
 
 #include "common.h"
@@ -35,6 +58,8 @@ extern "C" {
 }
 
 #include "bu.h"
+#include "bv.h"
+#include "dm.h"
 #include "ged.h"
 
 #define DEFAULT_GSH_PROMPT "g> "
@@ -97,7 +122,8 @@ main(int argc, const char **argv)
     /* Need a view for commands that expect a view */
     struct bview *gsh_view;
     BU_GET(gsh_view, struct bview);
-    ged_view_init(gsh_view);
+    bu_vls_sprintf(&gsh_view->gv_name, "default");
+    bv_init(gsh_view);
 
     /* See if we've been told to pre-load a specific .g file. */
     if (argc) {
@@ -172,6 +198,11 @@ main(int argc, const char **argv)
      * */
 
     /* Start the interactive loop */
+    unsigned long long prev_dhash = 0;
+    unsigned long long prev_vhash = 0;
+    unsigned long long prev_lhash = 0;
+    unsigned long long prev_ghash = 0;
+
     while ((line = linenoise(gpmpt)) != NULL) {
 
 	bu_vls_sprintf(&iline, "%s", line);
@@ -192,6 +223,15 @@ main(int argc, const char **argv)
 	if (BU_STR_EQUAL(bu_vls_addr(&iline), "q")) goto done;
 	if (BU_STR_EQUAL(bu_vls_addr(&iline), "quit")) goto done;
 	if (BU_STR_EQUAL(bu_vls_addr(&iline), "exit")) goto done;
+
+	/* Looks like we'll be running a GED command - stash the state
+	 * of the view info */
+	if (gedp->ged_dmp) {
+	    prev_dhash = (gedp->ged_dmp) ? dm_hash((struct dm *)gedp->ged_dmp) : 0;
+	    prev_vhash = bv_hash(gedp->ged_gvp);
+	    prev_lhash = dl_name_hash(gedp);
+	    prev_ghash = ged_dl_hash((struct display_list *)gedp->ged_gdp->gd_headDisplay);
+	}
 
 	/* OK, try a GED command - make an argv array from the input line */
 	struct bu_vls ged_prefixed = BU_VLS_INIT_ZERO;
@@ -259,6 +299,45 @@ main(int argc, const char **argv)
 	    ged_exec(gedp, ac, (const char **)av);
 	    printf("%s\n", bu_vls_cstr(gedp->ged_result_str));
 	    bu_vls_trunc(gedp->ged_result_str, 0);
+
+	    // The command ran, see if the display needs updating
+	    if (gedp->ged_dmp) {
+		struct dm *dmp = (struct dm *)gedp->ged_dmp;
+		struct bview *v = gedp->ged_gvp;
+		unsigned long long dhash = dm_hash(dmp);
+		unsigned long long vhash = bv_hash(gedp->ged_gvp);
+		unsigned long long lhash = dl_name_hash(gedp);
+		unsigned long long ghash = ged_dl_hash((struct display_list *)gedp->ged_gdp->gd_headDisplay);
+		unsigned long long lhash_edit = lhash;
+		//lhash_edit += dl_update(gedp);
+		if (dhash != prev_dhash) {
+		    dm_set_dirty(dmp, 1);
+		}
+		if (vhash != prev_vhash) {
+		    dm_set_dirty(dmp, 1);
+		}
+		if (lhash_edit != prev_lhash) {
+		    dm_set_dirty(dmp, 1);
+		}
+		if (ghash != prev_ghash) {
+		    dm_set_dirty(dmp, 1);
+		}
+		if (dm_get_dirty(dmp)) {
+		    matp_t mat = gedp->ged_gvp->gv_model2view;
+		    dm_loadmatrix(dmp, mat, 0);
+		    unsigned char geometry_default_color[] = { 255, 0, 0 };
+		    dm_draw_begin(dmp);
+		    dm_draw_display_list(dmp, gedp->ged_gdp->gd_headDisplay,
+			    1.0, gedp->ged_gvp->gv_isize, -1, -1, -1, 1,
+			    0, 0, geometry_default_color, 1, 0);
+
+		    // Faceplate drawing
+		    dm_draw_viewobjs(gedp->ged_wdbp, v, NULL, gedp->ged_wdbp->dbip->dbi_base2local, gedp->ged_wdbp->dbip->dbi_local2base);
+
+		    dm_draw_end(dmp);
+		}
+	    }
+
 	}
 #if 0
 	int (*func)(struct ged *, int, char *[]);
@@ -277,7 +356,7 @@ main(int argc, const char **argv)
     }
 
 done:
-    BU_PUT(gsh_view, struct bview);
+    BU_PUT(gsh_view, struct bv);
     bu_dlclose(libged);
     if (gedp) ged_close(gedp);
     linenoiseHistoryFree();

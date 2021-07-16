@@ -83,8 +83,8 @@ __BEGIN_DECLS
 #define BN_TOL_MAGIC			0x98c734bb /**< ??4? */
 #define BN_UNIF_MAGIC			0x00be7460 /**< ??t` => 12481632 */
 #define BN_VERT_TREE_MAGIC		0x56455254 /**< VERT */
-#define BN_VLBLOCK_MAGIC		0x981bd112 /**< ???? */
-#define BN_VLIST_MAGIC			0x98237474 /**< ?\#tt */
+#define BV_VLBLOCK_MAGIC		0x981bd112 /**< ???? */
+#define BV_VLIST_MAGIC			0x98237474 /**< ?\#tt */
 
 /* libbg */
 #define BG_TESS_TOL_MAGIC		0xb9090dab /**< ???? */
@@ -206,11 +206,12 @@ __BEGIN_DECLS
 #define FB_REMOTE_MAGIC			0x524d4642 /**< MEFB */
 #define FB_NULL_MAGIC			0x4e554642 /**< NUFB */
 #define FB_OSGL_MAGIC			0x4f474642 /**< OGFB */
+#define FB_SWFB_MAGIC			0x51474642 /**< SWFB */
 
 /* misc */
 
 #define ANIMATE_MAGIC			0x414e4963 /**< ANIc */
-#define BVIEW_MAGIC			0x62766965 /**< bvie */
+#define BV_MAGIC			0x62766965 /**< bvie */
 #define CURVE_BEZIER_MAGIC		0x62657a69 /**< bezi */
 #define CURVE_CARC_MAGIC		0x63617263 /**< carc */
 #define CURVE_LSEG_MAGIC		0x6c736567 /**< lseg */

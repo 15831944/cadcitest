@@ -114,6 +114,49 @@ const struct bu_structparse rt_hyp_parse[] = {
     { {'\0', '\0', '\0', '\0'}, 0, (char *)NULL, 0, BU_STRUCTPARSE_FUNC_NULL, NULL, NULL }
 };
 
+
+#ifdef USE_OPENCL
+/* largest data members first */
+struct clt_hyp_specific {
+    cl_double hyp_V[3];	/* scaled vector to hyp origin */
+
+    cl_double hyp_Hunit[3];	/* unit H vector */
+    cl_double hyp_Aunit[3];	/* unit vector along semi-major axis */
+    cl_double hyp_Bunit[3];	/* unit vector, H x A, semi-minor axis */
+    cl_double hyp_Hmag;	/* scaled height of hyperboloid */
+
+    cl_double hyp_rx;
+    cl_double hyp_ry;	/* hyp_r* store coeffs */
+    cl_double hyp_rz;
+
+    cl_double hyp_bounds;	/* const used to check if a ray hits the top/bottom surfaces */
+};
+
+size_t
+clt_hyp_pack(struct bu_pool *pool, struct soltab *stp)
+{
+    struct hyp_specific *hyp =
+        (struct hyp_specific *)stp->st_specific;
+    struct clt_hyp_specific *args;
+
+    const size_t size = sizeof(*args);
+    args = (struct clt_hyp_specific*)bu_pool_alloc(pool, 1, size);
+
+    VMOVE(args->hyp_V, hyp->hyp_V);
+    VMOVE(args->hyp_Hunit, hyp->hyp_Hunit);
+    VMOVE(args->hyp_Aunit, hyp->hyp_Aunit);
+    VMOVE(args->hyp_Bunit, hyp->hyp_Bunit);
+    args->hyp_Hmag = hyp->hyp_Hmag;
+    args->hyp_rx = hyp->hyp_rx;
+    args->hyp_ry = hyp->hyp_ry;
+    args->hyp_rz = hyp->hyp_rz;
+    args->hyp_bounds = hyp->hyp_bounds;
+    return size;
+}
+
+#endif /* USE_OPENCL */
+
+
 /**
  * Create a bounding RPP for an hyp
  */
@@ -588,7 +631,7 @@ rt_hyp_free(struct soltab *stp)
 
 
 int
-rt_hyp_plot(struct bu_list *vhead, struct rt_db_internal *incoming, const struct bg_tess_tol *UNUSED(ttol), const struct bn_tol *UNUSED(tol), const struct rt_view_info *UNUSED(info))
+rt_hyp_plot(struct bu_list *vhead, struct rt_db_internal *incoming, const struct bg_tess_tol *UNUSED(ttol), const struct bn_tol *UNUSED(tol), const struct bview *UNUSED(info))
 {
     int i, j;		/* loop indices */
     struct rt_hyp_internal *hyp_in;
@@ -605,6 +648,7 @@ rt_hyp_plot(struct bu_list *vhead, struct rt_db_internal *incoming, const struct
 
     BU_CK_LIST_HEAD(vhead);
     RT_CK_DB_INTERNAL(incoming);
+    struct bu_list *vlfree = &RTG.rtg_vlfree;
     hyp_in = (struct rt_hyp_internal *)incoming->idb_ptr;
     RT_HYP_CK_MAGIC(hyp_in);
 
@@ -663,9 +707,9 @@ rt_hyp_plot(struct bu_list *vhead, struct rt_db_internal *incoming, const struct
 	VADD4(ell[15], hyp->hyp_V, heightAxis[i], majorAxis[1], minorAxis[4]);
 
 	/* draw ellipse */
-	RT_ADD_VLIST(vhead, ell[15], BN_VLIST_LINE_MOVE);
+	BV_ADD_VLIST(vlfree, vhead, ell[15], BV_VLIST_LINE_MOVE);
 	for (j = 0; j < 16; j++) {
-	    RT_ADD_VLIST(vhead, ell[j], BN_VLIST_LINE_DRAW);
+	    BV_ADD_VLIST(vlfree, vhead, ell[j], BV_VLIST_LINE_DRAW);
 	}
 
 	/* add ellipse's points to ribs */
@@ -676,9 +720,9 @@ rt_hyp_plot(struct bu_list *vhead, struct rt_db_internal *incoming, const struct
 
     /* draw ribs */
     for (i = 0; i < 16; i++) {
-	RT_ADD_VLIST(vhead, ribs[i][0], BN_VLIST_LINE_MOVE);
+	BV_ADD_VLIST(vlfree, vhead, ribs[i][0], BV_VLIST_LINE_MOVE);
 	for (j = 1; j < 7; j++) {
-	    RT_ADD_VLIST(vhead, ribs[i][j], BN_VLIST_LINE_DRAW);
+	    BV_ADD_VLIST(vlfree, vhead, ribs[i][j], BV_VLIST_LINE_DRAW);
 	}
 
     }
@@ -1388,6 +1432,52 @@ rt_hyp_volume(fastf_t *volume, const struct rt_db_internal *ip)
     }
 }
 
+void
+rt_hyp_labels(struct bu_ptbl *labels, const struct rt_db_internal *ip, struct bview *v)
+{
+    if (!labels || !ip)
+	return;
+
+    struct rt_hyp_internal *hyp = (struct rt_hyp_internal *)ip->idb_ptr;
+    RT_HYP_CK_MAGIC(hyp);
+
+    // Set up the containers
+    struct bv_label *l[4];
+    for (int i = 0; i < 4; i++) {
+	struct bv_scene_obj *s;
+	struct bv_label *la;
+	BU_GET(s, struct bv_scene_obj);
+	BU_GET(la, struct bv_label);
+	s->s_i_data = (void *)la;
+	s->s_v = v;
+
+	BU_LIST_INIT(&(s->s_vlist));
+	VSET(s->s_color, 255, 255, 0);
+	s->s_type_flags |= BV_DBOBJ_BASED;
+	s->s_type_flags |= BV_LABELS;
+	BU_VLS_INIT(&la->label);
+
+	l[i] = la;
+	bu_ptbl_ins(labels, (long *)s);
+    }
+
+    bu_vls_sprintf(&l[0]->label, "V");
+    VMOVE(l[0]->p, hyp->hyp_Vi);
+
+    bu_vls_sprintf(&l[1]->label, "H");
+    VADD2(l[1]->p, hyp->hyp_Vi, hyp->hyp_Hi);
+
+    bu_vls_sprintf(&l[2]->label, "A");
+    VADD2(l[2]->p, hyp->hyp_Vi, hyp->hyp_A);
+
+    bu_vls_sprintf(&l[3]->label, "B");
+    vect_t vB;
+    VCROSS(vB, hyp->hyp_A, hyp->hyp_Hi);
+    VUNITIZE(vB);
+    VSCALE(vB, vB, hyp->hyp_b);
+    VADD2(l[3]->p, hyp->hyp_Vi, vB);
+
+}
 
 /*
  * Local Variables:

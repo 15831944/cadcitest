@@ -29,12 +29,26 @@
 #define GED_VIEW_STATE_H
 
 #include "common.h"
+#include "bn/tol.h"
+#include "rt/db_fullpath.h"
+#include "rt/db_instance.h"
 #include "ged/defines.h"
 
 __BEGIN_DECLS
 
-/* Defined in vutil.c */
-GED_EXPORT extern void ged_view_update(struct bview *gvp);
+// TODO - once this settles down, give it a magic number so we can type
+// check it after a void cast
+struct draw_update_data_t {
+    struct db_i *dbip;
+    struct db_full_path fp;
+    const struct bn_tol *tol;
+    const struct bg_tess_tol *ttol;
+    struct resource *res;
+};
+
+
+/* Defined in view.cpp */
+GED_EXPORT extern int ged_view_update(struct ged *gedp);
 
 /**
  * Erase all currently displayed geometry and draw the specified object(s)
@@ -107,6 +121,8 @@ GED_EXPORT extern int ged_rect(struct ged *gedp, int argc, const char *argv[]);
  */
 GED_EXPORT extern int ged_keypoint(struct ged *gedp, int argc, const char *argv[]);
 
+
+GED_EXPORT extern unsigned long long dl_name_hash(struct ged *gedp);
 
 
 __END_DECLS

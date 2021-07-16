@@ -22,6 +22,7 @@ endif(MSVC)
 set(level_1_dirs
   libbu
   libbn
+  libbv
   libbg
   libnmg
   libbrep
@@ -43,6 +44,7 @@ set(level_2_dirs
   libfft
   libicv
   libpc
+  libqtcad
   libtclcad
   libtermio
   )

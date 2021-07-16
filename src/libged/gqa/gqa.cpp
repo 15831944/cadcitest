@@ -45,7 +45,7 @@
 #include "bu/getopt.h"
 #include "vmath.h"
 #include "raytrace.h"
-#include "bn/plot3.h"
+#include "bv/plot3.h"
 #include "analyze.h"
 
 #include "../ged_private.h"
@@ -166,7 +166,7 @@ struct cstate {
 
 
 struct ged_gqa_plot {
-    struct bn_vlblock *vbp;
+    struct bv_vlblock *vbp;
     struct bu_list *vhead;
 } ged_gqa_plot;
 
@@ -803,8 +803,8 @@ _gqa_overlap(struct application *ap,
 
     if (analysis_flags & ANALYSIS_PLOT_OVERLAPS) {
 	bu_semaphore_acquire(state->sem_worker);
-	BN_ADD_VLIST(ged_gqa_plot.vbp->free_vlist_hd, ged_gqa_plot.vhead, ihit, BN_VLIST_LINE_MOVE);
-	BN_ADD_VLIST(ged_gqa_plot.vbp->free_vlist_hd, ged_gqa_plot.vhead, ohit, BN_VLIST_LINE_DRAW);
+	BV_ADD_VLIST(ged_gqa_plot.vbp->free_vlist_hd, ged_gqa_plot.vhead, ihit, BV_VLIST_LINE_MOVE);
+	BV_ADD_VLIST(ged_gqa_plot.vbp->free_vlist_hd, ged_gqa_plot.vhead, ohit, BV_VLIST_LINE_DRAW);
 	bu_semaphore_release(state->sem_worker);
     }
 
@@ -2340,8 +2340,8 @@ ged_gqa_core(struct ged *gedp, int argc, const char *argv[])
     }
 
     if (analysis_flags & ANALYSIS_PLOT_OVERLAPS) {
-	ged_gqa_plot.vbp = rt_vlblock_init();
-	ged_gqa_plot.vhead = bn_vlblock_find(ged_gqa_plot.vbp, 0xFF, 0xFF, 0x00);
+	ged_gqa_plot.vbp = bv_vlblock_init(&RTG.rtg_vlfree, 32);
+	ged_gqa_plot.vhead = bv_vlblock_find(ged_gqa_plot.vbp, 0xFF, 0xFF, 0x00);
     }
 
     rtip = rt_new_rti(gedp->ged_wdbp->dbip);
@@ -2494,13 +2494,21 @@ aborted:
     if (!aborted) {
 	summary_reports(&state);
 
-	if (analysis_flags & ANALYSIS_PLOT_OVERLAPS)
-	    _ged_cvt_vlblock_to_solids(gedp, ged_gqa_plot.vbp, "OVERLAPS", 0);
+	if (analysis_flags & ANALYSIS_PLOT_OVERLAPS) {
+	    const char *nview = getenv("GED_TEST_NEW_CMD_FORMS");
+	    if (BU_STR_EQUAL(nview, "1")) {
+		struct bview *view = gedp->ged_gvp;
+		struct bu_ptbl *vobjs = (view->independent) ? view->gv_view_objs : view->gv_view_shared_objs;
+		bv_vlblock_to_objs(vobjs, "gqa::overlaps_", ged_gqa_plot.vbp, view, gedp->free_scene_obj, &gedp->vlfree);
+	    } else {
+		_ged_cvt_vlblock_to_solids(gedp, ged_gqa_plot.vbp, "OVERLAPS", 0);
+	    }
+	}
     } else
 	aborted = 0; /* reset flag */
 
     if (analysis_flags & ANALYSIS_PLOT_OVERLAPS)
-	bn_vlblock_free(ged_gqa_plot.vbp);
+	bv_vlblock_free(ged_gqa_plot.vbp);
 
     /* Clear out the lists */
     while (BU_LIST_WHILE (rp, region_pair, &overlapList.l)) {

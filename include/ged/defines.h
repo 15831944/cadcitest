@@ -33,9 +33,10 @@
 #include "bu/list.h"
 #include "bu/process.h"
 #include "bu/vls.h"
-#include "dm/bview.h"
+#include "bv/defines.h"
 #include "rt/search.h"
-#include "rt/solid.h"
+#include "bv/defines.h"
+#include "dm/fbserv.h" // for fbserv_obj
 
 __BEGIN_DECLS
 
@@ -86,7 +87,7 @@ typedef int (*ged_func_ptr)(struct ged *, int, const char *[]);
 /* Callback related definitions */
 typedef void (*ged_io_func_t)(void *, int);
 typedef void (*ged_refresh_func_t)(void *);
-typedef void (*ged_create_vlist_solid_func_t)(struct solid *);
+typedef void (*ged_create_vlist_solid_func_t)(struct bv_scene_obj *);
 typedef void (*ged_create_vlist_display_list_func_t)(struct display_list *);
 typedef void (*ged_destroy_vlist_func_t)(unsigned int, int);
 struct ged_callback_state;
@@ -193,16 +194,36 @@ struct ged {
     struct bu_vls               go_name;
     struct rt_wdb		*ged_wdbp;
 
-    // The full set of bviews associated with this ged object
+    /*************************************************************/
+    /* Information pertaining to views and view objects .        */
+    /*************************************************************/
+    // The full set of views associated with this ged object
     struct bu_ptbl              ged_views;
+    /* The current view */
+    struct bview		*ged_gvp;
+
+    /* bv group objects corresponding to drawn .g solids and combs.  Shared
+     * across multiple views */
+    struct bu_ptbl              ged_db_grps;
+
+    /* View objects intended to be shared across multiple views (rtcheck
+     * overlap visualizations, for example.) */
+    struct bu_ptbl              ged_view_shared_objs;
+
+
+    /* Containers holding reusable view related structures.  These
+     * are important for performance, since drawing routines regularly
+     * create and discard lots of these. */
+    struct bv_scene_obj         *free_scene_obj;
+    struct bu_ptbl              free_solids;
+    struct bu_list              vlfree;
+
 
     void                        *u_data; /**< @brief User data associated with this ged instance */
 
     /** for catching log messages */
     struct bu_vls		*ged_log;
 
-    struct solid                *freesolid;  /* For now this is a struct solid, but longer term that may not always be true */
-    struct bu_ptbl              free_solids; /**< @brief  solid structures available for reuse */
 
     /* @todo: add support for returning an array of objects, not just a
      * simple string.
@@ -218,7 +239,6 @@ struct ged {
     struct ged_results          *ged_results;
 
     struct ged_drawable		*ged_gdp;
-    struct bview		*ged_gvp;
     struct bu_hash_tbl		*ged_selections; /**< @brief object name -> struct rt_object_selections */
 
     char			*ged_output_script;		/**< @brief  script for use by the outputHandler */
@@ -246,6 +266,7 @@ struct ged {
     struct bu_ptbl		ged_subp; /**< @brief  forked sub-processes */
 
     /* Interface to LIBDM */
+    struct bu_ptbl *ged_all_dmp;
     void *ged_dmp;
 
 
@@ -255,7 +276,7 @@ struct ged {
     void			(*ged_refresh_handler)(void *);	/**< @brief  function for handling refresh requests */
     void			*ged_refresh_clientdata;	/**< @brief  client data passed to refresh handler */
     void			(*ged_output_handler)(struct ged *, char *);	/**< @brief  function for handling output */
-    void			(*ged_create_vlist_solid_callback)(struct solid *);	/**< @brief  function to call after creating a vlist to create display list for solid */
+    void			(*ged_create_vlist_scene_obj_callback)(struct bv_scene_obj *);	/**< @brief  function to call after creating a vlist to create display list for solid */
     void			(*ged_create_vlist_display_list_callback)(struct display_list *);	/**< @brief  function to call after all vlist created that loops through creating display list for each solid  */
     void			(*ged_destroy_vlist_callback)(unsigned int, int);	/**< @brief  function to call after freeing a vlist */
 
@@ -275,14 +296,27 @@ struct ged {
     void (*ged_delete_io_handler)(struct ged_subprocess *gp, bu_process_io_t fd);
     void *ged_io_data;  /**< brief caller supplied data */
 
+    /* fbserv server and I/O callbacks.  These must hook into the application's event
+     * loop, and so cannot be effectively supplied by low-level libraries - the
+     * application must tell us how to tie in with the toplevel event
+     * processing system it is using (typically tookit specific). */
+    struct fbserv_obj *ged_fbs;
+    int (*fbs_is_listening)(struct fbserv_obj *);          /**< @brief return 1 if listening, else 0 */
+    int (*fbs_listen_on_port)(struct fbserv_obj *, int);  /**< @brief return 1 on success, 0 on failure */
+    void (*fbs_open_server_handler)(struct fbserv_obj *);   /**< @brief platform/tookit method to open listener handler */
+    void (*fbs_close_server_handler)(struct fbserv_obj *);   /**< @brief platform/tookit method to close handler listener */
+    void (*fbs_open_client_handler)(struct fbserv_obj *, int, void *);   /**< @brief platform/tookit specific client handler setup (called by fbs_new_client) */
+    void (*fbs_close_client_handler)(struct fbserv_obj *, int);   /**< @brief platform/tookit method to close handler for client at index client_id */
+
     // Other callbacks...
     // Tcl command strings - these are libtclcad level callbacks that execute user supplied Tcl commands if set:
     // gdv_callback, gdv_edit_motion_delta_callback, go_more_args_callback, go_rt_end_callback
     //
     // fbserv_obj: fbs_callback
-    // bview.h gv_callback (only used by MGED?)
+    // bv.h gv_callback (only used by MGED?)
     // db_search_callback_t
 
+    void *ged_ctx; /* Temporary - do not rely on when designing new functionality */
     void *ged_interp; /* Temporary - do not rely on when designing new functionality */
     db_search_callback_t ged_interp_eval; /* FIXME: broke the rule written on the previous line */
 

@@ -63,12 +63,46 @@ struct fb *fb_get()
     return new_fb;
 }
 
+struct fb *fb_raw(const char *type)
+{
+    struct fb *new_fb = FB_NULL;
+    BU_GET(new_fb, struct fb);
+    BU_GET(new_fb->i, struct fb_impl);
+    if (!fb_set_interface(new_fb, type)) {
+    	BU_PUT(new_fb->i, struct fb_impl);
+	BU_PUT(new_fb, struct fb);
+	return NULL;
+    }
+    fb_set_magic(new_fb, FB_MAGIC);
+    return new_fb;
+}
+
 void fb_put(struct fb *ifp)
 {
     if (ifp != FB_NULL) {
 	BU_PUT(ifp->i, struct fb_impl);
 	BU_PUT(ifp, struct fb);
     }
+}
+
+void
+fb_set_standalone(struct fb *ifp, int val)
+{
+    if (!ifp) return;
+    ifp->i->stand_alone = val;
+}
+
+int
+fb_get_standalone(struct fb *ifp)
+{
+    if (!ifp) return 0;
+    return ifp->i->stand_alone;
+}
+
+void
+fb_setup_existing(struct fb *fbp, int width, int height, struct fb_platform_specific *fb_p)
+{
+    if (fbp->i->if_open_existing) fbp->i->if_open_existing(fbp, width, height, fb_p);
 }
 
 struct fb *
@@ -79,7 +113,7 @@ fb_open_existing(const char *file, int width, int height, struct fb_platform_spe
     ifp->i = (struct fb_impl *) calloc(sizeof(struct fb_impl), 1);
     fb_set_interface(ifp, file);
     fb_set_magic(ifp, FB_MAGIC);
-    if (ifp->i->if_open_existing) ifp->i->if_open_existing(ifp, width, height, fb_p);
+    fb_setup_existing(ifp, width, height, fb_p);
     return ifp;
 }
 
@@ -153,6 +187,12 @@ void fb_set_magic(struct fb *ifp, uint32_t magic)
     ifp->i->if_magic = magic;
 }
 
+
+struct dm *fb_get_dm(struct fb *ifp)
+{
+    if (!ifp) return NULL;
+    return ifp->i->dmp;
+}
 
 char *fb_gettype(struct fb *ifp)
 {
@@ -487,12 +527,6 @@ fb_read_fd(struct fb *ifp, int fd, int file_width, int file_height, int file_xof
 	}
     }
 
-    /* If screen size was not set, track the file size */
-    if (scr_width == 0)
-	scr_width = file_width;
-    if (scr_height == 0)
-	scr_height = file_height;
-
     /* Get the screen size we were given */
     scr_width = fb_getwidth(ifp);
     scr_height = fb_getheight(ifp);
@@ -732,6 +766,10 @@ fb_read_icv(struct fb *ifp, icv_image_t *img_in, int file_xoff_in, int file_yoff
 	/* Zoom in, and center the display.  Use square zoom. */
 	int newzoom;
 	newzoom = scr_width/xout;
+
+	if (!yout)
+	    return BRLCAD_ERROR;
+
 	V_MIN(newzoom, scr_height/yout);
 
 	if (inverse) {
@@ -998,8 +1036,11 @@ fb_read_png(struct fb *ifp, FILE *fp_in, int file_xoff, int file_yoff, int scr_x
     }
     if (zoom) {
 	/* Zoom in, and center the display.  Use square zoom. */
-	int newzoom;
-	newzoom = scr_width/xout;
+	int newzoom = scr_width/xout;
+
+	if (!yout)
+	    return BRLCAD_ERROR;
+
 	V_MIN(newzoom, scr_height/yout);
 
 	if (inverse) {

@@ -49,8 +49,8 @@
 #include "vmath.h"
 #include "bu/malloc.h"
 #include "bu/sort.h"
-#include "bn/plane.h"
-#include "bn/plot3.h"
+#include "bg/plane.h"
+#include "bv/plot3.h"
 #include "nmg.h"
 
 #define PLOT_BOTH_FACES 1
@@ -248,7 +248,7 @@ ptbl_vsort(struct bu_ptbl *b, fastf_t *pt, fastf_t *dir, fastf_t *mag, fastf_t d
 	    fastf_t dist;
 
 	    NMG_CK_VERTEXUSE(vu[i]);
-	    dist = bn_dist_line3_pnt3(pt, dir, vu[i]->v_p->vg_p->coord);
+	    dist = bg_dist_line3_pnt3(pt, dir, vu[i]->v_p->vg_p->coord);
 	    if (dist > dist_tol) {
 		bu_log("WARNING ptbl_vsort() vu=%p point off line by %e %g*tol, tol=%e\n",
 		       (void *)vu[i], dist,
@@ -489,7 +489,7 @@ nmg_vu_angle_measure(struct vertexuse *vu, fastf_t *x_dir, fastf_t *y_dir, int a
     /* in==0 "prev" is really next, so this is departing vec */
     VSUB2(vec, prev_eu->vu_p->v_p->vg_p->coord, vu->v_p->vg_p->coord);
 
-    ang = bn_angle_measure(vec, x_dir, y_dir);
+    ang = bg_angle_measure(vec, x_dir, y_dir);
     if (nmg_debug&NMG_DEBUG_VU_SORT)
 	bu_log("nmg_vu_angle_measure:  measured angle=%e\n", ang*RAD2DEG);
 
@@ -771,8 +771,8 @@ nmg_assess_vu(struct nmg_ray_state *rs, int pos)
 
 	    /* See how far off the line they are */
 	    bu_log("vu dist=%e, next dist=%e, tol=%e\n",
-		   bn_dist_line3_pnt3(rs->pt, rs->dir, this_eu->vu_p->v_p->vg_p->coord),
-		   bn_dist_line3_pnt3(rs->pt, rs->dir, prev->vu_p->v_p->vg_p->coord),
+		   bg_dist_line3_pnt3(rs->pt, rs->dir, this_eu->vu_p->v_p->vg_p->coord),
+		   bg_dist_line3_pnt3(rs->pt, rs->dir, prev->vu_p->v_p->vg_p->coord),
 		   rs->tol->dist);
 	    bu_bomb("nmg_assess_vu() ON/ON edgeuse ends on different vertices.\n");
 	}
@@ -1525,7 +1525,7 @@ nmg_special_wedge_processing(struct nmg_vu_stuff *vs, int start, int end, double
 	FILE *fp;
 	struct model *m;
 	long *b;
-	struct bn_vlblock *vbp;
+	struct bv_vlblock *vbp;
 	static int num = 0;
 
 	bu_log("nmg_special_wedge_processing(start=%d, end=%d, lo=%g, hi=%g, wclass=%s)\n",
@@ -1536,7 +1536,7 @@ nmg_special_wedge_processing(struct nmg_vu_stuff *vs, int start, int end, double
 	/* Plot all the loops that touch here. */
 	m = nmg_find_model((uint32_t *)vs[start].vu);
 	b = (long *)nmg_calloc(m->maxindex, sizeof(long), "nmg_special_wedge_processing flag[]");
-	vbp = bn_vlblock_init(vlfree, 32);
+	vbp = bv_vlblock_init(vlfree, 32);
 	for (i=start; i < end; i++) {
 	    struct loopuse *lu;
 	    lu = nmg_find_lu_of_vu(vs[i].vu);
@@ -1550,11 +1550,11 @@ nmg_special_wedge_processing(struct nmg_vu_stuff *vs, int start, int end, double
 	}
 	sprintf(buf, "wedge%d.plot3", num++);
 	fp = fopen(buf, "wb");
-	bn_plot_vlblock(fp, vbp);
+	bv_plot_vlblock(fp, vbp);
 	fclose(fp);
 	bu_log("wrote %s\n", buf);
 	nmg_free((char *)b, "nmg_special_wedge_processing flag[]");
-	bn_vlblock_free(vbp);
+	bv_vlblock_free(vbp);
     }
 
     if (end-start >= 128) bu_bomb("nmg_special_wedge_processing: array overflow\n");

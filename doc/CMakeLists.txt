@@ -17,6 +17,7 @@ set(documentation_DATA
   description.txt
   notes/TODO.BREP
   notes/TODO.shaded_displays
+  notes/apitrace.txt
   notes/brep.txt
   notes/bu_opt_design_notes.txt
   notes/cvs.txt
@@ -213,6 +214,11 @@ CMAKEFILES(
   git/check.yml
   git/gitconfig
   git/gitk
+  git/git2gource.cpp
+  git/gource.txt
+  git/gource.sh
+  git/history.txt
+  git/gitstats.txt
   git/mime_types.txt
   notes/bsd_semaphore_bug.txt
   notes/cmake_paths/CMakeLists.txt

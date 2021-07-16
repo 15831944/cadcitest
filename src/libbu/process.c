@@ -59,16 +59,13 @@ struct bu_process {
     FILE *fp_in;
     FILE *fp_out;
     FILE *fp_err;
-#if defined(_WIN32) && !defined(__CYGWIN__)
-    HANDLE fd_in;
-    HANDLE fd_out;
-    HANDLE fd_err;
-    HANDLE hProcess;
-    DWORD pid;
-#else
     int fd_in;
     int fd_out;
     int fd_err;
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    HANDLE hProcess;
+    DWORD pid;
+#else
     int pid;
 #endif
     int aborted;
@@ -114,27 +111,15 @@ bu_process_open(struct bu_process *pinfo, bu_process_io_t d)
     bu_process_close(pinfo, d);
 
     if (d == BU_PROCESS_STDIN) {
-#ifndef _WIN32
 	pinfo->fp_in = fdopen(pinfo->fd_in, "wb");
-#else
-	pinfo->fp_in = _fdopen(_open_osfhandle((intptr_t)pinfo->fd_in, _O_TEXT), "wb");
-#endif
 	return pinfo->fp_in;
     }
     if (d == BU_PROCESS_STDOUT) {
-#ifndef _WIN32
 	pinfo->fp_out = fdopen(pinfo->fd_out, "rb");
-#else
-	pinfo->fp_out = _fdopen(_open_osfhandle((intptr_t)pinfo->fd_out, _O_TEXT), "rb");
-#endif
 	return pinfo->fp_out;
     }
     if (d == BU_PROCESS_STDERR) {
-#ifndef _WIN32
 	pinfo->fp_err = fdopen(pinfo->fd_err, "rb");
-#else
-	pinfo->fp_err = _fdopen(_open_osfhandle((intptr_t)pinfo->fd_err, _O_TEXT), "rb");
-#endif
 	return pinfo->fp_err;
     }
 
@@ -142,20 +127,20 @@ bu_process_open(struct bu_process *pinfo, bu_process_io_t d)
 }
 
 
-void *
-bu_process_fd(struct bu_process *pinfo, bu_process_io_t d)
+int
+bu_process_fileno(struct bu_process *pinfo, bu_process_io_t d)
 {
     if (!pinfo)
-	return NULL;
+	return -1;
 
     if (d == BU_PROCESS_STDIN)
-	return (void *)(&(pinfo->fd_in));
+	return pinfo->fd_in;
     if (d == BU_PROCESS_STDOUT)
-	return (void *)(&(pinfo->fd_out));
+	return pinfo->fd_out;
     if (d == BU_PROCESS_STDERR)
-	return (void *)(&(pinfo->fd_err));
+	return pinfo->fd_err;
 
-    return NULL;
+    return -1;
 }
 
 
@@ -191,34 +176,16 @@ bu_process_read(char *buff, int *count, struct bu_process *pinfo, bu_process_io_
 	return -1;
 
     if (d == BU_PROCESS_STDOUT) {
-#ifndef _WIN32
 	(*count) = read((int)pinfo->fd_out, buff, n);
 	if ((*count) <= 0) {
 	    ret = -1;
 	}
-#else
-	DWORD dcount;
-	BOOL rf = ReadFile(pinfo->fd_out, buff, n, &dcount, 0);
-	if (!rf || (rf && dcount == 0)) {
-	    ret = -1;
-	}
-	(*count) = (int)dcount;
-#endif
     }
     if (d == BU_PROCESS_STDERR) {
-#ifndef _WIN32
 	(*count) = read((int)pinfo->fd_err, buff, n);
 	if ((*count) <= 0) {
 	    ret = -1;
 	}
-#else
-	DWORD dcount;
-	BOOL rf = ReadFile(pinfo->fd_err, buff, n, &dcount, 0);
-	if (!rf || (rf && dcount == 0)) {
-	    ret = -1;
-	}
-	(*count) = (int)dcount;
-#endif
     }
 
     /* sanity clamping */
@@ -259,6 +226,9 @@ bu_process_exec(
     (*p)->fp_in = NULL;
     (*p)->fp_out = NULL;
     (*p)->fp_err = NULL;
+    (*p)->fd_in = -1;
+    (*p)->fd_out = -1;
+    (*p)->fd_err = -1;
 
     av = (const char **)bu_calloc(argc+2, sizeof(char *), "argv array");
     if (!argc || !BU_STR_EQUAL(cmd, argv[0])) {
@@ -373,6 +343,9 @@ bu_process_exec(
     (*p)->fp_in = NULL;
     (*p)->fp_out = NULL;
     (*p)->fp_err = NULL;
+    (*p)->fd_in = -1;
+    (*p)->fd_out = -1;
+    (*p)->fd_err = -1;
 
     (*p)->cmd = bu_strdup(cmd);
     (*p)->argc = argc;
@@ -456,14 +429,18 @@ bu_process_exec(
     CloseHandle(pipe_out[1]);
     CloseHandle(pipe_err[1]);
 
-    /* Save necessary information for parental process manipulation */
-    (*p)->fd_in = pipe_inDup;
+    /* Save necessary information for parental process manipulation.
+     * Switching from HANDLE to file descriptor so the rest of the code can be
+     * consistent - see
+     * https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/open-osfhandle
+     */
+    (*p)->fd_in = _open_osfhandle((intptr_t)pipe_inDup, 0);
     if (out_eql_err) {
-	(*p)->fd_out = pipe_errDup;
+	(*p)->fd_out = _open_osfhandle((intptr_t)pipe_errDup, 0);
     } else {
-	(*p)->fd_out = pipe_outDup;
+	(*p)->fd_out = _open_osfhandle((intptr_t)pipe_outDup, 0);
     }
-    (*p)->fd_err = pipe_errDup;
+    (*p)->fd_err = _open_osfhandle((intptr_t)pipe_errDup, 0);
     (*p)->hProcess = pi.hProcess;
     (*p)->pid = pi.dwProcessId;
     (*p)->aborted = 0;

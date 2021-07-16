@@ -106,6 +106,15 @@ list(APPEND CMAKE_MODULE_PATH "${BRLCAD_CMAKE_DIR}")
 
 
 #---------------------------------------------------------------------
+# We definitely do not want a .gitattributes files present, as it is
+# a potential source of subtle problems.  Bail with an explanation if
+# it is found to be present.
+if (EXISTS "${BRLCAD_SOURCE_DIR}/.gitattributes")
+  message(FATAL_ERROR "\nBRL-CAD does not use a .gitattributes file in its repository.  This is intended to prevent subtle errors from creeping in due to inadvertant pattern matches.  See ${BRLCAD_SOURCE_DIR}/doc/git/mime_types.txt for an in-depth discussion of the recommended alternatives to use for the problems .gitattributes is intended to address.\n")
+endif (EXISTS "${BRLCAD_SOURCE_DIR}/.gitattributes")
+
+
+#---------------------------------------------------------------------
 # Setup and checks related to system environment settings.  Some of
 # these impact search results needed to set default options, so we
 # do this early in the process.
@@ -1407,6 +1416,7 @@ BRLCAD_INCLUDE_FILE(dlfcn.h HAVE_DLFCN_H)
 BRLCAD_INCLUDE_FILE(dslib.h HAVE_DSLIB_H)
 BRLCAD_INCLUDE_FILE(emmintrin.h HAVE_EMMINTRIN_H)
 BRLCAD_INCLUDE_FILE(getopt.h HAVE_GETOPT_H)
+BRLCAD_INCLUDE_FILE(GL/gl.h HAVE_GL_GL_H)
 BRLCAD_INCLUDE_FILE(gl/device.h HAVE_GL_DEVICE_H)
 BRLCAD_INCLUDE_FILE(gl/glext.h HAVE_GL_GLEXT_H)
 BRLCAD_INCLUDE_FILE(gl/wglext.h HAVE_GL_WGLEXT_H)
@@ -1498,12 +1508,16 @@ BRLCAD_CHECK_DIRNAME()
 
 # OpenGL headers
 if(BRLCAD_ENABLE_OPENGL)
+  find_package(OpenGL)
   if(OPENGL_INCLUDE_DIR_GL)
     CONFIG_H_APPEND(BRLCAD "#define HAVE_GL_GL_H 1\n")
   endif(OPENGL_INCLUDE_DIR_GL)
   if(OPENGL_INCLUDE_DIR_GLX)
     CONFIG_H_APPEND(BRLCAD "#define HAVE_GL_GLX_H 1\n")
   endif(OPENGL_INCLUDE_DIR_GLX)
+  if(OPENGL_USING_FRAMEWORK)
+    CONFIG_H_APPEND(BRLCAD "#define HAVE_OPENGL_GL_H 1\n")
+  endif(OPENGL_USING_FRAMEWORK)
 endif(BRLCAD_ENABLE_OPENGL)
 
 # may have the header, but ensure it works in pedantic mode (gcc bug)

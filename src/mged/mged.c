@@ -73,7 +73,7 @@
 #include "raytrace.h"
 #include "libtermio.h"
 #include "rt/db4.h"
-#include "dm/bview_util.h"
+#include "bv/util.h"
 #include "ged.h"
 #include "tclcad.h"
 
@@ -114,7 +114,7 @@ extern struct _mged_variables default_mged_variables;
 extern struct _color_scheme default_color_scheme;
 
 /* defined in grid.c */
-extern struct bview_grid_state default_grid_state;
+extern struct bv_grid_state default_grid_state;
 
 /* defined in axes.c */
 extern struct _axes_state default_axes_state;
@@ -390,7 +390,7 @@ mged_view_callback(struct bview *gvp,
 void
 new_mats(void)
 {
-    bview_update(view_state->vs_gvp);
+    bv_update(view_state->vs_gvp);
 }
 
 
@@ -1198,6 +1198,8 @@ main(int argc, char *argv[])
 #endif
     } /* argc > 1 */
 
+    //bu_log("interactive: %d\n", interactive);
+
     if (bu_debug > 0)
 	fprintf(stdout, "DEBUG: interactive=%d, classic_mged=%d\n", interactive, classic_mged);
 
@@ -1307,7 +1309,7 @@ main(int argc, char *argv[])
     BU_ALLOC(color_scheme, struct _color_scheme);
     *color_scheme = default_color_scheme;	/* struct copy */
 
-    BU_ALLOC(grid_state, struct bview_grid_state);
+    BU_ALLOC(grid_state, struct bv_grid_state);
     *grid_state = default_grid_state;		/* struct copy */
 
     BU_ALLOC(axes_state, struct _axes_state);
@@ -2398,7 +2400,7 @@ refresh(void)
 
 
 		    /* Restore to non-rotated, full brightness */
-		    dm_normal(DMP);
+		    dm_hud_begin(DMP);
 
 		    /* only if not doing overlay */
 		    if (!mged_variables->mv_fb ||
@@ -2478,6 +2480,27 @@ mged_finish(int exitcode)
     int ret;
 
     (void)sprintf(place, "exit_status=%d", exitcode);
+
+    /* If we're in script mode, wait for subprocesses to finish before we
+     * wrap up */
+    if (GEDP && !interactive) {
+	struct bu_ptbl rmp = BU_PTBL_INIT_ZERO;
+	while (BU_PTBL_LEN(&GEDP->ged_subp)) {
+	    for (size_t i = 0; i < BU_PTBL_LEN(&GEDP->ged_subp); i++) {
+		int aborted = 0;
+		struct ged_subprocess *rrp = (struct ged_subprocess *)BU_PTBL_GET(&GEDP->ged_subp, i);
+		if (bu_process_wait(&aborted, rrp->p, 1) != -1) {
+		    bu_ptbl_ins(&rmp, (long *)rrp);
+		}
+	    }
+	    for (size_t i = 0; i < BU_PTBL_LEN(&rmp); i++) {
+		struct ged_subprocess *rrp = (struct ged_subprocess *)BU_PTBL_GET(&GEDP->ged_subp, i);
+		bu_ptbl_rm(&GEDP->ged_subp, (long *)rrp);
+		BU_PUT(rrp, struct ged_subprocess);
+	    }
+	    bu_ptbl_reset(&rmp);
+	}
+    }
 
     /* Release all displays */
     for (size_t di = 0; di < BU_PTBL_LEN(&active_dm_set); di++) {
@@ -2819,7 +2842,7 @@ f_opendb(ClientData clientData, Tcl_Interp *interpreter, int argc, const char *a
     GED_INIT(GEDP, ged_wdbp);
     GEDP->ged_output_handler = mged_output_handler;
     GEDP->ged_refresh_handler = mged_refresh_handler;
-    GEDP->ged_create_vlist_solid_callback = createDListSolid;
+    GEDP->ged_create_vlist_scene_obj_callback = createDListSolid;
     GEDP->ged_create_vlist_display_list_callback = createDListAll;
     GEDP->ged_destroy_vlist_callback = freeDListsAll;
     GEDP->ged_create_io_handler = &tclcad_create_io_handler;
@@ -2983,7 +3006,7 @@ f_closedb(ClientData clientData, Tcl_Interp *interpreter, int argc, const char *
     ged_init(GEDP);
     GEDP->ged_output_handler = mged_output_handler;
     GEDP->ged_refresh_handler = mged_refresh_handler;
-    GEDP->ged_create_vlist_solid_callback = createDListSolid;
+    GEDP->ged_create_vlist_scene_obj_callback = createDListSolid;
     GEDP->ged_create_vlist_display_list_callback = createDListAll;
     GEDP->ged_destroy_vlist_callback = freeDListsAll;
     GEDP->ged_create_io_handler = &tclcad_create_io_handler;

@@ -32,7 +32,7 @@
 #include "bu/getopt.h"
 #include "bu/parallel.h"
 #include "rt/geom.h"
-#include "bn/plot3.h"
+#include "bv/plot3.h"
 
 #include "../ged_private.h"
 
@@ -46,7 +46,7 @@ show_dangling_edges(struct ged *gedp, const uint32_t *magic_p, const char *name,
     int done;
     point_t pt1, pt2;
     size_t i, cnt;
-    struct bn_vlblock *vbp = NULL;
+    struct bv_vlblock *vbp = NULL;
     struct bu_list *vhead = NULL;
     struct bu_ptbl faces;
     struct bu_vls plot_file_name = BU_VLS_INIT_ZERO;
@@ -63,8 +63,8 @@ show_dangling_edges(struct ged *gedp, const uint32_t *magic_p, const char *name,
     }
 
     if (out_type == 1) {
-	vbp = rt_vlblock_init();
-	vhead = bn_vlblock_find(vbp, 0xFF, 0xFF, 0x00);
+	vbp = bv_vlblock_init(&RTG.rtg_vlfree, 32);
+	vhead = bv_vlblock_find(vbp, 0xFF, 0xFF, 0x00);
     }
 
     bu_ptbl_init(&faces, 64, "faces buffer");
@@ -99,8 +99,8 @@ show_dangling_edges(struct ged *gedp, const uint32_t *magic_p, const char *name,
 			    VMOVE(pt1, eu->vu_p->v_p->vg_p->coord);
 			    VMOVE(pt2, eu->eumate_p->vu_p->v_p->vg_p->coord);
 			    if (out_type == 1) {
-				BN_ADD_VLIST(vbp->free_vlist_hd, vhead, pt1, BN_VLIST_LINE_MOVE);
-				BN_ADD_VLIST(vbp->free_vlist_hd, vhead, pt2, BN_VLIST_LINE_DRAW);
+				BV_ADD_VLIST(vbp->free_vlist_hd, vhead, pt1, BV_VLIST_LINE_MOVE);
+				BV_ADD_VLIST(vbp->free_vlist_hd, vhead, pt2, BV_VLIST_LINE_DRAW);
 			    } else if (out_type == 2) {
 				if (!plotfp) {
 				    bu_vls_sprintf(&plot_file_name, "%s.%p.pl", name, (void *)magic_p);
@@ -127,8 +127,18 @@ show_dangling_edges(struct ged *gedp, const uint32_t *magic_p, const char *name,
 
     if (out_type == 1) {
 	/* Add overlay */
-	_ged_cvt_vlblock_to_solids(gedp, vbp, name, 0);
-	bn_vlblock_free(vbp);
+	const char *nview = getenv("GED_TEST_NEW_CMD_FORMS");
+	if (BU_STR_EQUAL(nview, "1")) {
+	    struct bu_vls nroot = BU_VLS_INIT_ZERO;
+	    bu_vls_sprintf(&nroot, "bot_fuse::%s", name);
+	    struct bview *view = gedp->ged_gvp;
+	    struct bu_ptbl *vobjs = (view->independent) ? view->gv_view_objs : view->gv_view_shared_objs;
+	    bv_vlblock_to_objs(vobjs, bu_vls_cstr(&nroot), vbp, view, gedp->free_scene_obj, &gedp->vlfree);
+	    bu_vls_free(&nroot);
+	} else {
+	    _ged_cvt_vlblock_to_solids(gedp, vbp, name, 0);
+	}
+	bv_vlblock_free(vbp);
 	bu_log("Showing open edges...\n");
     } else if (out_type == 2) {
 	if (plotfp) {

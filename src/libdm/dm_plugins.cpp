@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <cctype>
 #include <map>
+#include <set>
 #include <string>
 #include <cstdio>
 
@@ -43,10 +44,10 @@
 
 
 extern "C" struct dm *
-dm_open(void *interp, const char *type, int argc, const char *argv[])
+dm_open(void *ctx, void *interp, const char *type, int argc, const char *argv[])
 {
     if (BU_STR_EQUIV(type, "nu") || BU_STR_EQUIV(type, "null")) {
-	return dm_null.i->dm_open(interp, argc, argv);
+	return dm_null.i->dm_open(ctx , interp, argc, argv);
     }
 
     std::map<std::string, const struct dm *> *dmb = (std::map<std::string, const struct dm *> *)dm_backends;
@@ -58,7 +59,7 @@ dm_open(void *interp, const char *type, int argc, const char *argv[])
     }
 
     const struct dm *d = d_it->second;
-    struct dm *dmp = d->i->dm_open(interp, argc, argv);
+    struct dm *dmp = d->i->dm_open(ctx, interp, argc, argv);
     return dmp;
 }
 
@@ -121,11 +122,16 @@ dm_list_types(struct bu_vls *list, const char *separator)
 
     std::map<std::string, const struct dm *> *dmb = (std::map<std::string, const struct dm *> *)dm_backends;
 
+    std::set<std::string> checked;
+
+    /* First, do the priority list (Tcl/Tk client codes expect the reported output to be
+     * in order of "most preferred" interface */
     int i = 0;
     const char *b = priority_list[i];
     while (b) {
 	std::string key(b);
 	std::transform(key.begin(), key.end(), key.begin(), [](unsigned char c) { return std::tolower(c); });
+	checked.insert(key);
 	std::map<std::string, const struct dm *>::iterator d_it = dmb->find(key);
 	if (d_it == dmb->end()) {
 	    i++;
@@ -142,6 +148,23 @@ dm_list_types(struct bu_vls *list, const char *separator)
 	i++;
 	b = priority_list[i];
     }
+
+    /* Report anything not included in the priority list but still available */
+    std::map<std::string, const struct dm *>::iterator d_it;
+    for (d_it = dmb->begin(); d_it != dmb->end(); d_it++) {
+	if (checked.find(d_it->first) != checked.end()) {
+	    continue;
+	}
+	const struct dm *d = d_it->second;
+	const char *dname = dm_get_name(d);
+	if (dname) {
+	    if (strlen(bu_vls_cstr(list)) > 0)
+		bu_vls_printf(list, "%s", separator);
+	    bu_vls_printf(list, "%s", dname);
+	}
+    }
+
+    /* Null is always available */
     if (strlen(bu_vls_cstr(list)) > 0)
 	bu_vls_printf(list, "%s", separator);
     bu_vls_strcat(list, "nu");
@@ -260,11 +283,11 @@ dm_default_type()
 }
 
 
-extern "C" void
+extern "C" int
 fb_set_interface(struct fb *ifp, const char *interface_type)
 {
     if (!ifp)
-	return;
+	return 0;
 
     std::map<std::string, const struct fb *> *fmb = (std::map<std::string, const struct fb *> *)fb_backends;
     std::map<std::string, const struct fb *>::iterator f_it;
@@ -274,9 +297,11 @@ fb_set_interface(struct fb *ifp, const char *interface_type)
         if (bu_strncmp(interface_type, f->i->if_name+5, strlen(interface_type)) == 0) {
 	    /* found it, copy its struct in */
             *ifp->i = *(f->i);
-            return;
+            return 1;
         }
     }
+
+    return 0;
 }
 
 

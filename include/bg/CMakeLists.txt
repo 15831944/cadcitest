@@ -1,9 +1,11 @@
 set(bg_headers
   aabb_ray.h
   chull.h
+  clip.h
   defines.h
   lseg.h
   obr.h
+  plane.h
   polygon.h
   polygon_types.h
   spsr.h
@@ -11,6 +13,7 @@ set(bg_headers
   tri_ray.h
   tri_tri.h
   trimesh.h
+  vert_tree.h
   )
 BRLCAD_MANAGE_FILES(bg_headers ${INCLUDE_DIR}/brlcad/bg)
 
