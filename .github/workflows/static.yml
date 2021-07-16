@@ -24,7 +24,6 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update
-          sudo apt-get upgrade
           sudo apt-get install clang++-10 clang-tools-10
           sudo apt-get clean
 
@@ -34,6 +33,6 @@ jobs:
       - name: Run Analyzer
         run: |
           pwd
-          export PATH=$ENV{GITHUB_WORKSPACE}:/usr/share/clang/scan-build-10/libexec:$PATH
+          export PATH=$ENV{GITHUB_WORKSPACE}:/usr/share/clang/scan-build-10/bin:/usr/share/clang/scan-build-10/libexec:$PATH
           mkdir build && cd build && cp ../misc/clang-static-analyzer-run.sh .
           ./clang-static-analyzer-run.sh
