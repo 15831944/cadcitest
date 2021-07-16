@@ -23,10 +23,10 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          apt-get update
-          apt-get upgrade
-          apt-get install clang++-10 clang-tools-10
-          apt-get clean
+          sudo apt-get update
+          sudo apt-get upgrade
+          sudo apt-get install clang++-10 clang-tools-10
+          sudo apt-get clean
 
       - name: Checkout
         uses: actions/checkout@v2
