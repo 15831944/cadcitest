@@ -7,7 +7,7 @@ on:
 jobs:
 
   linux:
-    name: Ubuntu Clang
+    name: Ubuntu Clang Analyser
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
