@@ -26,6 +26,8 @@
 #
 # https://github.com/actions/runner/issues/718
 #
+# We deliberately don't install deps (except for Qt) here to exercise our
+# src/other build logic.
 
 name: BRL-CAD
 
