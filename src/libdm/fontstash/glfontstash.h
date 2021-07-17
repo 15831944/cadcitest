@@ -18,6 +18,8 @@
 #ifndef GLFONTSTASH_H
 #define GLFONTSTASH_H
 
+#define GL_SILENCE_DEPRECATION 1
+
 FONScontext* glfonsCreate(int width, int height, int flags);
 void glfonsDelete(FONScontext* ctx);
 
