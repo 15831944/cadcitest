@@ -26,8 +26,6 @@
 #
 # https://github.com/actions/runner/issues/718
 #
-# We deliberately don't install deps (except for Qt) here to exercise our
-# src/other build logic.
 
 name: BRL-CAD
 
@@ -46,17 +44,8 @@ jobs:
       - name: Setup - Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v1
-        with:
-          path: ../Qt
-          key: ${{ runner.os }}-QtCache
-
-      - name: Install Qt
+      - name: Setup - Qt
         uses: jurplel/install-qt-action@v2
-        with:
-          cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -120,17 +109,8 @@ jobs:
           sudo apt-get install xserver-xorg-dev libx11-dev libxi-dev libxext-dev libglu1-mesa-dev
           sudo apt-get clean
 
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v1
-        with:
-          path: ../Qt
-          key: ${{ runner.os }}-QtCache
-
-      - name: Install Qt
+      - name: Setup - Qt
         uses: jurplel/install-qt-action@v2
-        with:
-          cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -167,17 +147,8 @@ jobs:
       - name: Setup - Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v1
-        with:
-          path: ../Qt
-          key: ${{ runner.os }}-QtCache
-
-      - name: Install Qt
+      - name: Setup - Qt
         uses: jurplel/install-qt-action@v2
-        with:
-          cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
       - name: Checkout
         uses: actions/checkout@v2
