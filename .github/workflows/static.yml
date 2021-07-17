@@ -15,16 +15,14 @@ jobs:
       - name: Setup - CMake
         uses: lukka/get-cmake@latest
 
-      - name: Setup - Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
-
-        # https://github.com/darktable-org/rawspeed/blob/develop/.github/workflows/ci-static-analysis.yml
+        # Setup hint from https://github.com/darktable-org/rawspeed/blob/develop/.github/workflows/ci-static-analysis.yml
       - name: Clang Static Analyzer Setup
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update
-          sudo apt-get install clang++-10 clang-tools-10
+          sudo apt-get install libproj-dev libgdal-dev tcl-dev tk-dev itcl3-dev itk3-dev libpng-dev zlib1g-dev
+          sudo apt-get install clang-tools-10
           sudo apt-get clean
 
       - name: Checkout
