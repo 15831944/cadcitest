@@ -44,8 +44,17 @@ jobs:
       - name: Setup - Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
-      - name: Setup - Qt
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v1
+        with:
+          path: ../Qt
+          key: ${{ runner.os }}-QtCache
+
+      - name: Install Qt
         uses: jurplel/install-qt-action@v2
+        with:
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -109,8 +118,17 @@ jobs:
           sudo apt-get install xserver-xorg-dev libx11-dev libxi-dev libxext-dev libglu1-mesa-dev
           sudo apt-get clean
 
-      - name: Setup - Qt
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v1
+        with:
+          path: ../Qt
+          key: ${{ runner.os }}-QtCache
+
+      - name: Install Qt
         uses: jurplel/install-qt-action@v2
+        with:
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
       - name: Checkout
         uses: actions/checkout@v2
@@ -147,8 +165,17 @@ jobs:
       - name: Setup - Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
-      - name: Setup - Qt
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v1
+        with:
+          path: ../Qt
+          key: ${{ runner.os }}-QtCache
+
+      - name: Install Qt
         uses: jurplel/install-qt-action@v2
+        with:
+          cached: ${{ steps.cache-qt.outputs.cache-hit }}
 
       - name: Checkout
         uses: actions/checkout@v2
