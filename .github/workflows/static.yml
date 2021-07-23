@@ -56,9 +56,10 @@ jobs:
           lcov -r coverage-4.info \*\/misc\/\* > coverage-5.info
           lcov -r coverage-5.info \*\/tests\/\* > coverage_cad.info
           rm coverage-*.info
-          genhtml coverage_cad.info --output-directory lcov-output
+          #genhtml coverage_cad.info --output-directory lcov-output
+          mv coverage_cad.info ..
 
       - name: Report Coverage Test
-        uses: romeovs/lcov-reporter-action@v0.2.16
+        uses: romeovs/lcov-reporter-action
         with:
-          lcov-file: ./build/coverage_cad.info
+          lcov-file: ./coverage_cad.info
