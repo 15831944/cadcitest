@@ -60,6 +60,6 @@ jobs:
           mv coverage_cad.info ..
 
       - name: Report Coverage Test
-        uses: romeovs/lcov-reporter-action
+        uses: romeovs/lcov-reporter-action@latest
         with:
           lcov-file: ./coverage_cad.info
