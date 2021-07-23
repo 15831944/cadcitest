@@ -38,14 +38,15 @@ jobs:
       - name: Build
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cd build && make && cd ..
+          cd build && make bu_test && cd ..
 
       - name: Run Coverage Test
         run: |
-          export PATH=$ENV{GITHUB_WORKSPACE}
+          export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
           cd build
           find . -name '*.gcda' -print0 | xargs -0 rm
-          make check
+          ./src/libbu/bu_test datetime 1
+          #make check
           lcov --capture --directory . --output-file coverage.info
           lcov -r coverage.info \*\/build\/\* > coverage-2.info
           lcov -r coverage-2.info \*\/other\/\* > coverage-3.info
