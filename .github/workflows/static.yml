@@ -1,56 +1,27 @@
-# This file defines Continuous Integration (CI) tests for BRL-CAD using the
-# Github Actions framework.  Currently it defines configurations for Windows,
-# Linux and OSX.
-#
-# Initially we used examples to try and define one common configuration for all
-# platforms, but that turned out to be more complex than it was worth.  The
-# different platforms manifest different issues, and it is easier to keep the
-# individual steps simple and address what needs addressing per-platform.
-#
-# For more information about available platforms for testing, see:
-#
-# https://docs.github.com/en/free-pro-team@latest/actions/reference/specifications-for-github-hosted-runners
-#
-# The general rule when building in CI is to go more verbose in output settings
-# rather than less, since iterative debugging isn't practical.  We also want to
-# avoid parallel building - while that will sometimes catch dependency issues,
-# it also makes the outputs far harder to interpret when there is a problem.
-# Better to do parallel build debugging in an environment were more interactive
-# and iterative debugging is available while preserving the readability of the
-# CI outputs for other issues.
-#
-# Note that there is another reason not to do parallel runs; we have had some
-# trouble with issues that appear to be related to files not being fully
-# written out to disk. To try and help mitigate this, we don't want to stress
-# the I/O subsystem any more than necessary:
-#
-# https://github.com/actions/runner/issues/718
-#
+name: BRL-CAD lcov coverage
 
-name: BRL-CAD
-
-on: [push]
+on:
+  push:
+    branches: [ main ]
 
 jobs:
+
   linux:
-    name: Ubuntu Latest GCC
-    runs-on: ubuntu-20.04
+    name: LCOV Coverage testing
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: true
     steps:
       - name: Setup - CMake
         uses: lukka/get-cmake@latest
 
-      - name: Setup - Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
-
-      - name: Setup - System
+      - name: Setup
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update
-          # Install X/OpenGL dev pkgs
-          sudo apt-get install xserver-xorg-dev libx11-dev libxi-dev libxext-dev libglu1-mesa-dev
+          # We want as many deps pre-installed as we can for this - the analyzer setup slows their compilation
+          sudo apt-get install libproj-dev libgdal-dev tcl-dev tk-dev itcl3-dev itk3-dev libpng-dev zlib1g-dev libxml2-dev libxslt1-dev xsltproc libxml2-utils astyle xserver-xorg-dev libx11-dev libxi-dev libxext-dev libglu1-mesa-dev
           sudo apt-get clean
 
       - name: Setup - Qt
@@ -62,42 +33,29 @@ jobs:
       - name: Configure
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cmake -S . -G Ninja -B build -D ENABLE_ALL=ON -D CMAKE_BUILD_TYPE=Release -D BRLCAD_ENABLE_QT=ON
+          cmake -S . -B build -DBRLCAD_ENABLE_QT=ON -DBRLCAD_ENABLE_CAPTURE=ON
 
       - name: Build
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cmake --build build --config Release --target check
-          cmake --build build --config Release --target package
+          cd build && make && cd ..
 
-        # For the moment the space demands are too extreme to enable this
-        # output for every compile test, but leave the enabling logic present
-        # in commented out form so it can be enabled as needed.
-#     - name: Upload Package
-#       uses: actions/upload-artifact@v2
-#       with:
-#         name: BRLCAD_Linux
-#         path: ${{ github.workspace }}/build/BRL-CAD*gz
-
-  archives:
-    name: Source Archives
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-    steps:
-      - name: Setup - CMake
-        uses: lukka/get-cmake@latest
-
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Configure
+      - name: Run Coverage Test
         run: |
-          export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cmake -S . -B build_archives -D ENABLE_ALL=ON
+          export PATH=$ENV{GITHUB_WORKSPACE}
+          cd build
+          find . -name '*.gcda' -print0 | xargs -0 rm
+          make check
+          lcov --capture --directory . --output-file coverage.info
+          lcov -r coverage.info \*\/build\/\* > coverage-2.info
+          lcov -r coverage-2.info \*\/other\/\* > coverage-3.info
+          lcov -r coverage-3.info \/usr\/\* > coverage-4.info
+          lcov -r coverage-4.info \*\/misc\/\* > coverage-5.info
+          lcov -r coverage-5.info \*\/tests\/\* > coverage_cad.info
+          rm coverage-*.info
+          genhtml coverage_cad.info --output-directory lcov-output
 
-      - name: Build
-        run: |
-          export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cmake --build build_archives --config Debug --target distcheck-source_archives
-
+      - name: Report Coverage Test
+        uses: romeovs/lcov-reporter-action@v0.2.16
+        with:
+          lcov-file: ./build/coverage_cad.info
