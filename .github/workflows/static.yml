@@ -35,7 +35,7 @@ jobs:
       - name: Configure
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
-          cmake -S . -B build -DBRLCAD_ENABLE_QT=ON -DBRLCAD_ENABLE_CAPTURE=ON
+          cmake -S . -B build -DBRLCAD_ENABLE_QT=ON -DBRLCAD_ENABLE_COVERAGE=ON
 
       - name: Build
         run: |
