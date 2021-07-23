@@ -58,7 +58,7 @@ jobs:
           #genhtml coverage_cad.info --output-directory lcov-output
           mv coverage_cad.info ..
 
-      - name: Upload
-        uses: codecov/codecov-action@v2
-        with:
-          files: ./coverage_cad.info
+#     - name: Upload
+#       uses: codecov/codecov-action@v2
+#       with:
+#         files: ./coverage_cad.info
