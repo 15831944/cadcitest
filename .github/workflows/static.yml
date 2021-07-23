@@ -44,7 +44,7 @@ jobs:
         run: |
           export PATH=$ENV{GITHUB_WORKSPACE}:$PATH
           cd build
-          find . -name '*.gcda' -print0 | xargs -0 rm
+          find . -name '*.gcda' -exec rm {} \;
           ./src/libbu/bu_test datetime 1
           #make check
           lcov --capture --directory . --output-file coverage.info
