@@ -10,18 +10,26 @@ descriptive text that emphasizes or further describes significant
 changes made.  See document footer for additional details.
 
 ----------------------------------------------------------------------
---- 2021-XX-XX  Release 7.32.4                                     ---
+--- 2021-XX-XX  Release 7.32.6                                     ---
+----------------------------------------------------------------------
+
+* fixed bug reading older VOL objects with file data - Sean Morrison
+* fixed pixscale bug when scaling images down - Sean Morrison
+
+----------------------------------------------------------------------
+--- 2021-07-27  Release 7.32.4                                     ---
 ----------------------------------------------------------------------
 
 * Added -matrix search filter for finding comb matrices - Cliff Yapp
-* Improve documentation for bot modes in bot and search - Cliff Yapp
-* enabled draw -h (hidden line mode) in MGED - Cliff Yapp
+* fixed MGED handling of long running subprocesses in script mode
+        - Cliff Yapp, Sean Morrison
+* improve documentation for bot modes in bot and search - Cliff Yapp
 * added -o output option to GED stat command - Cliff Yapp
 * fixed overlay support for drawing multiple files - Cliff Yapp
 * fixed file creation for tire command - Cliff Yapp
 * fixed mixing object and full path searches in MGED - Cliff Yapp
 * fixed launching of ISST graphical viewer - Cliff Yapp
-* updated stepcode to latest upstream version - Cliff Yapp
+
 
 ----------------------------------------------------------------------
 --- 2021-02-06  Release 7.32.2                                     ---
@@ -312,7 +320,7 @@ methodologies and usability enhancements.
 * improved 'idents' command portability - Daniel Ramirez, Cliff Yapp
 * changed remrt/rtsrv to no longer report overlaps - Sean Morrison
 * improved GUI of MGED's Overlap Tool - Saran Narayan
-* fixed geopmetry directory building bug in remrt/rtsrv - Sean Morrison
+* fixed geometry directory building bug in remrt/rtsrv - Sean Morrison
 * fixed gcv problem with full paths on Windows - Cliff Yapp
 * removed precision limitation in NIRT input parsing - Cliff Yapp
 * added new example geometry models: chess and die pieces - Jeff Sieu

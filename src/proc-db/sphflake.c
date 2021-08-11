@@ -38,15 +38,6 @@
 #include "wdb.h"
 
 
-#define D2R(x) (x*DEG2RAD)
-#define MATXPNT(d, m, v) {						\
-	double _i = 1.0/((m)[12]*(v)[0] + (m)[13]*(v)[1] + (m)[14]*(v)[2] + (m)[15]*1); \
-	(d)[0] = ((m)[0]*(v)[0] + (m)[1]*(v)[1] + (m)[2]*(v)[2] + (m)[3])*_i; \
-	(d)[1] = ((m)[4]*(v)[0] + (m)[5]*(v)[1] + (m)[6]*(v)[2] + (m)[7])*_i; \
-	(d)[2] = ((m)[8]*(v)[0] + (m)[9]*(v)[1] + (m)[10]*(v)[2] + (m)[11])*_i; \
-    }
-
-
 #define DEFAULT_FILENAME "sflake.g"
 #define DEFAULT_MAXRADIUS 1000
 #define DEFAULT_MAXDEPTH 3
@@ -98,7 +89,6 @@ typedef struct params params_t;
 
 int count = 0; /* global sphere count */
 struct rt_wdb *fp;
-mat_t IDENT;
 
 /* make the wmember structs, in order to produce individual
    combinations so we can have separate materials among differing
@@ -360,7 +350,6 @@ void initializeInfo(params_t *p, int inter, char *name, int depth)
 	    fflush(stdin);
 	}
     }
-    MAT_IDN(IDENT);
 }
 
 
@@ -527,8 +516,8 @@ void getTrans(mat_t (*t), int theta, int phi, fastf_t radius)
 
 void getYRotMat(mat_t (*t), fastf_t theta)
 {
-    fastf_t sin_ = sin(D2R(theta));
-    fastf_t cos_ = cos(D2R(theta));
+    fastf_t sin_ = sin(DEG2RAD*theta);
+    fastf_t cos_ = cos(DEG2RAD*theta);
     mat_t r;
     MAT_ZERO(r);
     r[0] = cos_;
@@ -543,8 +532,8 @@ void getYRotMat(mat_t (*t), fastf_t theta)
 
 void getZRotMat(mat_t (*t), fastf_t phi)
 {
-    fastf_t sin_ = sin(D2R(phi));
-    fastf_t cos_ = cos(D2R(phi));
+    fastf_t sin_ = sin(DEG2RAD*phi);
+    fastf_t cos_ = cos(DEG2RAD*phi);
     mat_t r;
     MAT_ZERO(r);
     r[0] = cos_;
@@ -556,7 +545,7 @@ void getZRotMat(mat_t (*t), fastf_t phi)
     memcpy(*t, r, sizeof(*t));
 }
 
-void makeFlake(int depth, mat_t (*trans), fastf_t *center, fastf_t radius, double delta, int maxDepth)
+void makeFlake(int depth, mat_t (*trans), point_t center, fastf_t radius, double delta, int maxDepth)
 {
     char name[MAX_INPUT_LENGTH];
     int i = 0;
@@ -584,7 +573,7 @@ void makeFlake(int depth, mat_t (*trans), fastf_t *center, fastf_t radius, doubl
     for (i = 0; i < 9; i++) {
 	memcpy(temp, trans, sizeof(temp));
 	getTrans(&temp, dir[i][0], dir[i][1], radius+newRadius);
-	MATXPNT(pcentTemp, temp, origin);
+	MAT4X3PNT(pcentTemp, temp, origin);
 	VADD2(pcent, pcentTemp, center);
 	makeFlake(depth+1, &temp, pcent, newRadius, delta, maxDepth);
     }
