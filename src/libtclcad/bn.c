@@ -26,11 +26,7 @@
 
 #include "common.h"
 
-#define RESOURCE_INCLUDED 1
 #include <tcl.h>
-#ifdef HAVE_TK
-#  include <tk.h>
-#endif
 
 #include "string.h" /* for strchr */
 
@@ -73,9 +69,7 @@ tclcad_bg_dist_pnt2_lseg2(ClientData UNUSED(clientData), Tcl_Interp *interp, int
     point_t pt;
     fastf_t dist;
     int ret;
-    static const struct bn_tol tol = {
-	BN_TOL_MAGIC, BN_TOL_DIST, BN_TOL_DIST*BN_TOL_DIST, 1e-6, 1-1e-6
-    };
+    static const struct bn_tol tol = BG_TOL_INIT;
 
     if (argc != 4) {
 	bu_vls_printf(&result,
@@ -132,9 +126,7 @@ tclcad_bg_isect_line2_line2(ClientData UNUSED(clientData), Tcl_Interp *interp, i
     vect_t dir = VINIT_ZERO;
     vect_t c = VINIT_ZERO;
     int i;
-    static const struct bn_tol tol = {
-	BN_TOL_MAGIC, BN_TOL_DIST, BN_TOL_DIST*BN_TOL_DIST, 1e-6, 1-1e-6
-    };
+    static const struct bn_tol tol = BG_TOL_INIT;
 
     if (argc != 5) {
 	bu_vls_printf(&result,
@@ -189,9 +181,8 @@ tclcad_bg_isect_line3_line3(ClientData UNUSED(clientData), Tcl_Interp *interp, i
     point_t pt, a;
     vect_t dir, c;
     int i;
-    static const struct bn_tol tol = {
-	BN_TOL_MAGIC, BN_TOL_DIST, BN_TOL_DIST*BN_TOL_DIST, 1e-6, 1-1e-6
-    };
+    static const struct bn_tol tol = BG_TOL_INIT;
+
     if (argc != 5) {
 	bu_vls_printf(&result,
 		"Usage: bg_isect_line3_line3 pt dir pt dir (%d args specified)",
@@ -538,9 +529,7 @@ tclcad_bn_mat_fromto(ClientData UNUSED(clientData), Tcl_Interp *interp, int argc
     struct bu_vls result = BU_VLS_INIT_ZERO;
     mat_t o;
     vect_t from, to;
-    static const struct bn_tol tol = {
-	BN_TOL_MAGIC, BN_TOL_DIST, BN_TOL_DIST*BN_TOL_DIST, 1e-6, 1-1e-6
-    };
+    static const struct bn_tol tol = BG_TOL_INIT;
 
     if (argc < 3 || bn_decode_vect(from, argv[1]) < 3 ||
 	    bn_decode_vect(to, argv[2]) < 3) {

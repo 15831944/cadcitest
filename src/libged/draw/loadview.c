@@ -186,11 +186,11 @@ ged_loadview_core(struct ged *gedp, int argc, const char *argv[])
 		memset(dbName + strlen(dbName)-1, 0, 1);
 	    }
 
-	    if (!bu_file_same(gedp->ged_wdbp->dbip->dbi_filename, dbName)) {
+	    if (!bu_file_same(gedp->dbip->dbi_filename, dbName)) {
 		/* warn here if they are not the same file, otherwise,
 		 * proceed as expected, and try to load the objects.
 		 */
-		bu_log("WARNING: view script seems to reference a different database\n([%s] != [%s])\n", dbName, gedp->ged_wdbp->dbip->dbi_filename);
+		bu_log("WARNING: view script seems to reference a different database\n([%s] != [%s])\n", dbName, gedp->dbip->dbi_filename);
 	    }
 
 	    /* get rid of anything that may be displayed, since we
@@ -385,7 +385,7 @@ int
 _ged_cm_end(const int argc, const char **argv)
 {
     struct bu_vls eye = BU_VLS_INIT_ZERO;
-    char *eye_argv[5] = {"eye", NULL, NULL, NULL, NULL};
+    char *eye_argv[6] = {"eye", NULL, NULL, NULL, NULL, NULL};
 
     if (argc < 0 || argv == NULL)
 	return 1;

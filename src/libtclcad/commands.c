@@ -1316,7 +1316,7 @@ to_base2local(struct ged *gedp,
     /* initialize result */
     bu_vls_trunc(gedp->ged_result_str, 0);
 
-    bu_vls_printf(gedp->ged_result_str, "%lf", current_top->to_gedp->ged_wdbp->dbip->dbi_base2local);
+    bu_vls_printf(gedp->ged_result_str, "%lf", current_top->to_gedp->dbip->dbi_base2local);
 
     return GED_OK;
 }
@@ -2453,7 +2453,6 @@ to_data_pick_func(struct ged *gedp,
     static const char *data_polygons_str = "data_polygons";
     static const char *data_labels_str = "data_labels";
     static const char *sdata_labels_str = "sdata_labels";
-    static const char *data_lines_str = "data_lines";
     static const char *sdata_lines_str = "sdata_lines";
     static const char *data_arrows_str = "data_arrows";
     static const char *sdata_arrows_str = "sdata_arrows";
@@ -2605,13 +2604,6 @@ to_data_pick_func(struct ged *gedp,
 	    maxY = vpoint[Y] + tol;
 	    if (minX < vx && vx < maxX &&
 		    minY < vy && vy < maxY) {
-		if (top_z < vpoint[Z]) {
-		    top_z = vpoint[Z];
-		    top_data_str = data_lines_str;
-		    top_i = i;
-		    VMOVE(top_point, dpoint);
-		    found_top = 1;
-		}
 		bu_vls_printf(gedp->ged_result_str, "data_lines %d {%lf %lf %lf}", i, V3ARGS(dpoint));
 		return GED_OK;
 	    }
@@ -3168,7 +3160,7 @@ to_dplot(struct ged *gedp,
 	aflag = 1;
     bu_vls_trunc(gedp->ged_result_str, 0);
 
-    while ((ret = (*func)(gedp, ac, (const char **)av)) & GED_MORE) {
+    while ((*func)(gedp, ac, (const char **)av) & GED_MORE) {
 	int ac_more;
 	const char **avmp;
 	const char **av_more = NULL;
@@ -3614,7 +3606,7 @@ redraw_edited_paths(struct bu_hash_tbl *t, void *udata)
 	    mat_t dvec;
 
 	    MAT_DELTAS_GET(dvec, params->edit_mat);
-	    VSCALE(dvec, dvec, data->gedp->ged_wdbp->dbip->dbi_base2local);
+	    VSCALE(dvec, dvec, data->gedp->dbip->dbi_base2local);
 
 	    bu_vls_printf(&tran_x_vls, "%lf", dvec[X]);
 	    bu_vls_printf(&tran_y_vls, "%lf", dvec[Y]);
@@ -3644,7 +3636,7 @@ redraw_edited_paths(struct bu_hash_tbl *t, void *udata)
 	av[2] = NULL;
 	ret = ged_how(data->gedp, 2, av);
 	if (ret == GED_OK) {
-	    ret = bu_sscanf(bu_vls_cstr(data->gedp->ged_result_str), "%d", &dmode);
+	    bu_sscanf(bu_vls_cstr(data->gedp->ged_result_str), "%d", &dmode);
 	}
 	if (dmode == 5) {
 	    bu_vls_printf(&path_dmode, "-h");
@@ -3872,7 +3864,7 @@ to_local2base(struct ged *gedp,
     /* initialize result */
     bu_vls_trunc(gedp->ged_result_str, 0);
 
-    bu_vls_printf(gedp->ged_result_str, "%lf", current_top->to_gedp->ged_wdbp->dbip->dbi_local2base);
+    bu_vls_printf(gedp->ged_result_str, "%lf", current_top->to_gedp->dbip->dbi_local2base);
 
     return GED_OK;
 }
@@ -6577,7 +6569,7 @@ to_rt_gettrees_application(struct ged *gedp,
 	return RT_APPLICATION_NULL;
     }
 
-    rtip = rt_new_rti(gedp->ged_wdbp->dbip);
+    rtip = rt_new_rti(gedp->dbip);
 
     while (0 < argc && argv[0][0] == '-') {
 	if (BU_STR_EQUAL(argv[0], "-i")) {

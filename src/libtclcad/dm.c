@@ -614,15 +614,15 @@ dmo_drawDataAxes_tcl(void *clientData, int argc, const char **argv)
 	return BRLCAD_ERROR;
     }
 
+    point_t mapos = VINIT_ZERO;
     memset(&bndas, 0, sizeof(struct bv_data_axes_state));
+    bndas.points = &mapos;
     VMOVE(bndas.points[0], modelAxesPos);
     bndas.size = axesSize;
     VMOVE(bndas.color, axesColor);
     bndas.line_width = lineWidth;
 
-    dm_draw_data_axes(dmop->dmo_dmp,
-		      viewSize,
-		      &bndas);
+    dm_draw_data_axes(dmop->dmo_dmp, viewSize, &bndas);
 
     bu_vls_free(&vls);
     return BRLCAD_OK;
@@ -2231,7 +2231,7 @@ dmo_flush_tcl(void *clientData, int UNUSED(argc), const char **UNUSED(argv))
     if (!dmop)
 	return BRLCAD_ERROR;
 
-    if (!dmop->dmo_dmp->i->dm_flush) {
+    if (dmop->dmo_dmp->i->dm_flush) {
 	dmop->dmo_dmp->i->dm_flush(dmop->dmo_dmp);
     }
 
@@ -2254,7 +2254,7 @@ dmo_sync_tcl(void *clientData, int UNUSED(argc), const char **UNUSED(argv))
     if (!dmop)
 	return BRLCAD_ERROR;
 
-    if (!dmop->dmo_dmp->i->dm_sync) {
+    if (dmop->dmo_dmp->i->dm_sync) {
 	dmop->dmo_dmp->i->dm_sync(dmop->dmo_dmp);
     }
 

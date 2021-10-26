@@ -122,8 +122,8 @@ main(int argc, const char **argv)
     /* Need a view for commands that expect a view */
     struct bview *gsh_view;
     BU_GET(gsh_view, struct bview);
-    bu_vls_sprintf(&gsh_view->gv_name, "default");
     bv_init(gsh_view);
+    bu_vls_sprintf(&gsh_view->gv_name, "default");
 
     /* See if we've been told to pre-load a specific .g file. */
     if (argc) {
@@ -332,7 +332,7 @@ main(int argc, const char **argv)
 			    0, 0, geometry_default_color, 1, 0);
 
 		    // Faceplate drawing
-		    dm_draw_viewobjs(gedp->ged_wdbp, v, NULL, gedp->ged_wdbp->dbip->dbi_base2local, gedp->ged_wdbp->dbip->dbi_local2base);
+		    dm_draw_viewobjs(gedp->ged_wdbp, v, NULL, gedp->dbip->dbi_base2local, gedp->dbip->dbi_local2base);
 
 		    dm_draw_end(dmp);
 		}

@@ -59,7 +59,7 @@ _pnt_to_tri(point_t *p, vect_t *n, struct rt_bot_internal *bot_ip, fastf_t scale
     vect_t v1pp, v2pp, v3pp = {0.0, 0.0, 0.0};
     vect_t v1fp, v2fp, v3fp = {0.0, 0.0, 0.0};
     mat_t rot;
-    struct bn_tol btol = {BN_TOL_MAGIC, BN_TOL_DIST, BN_TOL_DIST * BN_TOL_DIST, 1e-6, 1.0 - 1e-6 };
+    struct bn_tol btol = BG_TOL_INIT;
 
     VSET(n1, 0, 0, 1);
     VSET(v1, 0, ty1, 0);
@@ -507,7 +507,7 @@ _obj_to_pnts(struct ged *gedp, int argc, const char **argv)
     int flags = 0;
     double avg_thickness = 0.0;
     struct rt_db_internal internal;
-    struct bn_tol btol = {BN_TOL_MAGIC, BN_TOL_DIST, BN_TOL_DIST * BN_TOL_DIST, 1e-6, 1.0 - 1e-6 };
+    struct bn_tol btol = BG_TOL_INIT;
     struct rt_pnts_internal *pnts = NULL;
     const char *pnt_prim= NULL;
     const char *obj_name = NULL;
@@ -554,7 +554,7 @@ _obj_to_pnts(struct ged *gedp, int argc, const char **argv)
     pnt_prim = argv[1];
 
     /* Sanity */
-    if (db_lookup(gedp->ged_wdbp->dbip, obj_name, LOOKUP_QUIET) == RT_DIR_NULL) {
+    if (db_lookup(gedp->dbip, obj_name, LOOKUP_QUIET) == RT_DIR_NULL) {
 	bu_vls_sprintf(gedp->ged_result_str, "Error: object %s doesn't exist!\n", obj_name);
 	return GED_ERROR;
     }
@@ -598,7 +598,7 @@ _obj_to_pnts(struct ged *gedp, int argc, const char **argv)
     pnts->scale = 0.0;
     pnts->type = RT_PNT_TYPE_NRM;
 
-    if (analyze_obj_to_pnts(pnts, &avg_thickness, gedp->ged_wdbp->dbip, obj_name, &btol, flags, max_pnts, max_time, 2)) {
+    if (analyze_obj_to_pnts(pnts, &avg_thickness, gedp->dbip, obj_name, &btol, flags, max_pnts, max_time, 2)) {
 	bu_vls_sprintf(gedp->ged_result_str, "Error: point generation failed\n");
 	return GED_ERROR;
     }
@@ -724,7 +724,7 @@ _read_pnts(struct ged *gedp, int argc, const char **argv)
 	return GED_ERROR;
     }
 
-    if (db_lookup(gedp->ged_wdbp->dbip, pnt_prim, LOOKUP_QUIET) != RT_DIR_NULL) {
+    if (db_lookup(gedp->dbip, pnt_prim, LOOKUP_QUIET) != RT_DIR_NULL) {
 	bu_vls_sprintf(gedp->ged_result_str, "Error: object %s already exists\n", pnt_prim);
 	bu_vls_free(&unit);
 	bu_vls_free(&fmt);
